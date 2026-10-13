@@ -10,7 +10,7 @@ GAP, WALL = 1.5, 2.5
 BASE_T = 3.0                   # base plate thickness
 STAND = 5.0                    # standoff height (board underside above plate)
 BOARD_T = 1.6
-CEIL = 25.5                    # inner ceiling above board underside
+CEIL = 22.5                    # inner ceiling above board underside
 TOP_T = 3.0
 INSERT_D, INSERT_L = 4.0, 6.0  # M3 heat-set hole
 SCREW_D = 3.4
@@ -79,12 +79,16 @@ cap = cap.cut(wall_cut_ew(23.0, 37.0, 0.8, 7.0, EX, 2.5))
 WX = (IN_X0 + OUT_X0) / 2
 cap = cap.cut(wall_cut_ew(51.26 - 7.0, 51.26 + 7.0, 0.8, 9.5, WX, 2.5))
 
-# OLED: module x 71.8-99.3, y 38.5-66.3 (header north). glass area roughly y 44-63.
+# OLED: module x 71.8-99.3, y 38.5-66.3 (header north), held by J3 + two posts.
+# recess: the lid top steps down into a pocket whose floor sits just above the glass.
 OLED_Z_TOP = BOARD_T + 11.0 + 1.0 + 1.7    # posts + module pcb + glass
-pocket = box(71.8 - 1.0, 99.3 + 0.3, ky(66.3 + 1.0), ky(38.5 - 1.0), OLED_Z_TOP + 0.4, CEIL + 0.01)
-frame = box(71.8 - 2.5, IN_X1, ky(66.3 + 2.5), ky(38.5 - 2.5), BOARD_T + 11.0 + 1.0 + 0.3, CEIL + 0.01)
-cap = cap.fuse(frame).cut(pocket)
-win = box(85.55 - 13.5, 85.55 + 13.5, ky(61.5), ky(46.0), OLED_Z_TOP - 1, Z_TOP + 1)
+FLOOR_Z0 = OLED_Z_TOP + 1.5
+FLOOR_T = 1.5
+PX0, PX1, PY0, PY1 = 71.8 - 1.5, 99.3 + 0.8, ky(66.3 + 1.5), ky(38.5 - 1.5)
+pocket = box(PX0, PX1, PY0, PY1, FLOOR_Z0 + FLOOR_T, Z_TOP + 1)
+floor = box(PX0 - WALL, min(PX1 + WALL, IN_X1), PY0 - WALL, PY1 + WALL, FLOOR_Z0, CEIL + 0.01)
+cap = cap.fuse(floor).cut(pocket)
+win = box(85.55 - 13.5, 85.55 + 13.5, ky(61.5), ky(46.0), FLOOR_Z0 - 1, Z_TOP + 1)
 cap = cap.cut(win)
 # LED peek holes LED1 (4,26) LED2 (9,26)
 for (lx, ly) in ((4.0, 26.0), (9.0, 26.0)):
@@ -138,13 +142,13 @@ X, Y, Z = V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)
 labels = []
 # south wall (outer face y = OUT_Y0), viewer looks +y: text runs +x
 for txt, x in (("PORT 1", 24.0), ("PORT 2", 76.6)):
-    labels.append(label(txt, 4.0, V(x, OUT_Y0, 25.3), X, Z, Y))
-labels.append(label("USB", 4.0, V(50.3, OUT_Y0, 25.3), X, Z, Y))
+    labels.append(label(txt, 4.0, V(x, OUT_Y0, 18.5), X, Z, Y))
+labels.append(label("USB", 4.0, V(50.3, OUT_Y0, 13.5), X, Z, Y))
 # north wall (outer face y = OUT_Y1), viewer looks -y: text runs -x
-labels.append(label("AMIGA", 4.0, V(28.0, OUT_Y1, 25.3), -X, Z, -Y))
-labels.append(label("KEYBOARD", 4.0, V(74.0, OUT_Y1, 25.3), -X, Z, -Y))
+labels.append(label("AMIGA", 3.5, V(38.0, OUT_Y1, 19.5), -X, Z, -Y))
+labels.append(label("KEYBOARD", 3.5, V(88.5, OUT_Y1, 19.5), -X, Z, -Y))
 # east wall (outer face x = OUT_X1), viewer looks -x: text runs +y
-labels.append(label("5V", 4.0, V(OUT_X1, ky(30.0), 20.0), Y, Z, -X))
+labels.append(label("5V", 4.0, V(OUT_X1, ky(30.0), 10.5), Y, Z, -X))
 for l in labels:
     cap = cap.cut(l)
 oc.Shape = cap
