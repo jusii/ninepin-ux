@@ -79,16 +79,13 @@ cap = cap.cut(wall_cut_ew(23.0, 37.0, 0.8, 7.0, EX, 2.5))
 WX = (IN_X0 + OUT_X0) / 2
 cap = cap.cut(wall_cut_ew(51.26 - 7.0, 51.26 + 7.0, 0.8, 9.5, WX, 2.5))
 
-# OLED: module x 71.8-99.3, y 38.5-66.3 (header north), held by J3 + two posts.
-# recess: the lid top steps down into a pocket whose floor sits just above the glass.
-OLED_Z_TOP = BOARD_T + 11.0 + 1.0 + 1.7    # posts + module pcb + glass
-FLOOR_Z0 = OLED_Z_TOP + 1.5
-FLOOR_T = 1.5
-PX0, PX1, PY0, PY1 = 71.8 - 1.5, 99.3 + 0.8, ky(66.3 + 1.5), ky(38.5 - 1.5)
-pocket = box(PX0, PX1, PY0, PY1, FLOOR_Z0 + FLOOR_T, Z_TOP + 1)
-floor = box(PX0 - WALL, min(PX1 + WALL, IN_X1), PY0 - WALL, PY1 + WALL, FLOOR_Z0, CEIL + 0.01)
-cap = cap.fuse(floor).cut(pocket)
-win = box(85.55 - 13.5, 85.55 + 13.5, ky(61.5), ky(46.0), FLOOR_Z0 - 1, Z_TOP + 1)
+# OLED: module x 71.8-99.3, y 38.5-66.3 (header north). two stacked 8.4 mm sockets on J3
+# (16.8 + 2.54 module header) and 20 mm posts put the glass just under the lid top.
+POSTS = 16.8 + 2.54
+OLED_Z_TOP = BOARD_T + POSTS + 1.0 + 1.7
+print("glass top", OLED_Z_TOP, "lid top", Z_TOP, "gap", Z_TOP - OLED_Z_TOP)
+# plain window sized to the glass (26.7 x 19.3) + 0.5
+win = box(85.55 - 13.6, 85.55 + 13.6, ky(64.5), ky(44.5), CEIL - 1, Z_TOP + 1)
 cap = cap.cut(win)
 # LED peek holes LED1 (4,26) LED2 (9,26)
 for (lx, ly) in ((4.0, 26.0), (9.0, 26.0)):
@@ -145,8 +142,8 @@ for txt, x in (("PORT 1", 24.0), ("PORT 2", 76.6)):
     labels.append(label(txt, 4.0, V(x, OUT_Y0, 18.5), X, Z, Y))
 labels.append(label("USB", 4.0, V(50.3, OUT_Y0, 13.5), X, Z, Y))
 # north wall (outer face y = OUT_Y1), viewer looks -y: text runs -x
-labels.append(label("AMIGA", 3.5, V(38.0, OUT_Y1, 19.5), -X, Z, -Y))
-labels.append(label("KEYBOARD", 3.5, V(88.5, OUT_Y1, 19.5), -X, Z, -Y))
+labels.append(label("AMIGA", 3.0, V(38.0, OUT_Y1, 19.0), -X, Z, -Y))
+labels.append(label("KEYB", 3.0, V(84.0, OUT_Y1, 19.0), -X, Z, -Y))
 # east wall (outer face x = OUT_X1), viewer looks -x: text runs +y
 labels.append(label("5V", 4.0, V(OUT_X1, ky(30.0), 10.5), Y, Z, -X))
 for l in labels:
