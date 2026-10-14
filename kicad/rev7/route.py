@@ -70,7 +70,7 @@ def comb(side, pitch, end, stop=None):
         track(n, pts)
     return ends
 
-N = comb("N", 1.0, CY - 9.2)
+N = comb("N", 1.0, CY - 9.2, stop={"11": 28.3, "6": 28.3, "5": 28.3, "4": 28.3, "3": 28.3, "2": 28.5, "1": CY - 8.55})
 E = comb("E", 1.2, CX + 10.5, stop={"60": pad("U8", 1)[0], "59": pad("U8", 2)[0], "58": pad("U8", 3)[0],
                                      "57": CX + 9.2, "56": CX + 9.2, "55": CX + 9.2})
 W = comb("W", 1.0, CX - 10.2, stop={"20": CX - 8.0, "23": CX - 7.6, "22": pad("R54", 1)[0], "26": pad("R53", 1)[0],
@@ -84,17 +84,22 @@ for x in (CX - 0.8, CX + 0.8):
 # caps are parked north of the lanes with their own vias. i2c/uart/3V3(11) columns also drop
 # to B.Cu here (they continue north on the bottom).
 for num in ("1", "6", "11", "2", "3", "4", "5"):
-    x, ytop = N[num]; via(padnet("U1", num), x, ytop + 0.3)
+    x, ye = N[num]; via(padnet("U1", num), x, ye)
 for cap, pwr in (("C23", "/+3V3"), ("C21", "/dvdd"), ("C24", "/+3V3")):
     p1 = pad(cap, 1); p2 = pad(cap, 2)
     via(pwr, p1[0], p1[1] - 1.3); track(pwr, [p1, (p1[0], p1[1] - 1.3)]); gnd_stub(p2, 0, -1.3)
 # ---- east: QSPI ----
-p1 = pad("U8", 1); route("/qspi_ss", (p1[0], p1[1] - 0.3), (p1[0], 27.0), "straight"); route("/qspi_ss", (p1[0], 27.0), pad("R52", 1), "diag")
+# BOOT: qspi_ss leaves the flash pad on B.Cu, runs east at y 28.6 under the switches to R52 by SW1
+p1 = pad("U8", 1); r1 = pad("R52", 1); r2 = pad("R52", 2); sw = pad("SW1", 1)
+track("/qspi_ss", [(p1[0] + 0.7, p1[1]), (p1[0] + 1.4, p1[1] - 0.4)]); via("/qspi_ss", p1[0] + 1.4, p1[1] - 0.4)
+track("/qspi_ss", [(p1[0] + 1.4, p1[1] - 0.4), (p1[0] + 2.0, 28.6), (r1[0] - 0.0, 28.6), (r1[0], 15.3)], "B"); via("/qspi_ss", r1[0], 15.3); track("/qspi_ss", [(r1[0], 15.3), r1])
+track("/qspi_ss_sw", [r2, (r2[0], 11.7), (r2[0] + 0.4, 11.3), (sw[0] - 0.4, 11.3), (sw[0], 11.7), sw])
 for num, netn, pnum, xv in (("57", "/qspi_sd0", 5, 52.6), ("56", "/qspi_sclk", 6, 53.6), ("55", "/qspi_sd3", 7, 54.4)):
     e = E[num]; via(netn, *e); pp = pad("U8", pnum)
     track(netn, [e, (xv, e[1]), (xv, pp[1])], "B"); via(netn, xv, pp[1]); track(netn, [(xv, pp[1]), pp])
 p4 = pad("U8", 4); track("GND", [(p4[0] + 0.6, p4[1]), (p4[0] + 1.2, p4[1] + 0.4)]); via("GND", p4[0] + 1.2, p4[1] + 0.4)
-p8 = pad("U8", 8); c1 = pad("C32", 1); track("/+3V3", [p8, c1]); via("/+3V3", p8[0] + 1.4, p8[1]); track("/+3V3", [p8, (p8[0] + 1.4, p8[1])]); gnd_stub(pad("C32", 2), 0, -1.2)
+p8 = pad("U8", 8); track("/+3V3", [(p8[0] + 0.7, p8[1]), (p8[0] + 1.4, p8[1] - 0.4)]); via("/+3V3", p8[0] + 1.4, p8[1] - 0.4)
+c1 = pad("C32", 1); via("/+3V3", c1[0], c1[1] - 1.3); track("/+3V3", [c1, (c1[0], c1[1] - 1.3)]); gnd_stub(pad("C32", 2), 0.9, 0)
 c30 = pad("C30", 1); route("/+3V3", E["53"], c30, "diag"); route("/+3V3", E["54"], c30, "diag"); via("/+3V3", CX + 9.6, E["53"][1]); gnd_stub(pad("C30", 2), 1.2, 0)
 route("/usb_dp", E["52"], pad("R57", 1), "diag"); route("/usb_dm", E["51"], pad("R58", 1), "diag")
 via("/dvdd", *E["50"])
@@ -106,8 +111,8 @@ r1 = pad("R59", 1); via("/+3V3", r1[0] + 1.2, r1[1]); track("/+3V3", [r1, (r1[0]
 l1 = pad("L1", 1); c38 = pad("C38", 1); track("/dvdd", [l1, c38]); via("/dvdd", c38[0] + 0.3, c38[1] + 1.2); track("/dvdd", [c38, (c38[0] + 0.3, c38[1] + 1.2)]); gnd_stub(pad("C38", 2), 1.2, 0)
 # ---- west ----
 via("/+3V3", CX - 7.7, W["20"][1]); via("/+3V3", *W["30"])
-for cap in ("C25", "C26", "C27"):               # parked 3V3 caps north of the west comb
-    p1 = pad(cap, 1); p2 = pad(cap, 2); via("/+3V3", p1[0], p1[1] + 1.2); track("/+3V3", [p1, (p1[0], p1[1] + 1.2)]); gnd_stub(p2, 0, -1.2)
+for cap in ("C25", "C26", "C27"):               # parked 3V3 caps west of the lanes (pad 1 down): 3V3 via below, GND above
+    p1 = pad(cap, 1); p2 = pad(cap, 2); via("/+3V3", p1[0], p1[1] + 1.3); track("/+3V3", [p1, (p1[0], p1[1] + 1.3)]); gnd_stub(p2, 0, -1.3)
 via("/dvdd", *W["23"])
 c22 = pad("C22", 1); track("/dvdd", [E["50"], (c22[0] - 0.3, E["50"][1]), c22]); gnd_stub(pad("C22", 2), 1.2, 0)
 y1 = {n: pad("Y1", n) for n in (1, 2, 3, 4)}
@@ -153,3 +158,40 @@ for i, num in enumerate(("31", "32", "33", "34")):
 
 b.Save(PCB)
 print("routed phase 1:", len(list(b.GetTracks())), "track items")
+
+# ====================== phase 2a: U6 (keyboard + port 1 hq..b1) ======================
+b = pcbnew.LoadBoard(PCB)
+_pads.clear()
+for fp in b.GetFootprints():
+    for pd in fp.Pads():
+        _pads[(fp.GetReference(), pd.GetNumber())] = (pd.GetPosition().x / 1e6, pd.GetPosition().y / 1e6, pd.GetNetname())
+# MCU lanes: north comb columns turn east at y 24.6..27.4 (west column = top lane) and drop
+# into U6's south row; the U6 pad order was chosen in design.py so this is planar.
+LANES = [("15", "13"), ("14", "14"), ("13", "15"), ("12", "16"), ("10", "17"), ("9", "18"), ("8", "19"), ("7", "20")]   # (U1 pin, U6 pin)
+for i, (u1, u6) in enumerate(LANES):
+    x, ytop = N[u1]; yl = 24.6 + 0.4 * i; n = padnet("U1", u1); px, py = pad("U6", u6)
+    track(n, [(x, ytop), (x, yl + 0.4), (x + 0.4, yl), (px - 0.4, yl), (px, yl - 0.4), (px, py)])
+# kbin_lo and port-1 b2/b3_lo: west-side vias -> B.Cu east bus at y 28.6..30.3 -> vias by the pads
+for u1, y_lane, dst, vx, vy in (("16", 25.0, ("U7", "22"), 78.78, 19.5), ("17", 25.4, ("U7", "21"), 79.41, 20.4),
+                                 ("18", 26.2, ("U6", "21"), 72.09, 26.2), ("19", 26.8, ("U6", "22"), 72.72, 26.8)):
+    e = W[u1]; vx0 = e[0] - 0.4; n = padnet("U1", u1); px, py = pad(*dst)
+    pts = [(vx0, e[1]), (vx0 + (e[1] - y_lane), y_lane)]
+    if dst[0] == "U6": pts += [(vx, y_lane)]; via(n, vx, y_lane); track(n, [(vx, y_lane), (vx, py)])
+    else: pts += [(vx, y_lane), (vx, vy)]; via(n, vx, vy); track(n, [(vx, vy), (px, py)])
+    track(n, pts, "B")
+# keyboard-out trio: J1 pins on B.Cu east at y 15.6/16.0/16.4 to vias north of U6 A4..A6
+for j1, y_lane, u6, t, gdy in (("3", 15.5, "4", "D12", -1.3), ("2", 16.5, "5", "D13", 1.3), ("1", 17.5, "6", "D14", 1.3)):
+    n = padnet("J1", j1); jx, jy = pad("J1", j1); px, py = pad("U6", u6); tp = pad(t, 1)
+    track(n, [(jx, jy), (jx, y_lane - 0.4), (jx + 0.4, y_lane), (px, y_lane)]); via(n, px, y_lane); track(n, [(px, y_lane), (px, py)])
+    gnd_stub(pad(t, 2), 0, gdy)          # the lane passes through the clamp's pad 1
+# keyboard-in: J12 pins east over the J12 body, down between the J3 pins, into A1/A2
+jd, jc = pad("J12", 1), pad("J12", 5); a1, a2 = pad("U6", 2), pad("U6", 3)
+d10 = pad("D10", 1); xv = 76.8
+track("/kbin_dat", [jd, (jd[0], 7.6), (jd[0] + 2.4, 10.0), (xv, 10.0), (xv, d10[1] - (xv - d10[0])), d10, (d10[0], d10[1] + 0.45), (d10[0] - (17.0 - d10[1] - 0.45), 17.0), (a1[0], 17.0), a1]); gnd_stub(pad("D10", 2), 1.2, 0)
+track("/kbin_clk", [jc, (jc[0], 10.0), (jc[0] + 0.4, 10.4), (74.25 - 0.4, 10.4), (74.25, 10.8), (74.25, 14.3), (a2[0], 14.3 + (74.25 - a2[0])), a2])
+d11 = pad("D11", 1); track("/kbin_clk", [jc, (jc[0], d11[1] - 0.65), d11]); gnd_stub(pad("D11", 2), -1.2, 0)
+# U6 ground pins and VCC cap
+gnd_stub(pad("U6", 12), -0.9, -0.3); gnd_stub(pad("U6", 23), 0.0, 0.8)
+v24 = pad("U6", 24); c13 = pad("C13", 1); track("/AMIGA_5V_FUSED", [v24, (v24[0], v24[1] + 0.7), (c13[0], v24[1] + 0.7 + (c13[0] - v24[0])), c13], w=0.3); gnd_stub(pad("C13", 2), 0, 1.2)
+b.Save(PCB)
+print("routed phase 2a:", len(list(b.GetTracks())), "track items")
