@@ -8905,6 +8905,15 @@
 				)
 			)
 		)
+		(property "MPN" "MF-MSMF075-2"
+			(at 39.37 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Sourcing" "bench-sized; not assembled"
 			(at 39.37 69.85 0)
 			(hide yes)
@@ -9235,6 +9244,24 @@
 				)
 			)
 		)
+		(property "LCSC" "C17313"
+			(at 167.64 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "MF-MSMF050-2"
+			(at 167.64 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "221b4944-abba-52e8-b5c1-7c02f4d8431c")
 		)
@@ -9328,6 +9355,24 @@
 			)
 		)
 		(property "Description" "Resettable fuse, polymeric positive temperature coefficient"
+			(at 208.28 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C17313"
+			(at 208.28 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "MF-MSMF050-2"
 			(at 208.28 69.85 0)
 			(hide yes)
 			(effects
@@ -11496,7 +11541,7 @@
 				)
 			)
 		)
-		(property "Value" "1N5819WS"
+		(property "Value" "SS34"
 			(at 123.92 172.72 0)
 			(effects
 				(font
@@ -11504,7 +11549,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323F"
+		(property "Footprint" "Diode_SMD:D_SMA"
 			(at 121.92 171.45 0)
 			(hide yes)
 			(effects
@@ -11523,6 +11568,15 @@
 			)
 		)
 		(property "Description" "Schottky diode"
+			(at 121.92 171.45 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C8678"
 			(at 121.92 171.45 0)
 			(hide yes)
 			(effects
@@ -12403,6 +12457,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C492407"
+			(at 220.98 265.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "7d6eeeac-c011-5973-94b9-e47220138f4c")
 		)
@@ -12670,6 +12733,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x08, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 287.02 265.43 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C492407"
 			(at 287.02 265.43 0)
 			(hide yes)
 			(effects
@@ -26881,6 +26953,24 @@
 				)
 			)
 		)
+		(property "MPN" "C&K PTS645VL58-2 LFS"
+			(at 278.13 1182.37 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"
+			(at 278.13 1182.37 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d41851d3-2c50-57a6-861d-36600e986754")
 		)
@@ -27122,6 +27212,24 @@
 			)
 		)
 		(property "Description" "Push button switch, generic, two pins"
+			(at 363.22 1182.37 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "C&K PTS645VL58-2 LFS"
+			(at 363.22 1182.37 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"
 			(at 363.22 1182.37 0)
 			(hide yes)
 			(effects
@@ -27970,6 +28078,15 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 290.83 1254.76 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2937625"
 			(at 290.83 1254.76 0)
 			(hide yes)
 			(effects
@@ -29230,6 +29347,24 @@
 				)
 			)
 		)
+		(property "LCSC" "C2897367"
+			(at 58.42 1446.53 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "PM254-1-04-Z-8.5"
+			(at 58.42 1446.53 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "3887b8b4-ce94-534f-b001-228c128cf475")
 		)
@@ -29909,6 +30044,24 @@
 			)
 		)
 		(property "Description" "Generic connector, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)"
+			(at 325.12 1446.53 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C2937625"
+			(at 325.12 1446.53 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "1x3 header cut from stock; or PZ254V-11-04P"
 			(at 325.12 1446.53 0)
 			(hide yes)
 			(effects
