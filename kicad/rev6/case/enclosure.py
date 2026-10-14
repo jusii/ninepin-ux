@@ -71,7 +71,7 @@ for c in (38.0, 84.0):
 # south: P1 flange 8.5-39.5, USB-A 42.2-58.4, P2 61.1-92.1
 for (x0, x1) in ((8.0, 40.0), (60.6, 92.6)):
     cap = cap.cut(wall_cut_ns(x0, x1, 1.0, 15.0, SY, 2.0))
-cap = cap.cut(wall_cut_ns(41.9, 58.7, -2.8, 10.0, SY, 1.0))
+cap = cap.cut(wall_cut_ns(41.9, 58.7, 1.0, 10.0, SY, 1.0))
 # east: USB-C J13 kicad y 24.4-35.6, z 1.6-4.9
 EX = (IN_X1 + OUT_X1) / 2
 cap = cap.cut(wall_cut_ew(23.0, 37.0, 0.8, 7.0, EX, 2.5))
