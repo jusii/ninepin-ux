@@ -78,7 +78,7 @@ BLOCKS = [
    ("D2", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AUX_5V"}, {"LCSC": "C8678"}),
    ("F2", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "USBA_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
    ("F3", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "KBIN_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
-   C("C1", "220uF", "SYS5V", "GND", CELEC, Note="10 V rated"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
+   C("C1", "100uF", "SYS5V", "GND", CELEC, Note="10 V rated; kept modest for inrush through the Amiga polyswitch"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
    C("C4", "150uF", "USBA_5V", "GND", CELEC, Note="10 V rated"), C("C5", "100nF", "USBA_5V", "GND"),
    C("C6", "10uF", "KBIN_5V", "GND", C0805), C("C7", "100nF", "KBIN_5V", "GND"),
    ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2865999", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX. LCSC code to verify before order"}),

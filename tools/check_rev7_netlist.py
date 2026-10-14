@@ -629,7 +629,7 @@ def check_power(rep, nl):
         rep.eq("D.%s.pin7_nc" % p, nl.net_of(p, "7"), NC, "%s pin 7 (+5 V)" % p)
     rep.eq("D.J10.pin4", nl.net_of("J10", "4"), "AMIGA_5V", "J10 pin 4")
     # bulk caps on the rails
-    for net, cap in (("SYS5V", 100e-6), ("USBA_5V", 100e-6)):
+    for net, cap in (("SYS5V", 47e-6), ("USBA_5V", 100e-6)):   # SYS5V bulk kept modest for Amiga-port inrush
         bulk = [r for r in nl.parts_between(net, GND, lib="Device:C")
                 if (parse_value(nl.value(r)) or 0) >= cap]
         rep.chk("D.%s.bulk" % net, bulk, "no >=%guF bulk cap on %s" % (cap * 1e6, net))

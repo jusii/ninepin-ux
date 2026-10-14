@@ -9794,7 +9794,7 @@
 				)
 			)
 		)
-		(property "Value" "220uF"
+		(property "Value" "100uF"
 			(at 249.65 71.12 0)
 			(effects
 				(font
@@ -9829,7 +9829,7 @@
 				)
 			)
 		)
-		(property "Note" "10 V rated"
+		(property "Note" "10 V rated; kept modest for inrush through the Amiga polyswitch"
 			(at 247.65 69.85 0)
 			(hide yes)
 			(effects
