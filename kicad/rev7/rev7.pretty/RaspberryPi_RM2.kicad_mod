@@ -1,0 +1,534 @@
+(footprint "RaspberryPi_RM2"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Raspberry Pi Radio Module 2 (RM2, RMC20452T), CYW43439 Wi-Fi/Bluetooth, 21 castellated pads 1.5mm pitch, 14.5x16.5mm, antenna keep-out 35.5x18.5mm, land pattern per datasheet RP-008943-DS-7 Fig. 6, https://rpltd.co/rm2-datasheet")
+	(tags "Raspberry Pi RM2 RMC20452T CYW43439 WiFi Bluetooth module castellated")
+	(property "Reference" "U**"
+		(at 0 -9.6 0)
+		(layer "F.SilkS")
+		(uuid "24494a0f-b0cd-446f-9a09-0aed98cff52e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "RaspberryPi_RM2"
+		(at 0 10.4 0)
+		(layer "F.Fab")
+		(uuid "45172e5b-02ad-4abb-97da-cebd8cfc66ac")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "https://rpltd.co/rm2-datasheet"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "02ffe265-1ef3-4b8f-82d8-1c5d3fe33855")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Raspberry Pi Radio Module 2 (RM2), CYW43439 2.4 GHz Wi-Fi + Bluetooth, gSPI"
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "718ceb58-2243-40e9-bd20-571ed7d057f7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start -8.05 -8.25)
+		(end -8.05 9.05)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2949c7e2-1b02-4832-b3a8-00f995db6a45")
+	)
+	(fp_line
+		(start -8.05 9.05)
+		(end 8.05 9.05)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "0bf4afe7-99d9-4d0b-9262-71575249c7a7")
+	)
+	(fp_line
+		(start 8.05 9.05)
+		(end 8.05 -8.25)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "bce1570a-b748-429a-b5df-74e5256330de")
+	)
+	(fp_poly
+		(pts
+			(xy -8.35 -2.55) (xy -8.85 -2.25) (xy -8.85 -2.85)
+		)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.SilkS")
+		(uuid "bde7b3b3-ed0e-4245-a1a2-790e439086e1")
+	)
+	(fp_rect
+		(start -17.75 -21.75)
+		(end 17.75 -3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "Cmts.User")
+		(uuid "3605b10a-024f-4498-af2a-17bd762534d2")
+	)
+	(fp_rect
+		(start -9.15 -8.5)
+		(end 8.4 9.4)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "2168bc8a-0737-464b-ac5a-a71f229d460a")
+	)
+	(fp_line
+		(start -7.25 -7.25)
+		(end -6.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "29e87747-6a32-44e3-b135-500392d8abb0")
+	)
+	(fp_line
+		(start -7.25 -6.25)
+		(end -5.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "aa5f6e5b-59ff-450e-8d7f-352c0cf93290")
+	)
+	(fp_line
+		(start -7.25 -5.25)
+		(end -4.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2e2a9f95-a1d5-4024-8aa6-1e6f7c21b2ee")
+	)
+	(fp_line
+		(start -7.25 -4.25)
+		(end -3.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "cc263bd6-c91f-42a5-bb60-09793f7956bd")
+	)
+	(fp_line
+		(start -7.25 -3.25)
+		(end -2.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "de2839c5-7102-43f0-bc9d-8461fe743dfe")
+	)
+	(fp_line
+		(start -7.25 -3.25)
+		(end 7.25 -3.25)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "e4dfcaa6-36c8-422d-a0f3-39fba8b7db6b")
+	)
+	(fp_line
+		(start -6.25 -3.25)
+		(end -1.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "cbd4c844-9a99-4054-82f2-2094ceb64d68")
+	)
+	(fp_line
+		(start -5.25 -3.25)
+		(end -0.25 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "85db8eb5-9053-45a2-bf4e-50369e8064c0")
+	)
+	(fp_line
+		(start -4.25 -3.25)
+		(end 0.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "aa33a060-e382-4b36-9a69-a4528a1073b6")
+	)
+	(fp_line
+		(start -3.25 -3.25)
+		(end 1.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "acdf8a5b-53d2-44ec-8e7e-02f753e6b9ee")
+	)
+	(fp_line
+		(start -2.25 -3.25)
+		(end 2.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "3a121c79-69bd-44a7-8046-22bda01d6a4e")
+	)
+	(fp_line
+		(start -1.25 -3.25)
+		(end 3.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "282fd793-50aa-4425-8cba-1bb1e3165440")
+	)
+	(fp_line
+		(start -0.25 -3.25)
+		(end 4.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "872c6ab5-ffc1-4a93-9d88-a257b6c85095")
+	)
+	(fp_line
+		(start 0.75 -3.25)
+		(end 5.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "56069297-4b5e-410d-b5fc-b97751599336")
+	)
+	(fp_line
+		(start 1.75 -3.25)
+		(end 6.75 -8.25)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "cef03b44-edb9-48c0-a1ef-21ba0b6780bb")
+	)
+	(fp_line
+		(start 2.75 -3.25)
+		(end 7.25 -7.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "3e9d4b58-f8cc-44ae-b68b-c4a5c3ab39a2")
+	)
+	(fp_line
+		(start 3.75 -3.25)
+		(end 7.25 -6.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "f700184e-b543-4620-99dd-b6ace6f3c0c5")
+	)
+	(fp_line
+		(start 4.75 -3.25)
+		(end 7.25 -5.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "5b577c6d-dc74-4398-80a4-f07761ccf5c7")
+	)
+	(fp_line
+		(start 5.75 -3.25)
+		(end 7.25 -4.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ae926411-90a0-4b77-b825-e98a33319bfa")
+	)
+	(fp_line
+		(start 6.75 -3.25)
+		(end 7.25 -3.75)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "8937ca7b-86b1-4af5-af4f-c9d2dcd429af")
+	)
+	(fp_poly
+		(pts
+			(xy -6.25 -8.25) (xy 7.25 -8.25) (xy 7.25 8.25) (xy -7.25 8.25) (xy -7.25 -7.25)
+		)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "734e2748-c9ba-485b-bf96-2a509b4272e0")
+	)
+	(fp_text user "RM2 antenna keep-out 35.5x18.5: no metal on any layer"
+		(at 0 -20.75 0)
+		(layer "Cmts.User")
+		(uuid "ee820d33-4631-4119-9031-1bdaacebca50")
+		(effects
+			(font
+				(size 0.7 0.7)
+				(thickness 0.1)
+			)
+		)
+	)
+	(fp_text user "ANTENNA KEEP-OUT 35.5x18.5 all layers"
+		(at 0 -15 0)
+		(layer "F.Fab")
+		(uuid "677c8ab0-50c9-4065-a474-8f74e804afdb")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(fp_text user "ANTENNA"
+		(at 0 -5.75 0)
+		(layer "F.Fab")
+		(uuid "35262f88-0568-451d-ac40-77e622e62766")
+		(effects
+			(font
+				(size 0.8 0.8)
+				(thickness 0.12)
+			)
+		)
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 2.5 0)
+		(layer "F.Fab")
+		(uuid "d375eb69-5784-472a-8ecd-8d91977031c7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" smd rect
+		(at -6.75 -2.55)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "56e1315f-cfc5-457c-9a89-d2ecbdc63d69")
+	)
+	(pad "2" smd rect
+		(at -6.75 -1.05)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "8bf95f99-efb1-4287-be0b-432db8285960")
+	)
+	(pad "3" smd rect
+		(at -6.75 0.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "032f8a18-1256-4736-88e2-a0d7e9ee56c0")
+	)
+	(pad "4" smd rect
+		(at -6.75 1.95)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "0a406085-f5b2-46ff-a469-d13db57a97fd")
+	)
+	(pad "5" smd rect
+		(at -6.75 3.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "4d92390a-8628-42c1-b8a3-eae210886454")
+	)
+	(pad "6" smd rect
+		(at -6.75 4.95)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "3d85f59b-81f1-479c-8686-9e775a75c8d8")
+	)
+	(pad "7" smd rect
+		(at -6.75 6.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "6c76e775-f83d-43c4-83b6-4c25e95ea277")
+	)
+	(pad "8" smd rect
+		(at -4.5 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "df9db43d-45c2-493a-b681-d13a14313c9f")
+	)
+	(pad "9" smd rect
+		(at -3 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "fd50d51b-3f8f-4b97-96e2-ef0700a278ac")
+	)
+	(pad "10" smd rect
+		(at -1.5 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "d2d236f0-6a8e-4925-9039-92b610283d3c")
+	)
+	(pad "11" smd rect
+		(at 0 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "730dfd2d-9687-4846-a4d8-88fa76bea05e")
+	)
+	(pad "12" smd rect
+		(at 1.5 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "046d9d6e-9d53-44d7-941f-d5aae32e2525")
+	)
+	(pad "13" smd rect
+		(at 3 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "480cf939-e379-4420-9900-18dcb78a3492")
+	)
+	(pad "14" smd rect
+		(at 4.5 7.75)
+		(size 1 2)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "54675a3f-206c-4d48-b3a7-5d45db9f4ba6")
+	)
+	(pad "15" smd rect
+		(at 6.75 6.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "6e9317f5-258d-4b1b-871d-7ccb3a065278")
+	)
+	(pad "16" smd rect
+		(at 6.75 4.95)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "a8e73b1c-de00-462d-83c8-42dd397294d7")
+	)
+	(pad "17" smd rect
+		(at 6.75 3.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "9c33920c-199f-44b0-90ec-62919a71afc9")
+	)
+	(pad "18" smd rect
+		(at 6.75 1.95)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "49990e91-fa52-45dc-b34b-f1bdc804056c")
+	)
+	(pad "19" smd rect
+		(at 6.75 0.45)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "f9a495cd-270c-4383-a187-f3d9159603f2")
+	)
+	(pad "20" smd rect
+		(at 6.75 -1.05)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "a33fb74a-2810-4d5e-b8c0-b0487859cd96")
+	)
+	(pad "21" smd rect
+		(at 6.75 -2.55)
+		(size 2 1)
+		(layers "F.Cu" "F.Mask" "F.Paste")
+		(uuid "867299c5-e309-468e-805a-5fe9901b7eb7")
+	)
+	(zone
+		(layers "F.Cu" "B.Cu")
+		(uuid "607e9f87-e9c2-4987-9ee8-46c82adab921")
+		(name "RM2_antenna_onmodule")
+		(hatch edge 0.5)
+		(connect_pads
+			(clearance 0)
+		)
+		(min_thickness 0.25)
+		(keepout
+			(tracks not_allowed)
+			(vias not_allowed)
+			(pads not_allowed)
+			(copperpour not_allowed)
+			(footprints not_allowed)
+		)
+		(placement
+			(enabled no)
+			(sheetname "")
+		)
+		(fill
+			(thermal_gap 0.5)
+			(thermal_bridge_width 0.5)
+			(island_removal_mode 0)
+		)
+		(polygon
+			(pts
+				(xy -17.75 -8.25) (xy 17.75 -8.25) (xy 17.75 -3.25) (xy -17.75 -3.25)
+			)
+		)
+	)
+	(embedded_fonts no)
+)
