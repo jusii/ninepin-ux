@@ -140,7 +140,7 @@ for txt, x in (("PORT 1", 24.0), ("PORT 2", 76.6)):
     labels.append(label(txt, 4.0, V(x, OUT_Y0, 18.5), X, Z, Y))
 labels.append(label("USB", 4.0, V(50.3, OUT_Y0, 13.5), X, Z, Y))
 # north wall (outer face y = OUT_Y1), viewer looks -y: text runs -x
-labels.append(label("AMIGA", 3.0, V(43.8, OUT_Y1, 19.0), -X, Z, -Y))
+labels.append(label("AMIGA", 3.0, V((18.0 + 11.5 + 64.0 - 11.5) / 2, OUT_Y1, 19.0), -X, Z, -Y))
 labels.append(label("KEYB", 3.0, V(84.0, OUT_Y1, 19.0), -X, Z, -Y))
 # east wall (outer face x = OUT_X1), viewer looks -x: text runs +y
 labels.append(label("5V", 4.0, V(OUT_X1, ky(30.0), 10.5), Y, Z, -X))
