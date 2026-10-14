@@ -6,7 +6,9 @@ Case rule (Rev7 Plan): the case OUTER wall is the reference. Mini-DIN and USB-A 
 sit flush with the outer wall, i.e. overhang the board edge by GAP + WALL. The DE9 flange
 sits behind the wall (D-cutout, wall thinned to DE9_WALL, 4-40 jackscrews through the wall).
 The USB-C receptacle can only overhang ~1.1 mm (its rear pads are 1.07 mm from the edge
-line), so it gets the same local wall thinning as the DE9 instead of a full overhang.
+line), so it gets the same local wall thinning as the DE9 instead of a full overhang. The
+mini-DIN shield pin (3.2 mm pad) limits its overhang to 2.5 mm, so the wall is thinned to
+MDIN_WALL over each mini-DIN body and the face stays flush (decided 2026-10-14).
 """
 
 # ---- board ----
@@ -20,6 +22,8 @@ GAP = 0.5            # board edge to inner wall
 WALL = 2.5           # outer wall thickness
 OVH = GAP + WALL     # connector face overhang past the board edge for wall-flush faces
 DE9_WALL = 1.5       # wall thickness in front of a DE9 flange / USB-C face
+MDIN_WALL = 2.0      # wall thinned locally at the mini-DIN bodies so the face is flush at a 2.5 mm overhang
+MDIN_OVH = OVH - (WALL - MDIN_WALL)
 STAND = 4.0          # board underside above the base plate
 BASE_T = 2.5
 CEIL = 15.5          # inner ceiling above board underside (OLED glass top 15.24, DE9 14.5)
@@ -36,7 +40,7 @@ DE9_FLANGE = 0.9
 DE9_W = 31.86                       # flange + fab outline width (local x -10.39..21.47)
 DE9_X0 = -10.39
 
-MDIN_Y = -OVH + 0.25
+MDIN_Y = -MDIN_OVH + 0.25
 USBA_Y = H + OVH - 13.49
 DE9_Y = H - 7.70 - 2.84
 USBC_X = W + OVH - DE9_WALL - 4.18          # face sits DE9_WALL behind the outer surface

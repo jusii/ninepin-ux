@@ -54,9 +54,11 @@ NY, SY, EX = (IN_Y1 + OUT_Y1) / 2, (IN_Y0 + OUT_Y0) / 2, (IN_X1 + OUT_X1) / 2
 conn = {c[0]: c for c in FP["CONNECTORS"]}
 
 # north: two mini-DIN6, body 14.5 wide x ~12.7 tall above the board (MD-60S), face flush
+MDIN_WALL = FP["MDIN_WALL"]
 for ref in ("J10", "J12"):
     x = conn[ref][4]
     cap = cap.cut(cut_ns(x - 7.8, x + 7.8, BOARD_T + 0.3, BOARD_T + 13.2, NY, 1.5))
+    cap = cap.cut(box(x - 8.0, x + 8.0, IN_Y1 - 0.01, OUT_Y1 - MDIN_WALL, BOARD_T + 0.3, BOARD_T + 13.4))   # pocket
 # south: DE9 flanges behind a thinned wall with a D cutout + 4-40 jackscrew holes
 DE9_X0, DE9_W = FP["DE9_X0"], FP["DE9_W"]
 for ref in ("P1", "P2"):
@@ -103,7 +105,7 @@ for (cx, cy) in HOLES:
 board = box(0, W, ky(H), 0, 0, BOARD_T)
 dummies = []
 for ref in ("J10", "J12"):
-    x = conn[ref][4]; dummies.append(box(x - 7.25, x + 7.25, ky(9.4), ky(-OVH), BOARD_T + 0.3, BOARD_T + 12.9))
+    x = conn[ref][4]; dummies.append(box(x - 7.25, x + 7.25, ky(12.65 - FP["MDIN_OVH"]), ky(-FP["MDIN_OVH"]), BOARD_T + 0.3, BOARD_T + 12.9))
 for ref in ("P1", "P2"):
     x = conn[ref][4]; cx = x + 5.54
     dummies.append(box(x + DE9_X0, x + DE9_X0 + DE9_W, ky(H + FP["DE9_FLANGE"]), ky(H - 13.3), BOARD_T + 0.3, BOARD_T + 12.9))
