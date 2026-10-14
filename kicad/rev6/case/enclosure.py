@@ -70,14 +70,12 @@ for c in (38.0, 84.0):
     cap = cap.cut(wall_cut_ns(c - 8.0, c + 8.0, 1.0, 15.5, NY))
 # south: P1 flange 8.5-39.5, USB-A 42.2-58.4, P2 61.1-92.1
 for (x0, x1) in ((8.0, 40.0), (60.6, 92.6)):
-    cap = cap.cut(wall_cut_ns(x0, x1, -4.5, 15.0, SY, 2.0))
+    cap = cap.cut(wall_cut_ns(x0, x1, 1.0, 15.0, SY, 2.0))
 cap = cap.cut(wall_cut_ns(41.9, 58.7, -2.8, 10.0, SY, 1.0))
 # east: USB-C J13 kicad y 24.4-35.6, z 1.6-4.9
 EX = (IN_X1 + OUT_X1) / 2
 cap = cap.cut(wall_cut_ew(23.0, 37.0, 0.8, 7.0, EX, 2.5))
-# west: pico micro-usb at kicad y 51.26
-WX = (IN_X0 + OUT_X0) / 2
-cap = cap.cut(wall_cut_ew(51.26 - 7.0, 51.26 + 7.0, 0.8, 9.5, WX, 2.5))
+# (no west opening: the pico's micro-usb is reached with the cap off)
 
 # OLED: module x 71.8-99.3, y 38.5-66.3 (header north). two stacked 8.4 mm sockets on J3
 # (16.8 + 2.54 module header) and 20 mm posts put the glass just under the lid top.
