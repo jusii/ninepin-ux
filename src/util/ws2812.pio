@@ -1,0 +1,54 @@
+; this file is part of amigahid-pico, (c) 2021 just nine <nine@aphlor.org>
+; please locate the full source at https://github.com/borb/amigahid-pico
+;
+; released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
+; please find the complete license text at https://spdx.org/licenses/EPL-2.0
+;
+; statemachine program for a single ws2812 status led (boards with
+; HAS_STATUS_WS2812). the program is the one from raspberry pi's pico-examples
+; (pio/ws2812/ws2812.pio, BSD-3-Clause, (c) 2020 Raspberry Pi (Trading) Ltd.):
+; every bit is t1+t2+t3 = 10 sm cycles at 800 kHz, high for t1 (a 0) or t1+t2
+; (a 1). the cpu writes one 24-bit grb word per frame, left-justified; autopull
+; does the rest. the led latches after 280us of low, which status_led.c
+; guarantees by never writing two frames closer together than that.
+
+.program ws2812
+.side_set 1
+
+.define public T1 3
+.define public T2 3
+.define public T3 4
+
+.wrap_target
+bitloop:
+    out x, 1        side 0 [T3 - 1] ; low tail of the previous bit, fetch the next
+    jmp !x do_zero  side 1 [T1 - 1] ; every bit starts high
+do_one:
+    jmp bitloop     side 1 [T2 - 1] ; a 1 stays high for t2 more
+do_zero:
+    nop             side 0 [T2 - 1] ; a 0 goes low early
+.wrap
+
+% c-sdk {
+#include "hardware/clocks.h"
+
+static inline void ws2812_program_init(PIO pio, uint sm, uint offset, uint pin)
+{
+    pio_gpio_init(pio, pin);
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
+
+    pio_sm_config c = ws2812_program_get_default_config(offset);
+    sm_config_set_sideset_pins(&c, pin);
+
+    // 24 bits per frame, msb first, autopull
+    sm_config_set_out_shift(&c, false, true, 24);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
+
+    // 800 kHz bit rate whatever the system clock
+    int cycles_per_bit = ws2812_T1 + ws2812_T2 + ws2812_T3;
+    sm_config_set_clkdiv(&c, (float)clock_get_hz(clk_sys) / (800000.0f * cycles_per_bit));
+
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}

@@ -16,6 +16,7 @@
 #include "platform/amiga/keyboard_serial_io.h"
 #include "platform/amiga/keyboard_recv.h"
 #include "platform/amiga/quad_mouse.h"
+#include "util/board_pins.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/status_led.h"
@@ -36,6 +37,10 @@ int main(void)
     // tinyusb board init; led, uart, button, usb
     board_init();
 
+    // board-level pads before any driver claims them: pull-ups on lines with
+    // no external pull-up, usb mux held on the device port (boards that have them)
+    board_pins_init();
+
     // status indicators come up first so a board with no display still shows
     // signs of life whilst the rest of the stack initialises
     status_led_init();
@@ -46,7 +51,9 @@ int main(void)
     // say hello, trevor ("hello, trevor")
     dbgcons_init();
 
-    // initialise the usb host stack on the rhport from tusb_config.h
+    // initialise the usb host stack on the rhport from tusb_config.h, first
+    // pointing the usb mux (on boards with one) at the host port
+    board_pins_usb_host();
     const tusb_rhport_init_t rhport_init = {
         .role = TUSB_ROLE_HOST,
         .speed = TUH_OPT_HIGH_SPEED ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL,

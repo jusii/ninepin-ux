@@ -132,10 +132,10 @@ GPIO_NET = {
     7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_v_lo",
     11: "cont1_b1_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
-    16: "ws_drv", 17: "usb_sel",
+    16: "cont2_h_lo", 17: "cont2_v_lo",
     18: "cont2_b3_lo", 19: "cont2_b2_lo", 20: "cont2_b1_lo", 21: "cont2_hq_lo", 22: "cont2_vq_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
-    26: "cont2_h_lo", 27: "cont2_v_lo", 28: "amiga_sense", 29: "wl_clk",
+    26: "ws_drv", 27: "usb_sel", 28: "amiga_sense", 29: "wl_clk",
 }
 # the non-Amiga gpio nets: exact node sets (U1's own pin included)
 GPIO_OTHER_NODES = {
@@ -143,7 +143,7 @@ GPIO_OTHER_NODES = {
     "uart_rx":     {("J7", "4")},
     "i2c_sda":     {("J3", "4"), ("R41", "2")},
     "i2c_scl":     {("J3", "3"), ("R42", "2")},
-    "ws_drv":      {("R49", "1")},
+    "ws_drv":      {("Q1", "1")},
     "usb_sel":     {("U5", "1"), ("R48", "1")},
     "wl_on":       {("U9", "12"), ("U9", "13")},
     "wl_d":        {("U9", "5"), ("R55", "2"), ("R56", "2")},
@@ -165,7 +165,7 @@ RM2_GND = ["1", "4", "7", "11", "15", "21"]
 
 # BOM: parts that may lack an LCSC number. F1 is bench-sized and not assembled; the
 # five connectors are hand-fitted THT. Each must say so in its Sourcing field.
-LCSC_EXEMPT = {"F1": "not assembled", "P1": "hand-fitted", "P2": "hand-fitted",
+LCSC_EXEMPT = {"P1": "hand-fitted", "P2": "hand-fitted",
                "J10": "hand-fitted", "J12": "hand-fitted", "J4": "hand-fitted",
                "SW1": "hand-fitted", "SW2": "hand-fitted"}
 GENERIC_PASSIVE_LIBS = {"Device:R", "Device:C", "Device:L", "Device:FerriteBead"}
@@ -175,12 +175,12 @@ VALUE_FOOTPRINT = [
     (r"^SS34$",          r"^Diode_SMD:D_SMA$"),
     (r"^PESD5V0S1BA$",   r"^Diode_SMD:D_SOD-323$"),
     (r"^SN74CBTD3861",   r"^Package_SO:SSOP-24_"),
-    (r"^TLV75733",       r"^Package_TO_SOT_SMD:SOT-23-5$"),
+    (r"^TLV75733",       r"^Package_SON:WSON-6-1EP_2x2mm"),
     (r"^RM2$",           r"^rev7:RaspberryPi_RM2$"),
     (r"^RP2350A$",       r"^Package_DFN_QFN:QFN-60-"),
 ]
 # minimum population of each listed value (catches a part silently dropped)
-VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 21, "SN74CBTD3861DBQR": 2, "TLV75733PDBVR": 1,
+VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 21, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
                "RM2": 1, "RP2350A": 1}
 
 # ---------------------------------------------------------------------------
@@ -573,7 +573,7 @@ def check_power(rep, nl):
     rep.eq("D.D1.value", (nl.value("D1"), nl.value("D2")), ("SS34", "SS34"), "D1/D2 values")
     # AMIGA_5V_FUSED: exactly the fuse, D1, the switch VCCs, decoupling, array commons, sense divider
     fused = {("F1", "2"), ("D1", "2"), ("U6", "24"), ("U7", "24"), ("C13", "1"), ("C14", "1"),
-             ("R46", "1")}
+             ("R46", "1"), ("R60", "1")}
     for i in range(len(AMIGA_NETS)):
         rn, _, com = rpack_slot(i)
         fused.add((rn, com))
@@ -617,12 +617,12 @@ def check_power(rep, nl):
     for r in ("F1", "F2", "F3"):
         rep.eq("D.%s.lib" % r, nl.lib_id(r), "Device:Polyfuse", "%s symbol" % r)
     # U3
-    rep.eq("D.U3.in_en", (pf.get(("U3", "1")), nl.net_of("U3", "1"), pf.get(("U3", "3")), nl.net_of("U3", "3")),
+    rep.eq("D.U3.in_en", (pf.get(("U3", "6")), nl.net_of("U3", "6"), pf.get(("U3", "4")), nl.net_of("U3", "4")),
            ("IN", "SYS5V", "EN", "SYS5V"), "U3 IN/EN")
-    rep.eq("D.U3.out", (pf.get(("U3", "5")), nl.net_of("U3", "5")), ("OUT", "+3V3"), "U3 OUT")
-    rep.eq("D.U3.gnd", nl.net_of("U3", "2"), GND, "U3 GND")
+    rep.eq("D.U3.out", (pf.get(("U3", "1")), nl.net_of("U3", "1")), ("OUT", "+3V3"), "U3 OUT")
+    rep.eq("D.U3.gnd", (nl.net_of("U3", "3"), nl.net_of("U3", "7")), (GND, GND), "U3 GND + thermal pad")
     # +3V3 has exactly one source
-    src = [(r, p) for r, p in nl.nodes("+3V3") if (r, p) != ("U3", "5") and pf.get((r, p)) in ("OUT", "VOUT")]
+    src = [(r, p) for r, p in nl.nodes("+3V3") if (r, p) != ("U3", "1") and pf.get((r, p)) in ("OUT", "VOUT")]
     rep.chk("D.3V3.single_source", not src, "other regulator outputs on +3V3: %s" % fmt(src))
     # DE9 pin 7s, J10 pin 4
     for p in ("P1", "P2"):
@@ -743,7 +743,8 @@ def check_core(rep, nl):
     n100 = nl.parts_between("+3V3", GND, lib="Device:C", value=100e-9)
     rep.chk("F.3v3.100n", len(n100) >= 8, "%d x 100nF on +3V3 (%s), want >= 8" % (len(n100), ", ".join(n100)))
     n47 = nl.parts_between("dvdd", GND, lib="Device:C", value=4.7e-6)
-    rep.chk("F.dvdd.4u7", len(n47) >= 1, "%d x 4.7uF on dvdd, want >= 1" % len(n47))
+    rep.chk("F.dvdd.4u7", len(n47) >= 2, "%d x 4.7uF on dvdd, want >= 2 (pin 23 + regulator output)" % len(n47))
+    rep.eq("F.L1.polarity", nl.net_of("L1", "1"), "dvdd", "L1 pad 1 (polarity dot) must be on dvdd / +1V1, pad 2 on VREG_LX")
 
 
 # ---------------------------------------------------------------------------

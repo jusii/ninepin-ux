@@ -49,9 +49,26 @@ def flatten(lib_id):
     if m:
         base = m.group(1)
         bblk = _block(text, base)
-        # override properties of the base with those of the derived symbol
-        for k, v in _props(blk).items():
-            bblk = re.sub(r'\(property "%s" "(?:[^"\\]|\\.)*"' % re.escape(k), '(property "%s" "%s"' % (k, v.replace('\\', '\\\\')), bblk, count=1)
+        # override properties of the base with the derived symbol's full property blocks,
+        # appending the ones the base does not have (eeschema flattens the same way)
+        def prop_blocks(text):
+            out = {}
+            for pm in re.finditer(r'\(property "([^"]+)" "', text):
+                i = pm.start(); d = 0; j = i
+                while True:
+                    ch = text[j]
+                    if ch == '(': d += 1
+                    elif ch == ')':
+                        d -= 1
+                        if d == 0: break
+                    j += 1
+                out[pm.group(1)] = text[i:j + 1]
+            return out
+        bp, dp = prop_blocks(bblk), prop_blocks(blk)
+        for k, v in dp.items():
+            if k in bp: bblk = bblk.replace(bp[k], v, 1)
+            else:
+                last = list(bp.values())[-1]; bblk = bblk.replace(last, last + "\n\t\t" + v, 1)
         bblk = bblk.replace('(symbol "%s"' % base, '(symbol "%s"' % name, 1)
         bblk = re.sub(r'\(symbol "%s_(\d+)_(\d+)"' % re.escape(base), lambda mm: '(symbol "%s_%s_%s"' % (name, mm.group(1), mm.group(2)), bblk)
         blk = bblk
@@ -184,14 +201,30 @@ def part_extent(part):
     if len(vis) <= 2: left = right = max(left, right) * 0.6
     return left, right, up, down
 
+def block_height(block, width):
+    """Estimate the block's height with the same packing as the placement loop."""
+    x0 = 0.0; yy = 8 + 3.5 * len(block.get("notes", [])) + 6
+    cx, rowh, cy = x0, 0.0, yy
+    for part in block["parts"]:
+        l, r, u, d = part_extent(part)
+        if cx + l + r > x0 + width and cx > x0:
+            cx = x0; cy += rowh + 6; rowh = 0
+        cx += l + r; rowh = max(rowh, u + d)
+    return cy + rowh + 20
+
 def main():
     body = {"libs": {}, "netlabels": {}}
     for pw in ("power:GND", "power:PWR_FLAG"):
         body["libs"][pw] = flatten(pw)[0]
     items = ""
-    x0, y0 = 20.0, 20.0
+    # blocks flow down a column; a new column starts when the page height would be exceeded
+    COL_W, PAGE_H, COL_X0 = 390.0, 820.0, 20.0
+    col, x0, y0 = 0, COL_X0, 20.0
     for block in D.BLOCKS:
-        title, parts, width = block["title"], block["parts"], block.get("width", 380.0)
+        title, parts, width = block["title"], block["parts"], block.get("width", COL_W - 20.0)
+        est = block_height(block, width)
+        if y0 + est > PAGE_H and y0 > 20.0:
+            col += 1; x0 = COL_X0 + col * COL_W; y0 = 20.0
         notes = block.get("notes", [])
         items += E_text(title, x0, y0 + 4, 3.0, True, key=("title", title))
         yy = y0 + 8

@@ -11,7 +11,9 @@
  * oled attached: led 1 is "am i usable" (heartbeat whilst nothing is attached,
  * solid once a usb or bluetooth device has mounted) and led 2 is "am i doing
  * something" (a short flash per input event forwarded to the amiga, replaced by
- * a fast blink whilst bluetooth is asking for a passkey).
+ * a fast blink whilst bluetooth is asking for a passkey). boards with a single
+ * ws2812 instead (HAS_STATUS_WS2812) show led 1 on its green channel and led 2
+ * on its blue one.
  *
  * every entry point here is core0-only: the call sites are the hid callbacks,
  * the bluetooth state changes and the main loop. core1 runs the quadrature

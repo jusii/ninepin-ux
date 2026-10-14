@@ -19,10 +19,37 @@
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
+#ifdef HAS_STATUS_WS2812
+#include "hardware/pio.h"
+#include "ws2812.pio.h" // generated at compile time
+#endif
+
+#ifndef HAS_STATUS_WS2812
 // the leds sit on the 3v3 side behind a series resistor, so a high output
 // lights them
 #define STATUS_LED_ON   1
 #define STATUS_LED_OFF  0
+#else
+// one rgb led stands in for both: led 1 ("am i usable") is the green channel
+// and led 2 ("am i doing something") the blue one, so attached + idle is green,
+// an input event flashes cyan and a pairing prompt blinks blue over it. kept
+// dim; a 2020 package at full drive is uncomfortable to look at
+#define STATUS_RGB_LEVEL    0x20
+
+// the led latches a frame after 280us of idle line; never send faster than
+// this, or two frames run together and the second lands in a led that is not
+// there
+#define STATUS_RGB_LATCH_US 300
+
+static PIO rgb_pio;
+static uint rgb_sm;
+static uint rgb_offset;
+
+// what the led currently shows, and when it was last sent
+static bool rgb_painted;
+static uint32_t rgb_painted_grb;
+static uint64_t rgb_painted_at;
+#endif
 
 // led 1: half-period of the "nothing attached yet" heartbeat
 #define STATUS_LED_HEARTBEAT_MS 500
@@ -60,8 +87,51 @@ static inline bool status_led_any_source(void)
     return false;
 }
 
+#ifdef HAS_STATUS_WS2812
+/**
+ * send one grb frame, unless it is already on display or the previous frame has
+ * not latched yet; a deferred frame goes out on a later pass of the task.
+ */
+static void status_led_rgb_put(uint32_t grb)
+{
+    uint64_t now = time_us_64();
+
+    if (rgb_pio == NULL)
+        return;
+
+    if (rgb_painted && (grb == rgb_painted_grb))
+        return;
+
+    if (rgb_painted && ((now - rgb_painted_at) < STATUS_RGB_LATCH_US))
+        return;
+
+    // the frame is left-justified in the 32-bit fifo word; autopull takes 24
+    pio_sm_put_blocking(rgb_pio, rgb_sm, grb << 8);
+    rgb_painted = true;
+    rgb_painted_grb = grb;
+    rgb_painted_at = now;
+}
+#endif
+
+/**
+ * put the two logical leds on the hardware.
+ */
+static void status_led_paint(bool led1_lit, bool led2_lit)
+{
+#ifndef HAS_STATUS_WS2812
+    gpio_put(LED_STATUS1, led1_lit ? STATUS_LED_ON : STATUS_LED_OFF);
+    gpio_put(LED_STATUS2, led2_lit ? STATUS_LED_ON : STATUS_LED_OFF);
+#else
+    uint32_t green = led1_lit ? STATUS_RGB_LEVEL : 0;
+    uint32_t blue = led2_lit ? STATUS_RGB_LEVEL : 0;
+
+    status_led_rgb_put((green << 16) | blue);
+#endif
+}
+
 void status_led_init(void)
 {
+#ifndef HAS_STATUS_WS2812
     gpio_init(LED_STATUS1);
     gpio_set_dir(LED_STATUS1, GPIO_OUT);
     gpio_put(LED_STATUS1, STATUS_LED_OFF);
@@ -69,6 +139,22 @@ void status_led_init(void)
     gpio_init(LED_STATUS2);
     gpio_set_dir(LED_STATUS2, GPIO_OUT);
     gpio_put(LED_STATUS2, STATUS_LED_OFF);
+#else
+    // any pio with a free sm and room for four instructions; this runs before
+    // the keyboard receiver and the cyw43 driver claim theirs. a status led is
+    // not worth a boot panic, so if there is no room the led just stays dark
+    if (!pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program,
+            &rgb_pio, &rgb_sm, &rgb_offset, LED_STATUS_WS2812, 1, true)) {
+        rgb_pio = NULL;
+    } else {
+        ws2812_program_init(rgb_pio, rgb_sm, rgb_offset, LED_STATUS_WS2812);
+#ifdef LED_STATUS_WS2812_INVERT
+        // the board drives the led through an open-drain inverter (q1): undo it here
+        gpio_set_outover(LED_STATUS_WS2812, GPIO_OVERRIDE_INVERT);
+#endif
+        status_led_rgb_put(0);
+    }
+#endif
 
     heartbeat_since = to_ms_since_boot(get_absolute_time());
     pairing_since = heartbeat_since;
@@ -105,13 +191,12 @@ void status_led_pairing(bool active)
 /**
  * led 1: solid once anything is attached, heartbeat until then.
  */
-static void status_led_source_task(uint32_t now)
+static bool status_led_source_task(uint32_t now)
 {
     if (status_led_any_source()) {
         heartbeat_lit = true;
         heartbeat_since = now;
-        gpio_put(LED_STATUS1, STATUS_LED_ON);
-        return;
+        return true;
     }
 
     if ((uint32_t)(now - heartbeat_since) >= STATUS_LED_HEARTBEAT_MS) {
@@ -119,13 +204,13 @@ static void status_led_source_task(uint32_t now)
         heartbeat_lit = !heartbeat_lit;
     }
 
-    gpio_put(LED_STATUS1, heartbeat_lit ? STATUS_LED_ON : STATUS_LED_OFF);
+    return heartbeat_lit;
 }
 
 /**
  * led 2: activity flashes, overridden by the pairing blink.
  */
-static void status_led_activity_task(uint32_t now)
+static bool status_led_activity_task(uint32_t now)
 {
     if (pairing_active) {
         if ((uint32_t)(now - pairing_since) >= STATUS_LED_PAIRING_MS) {
@@ -133,22 +218,22 @@ static void status_led_activity_task(uint32_t now)
             pairing_lit = !pairing_lit;
         }
 
-        gpio_put(LED_STATUS2, pairing_lit ? STATUS_LED_ON : STATUS_LED_OFF);
-        return;
+        return pairing_lit;
     }
 
     if (activity_pending && ((uint32_t)(now - activity_since) >= STATUS_LED_ACTIVITY_MS))
         activity_pending = false;
 
-    gpio_put(LED_STATUS2, activity_pending ? STATUS_LED_ON : STATUS_LED_OFF);
+    return activity_pending;
 }
 
 void status_led_task(void)
 {
     uint32_t now = to_ms_since_boot(get_absolute_time());
+    bool led1_lit = status_led_source_task(now);
+    bool led2_lit = status_led_activity_task(now);
 
-    status_led_source_task(now);
-    status_led_activity_task(now);
+    status_led_paint(led1_lit, led2_lit);
 }
 
 #endif // HAS_STATUS_LEDS

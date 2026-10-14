@@ -66,7 +66,7 @@ but you can also run this to get a revision 2 pcb build (the pin assignments are
 $ cmake -B build/ -S . -DBOARD_TYPE=BOARD_HIDPICO_REV2
 ```
 
-targets: `BOARD_HIDPICO_REV2`, `BOARD_HIDPICO_REV4` (also the r5 pcb) and `BOARD_HIDPICO_REV6` (the UX rev 1 board). revision 3 users should not use the pcb as it has a faulty pin assignment which can spontaneously reset the rp2040 controller, so please do not use it.
+targets: `BOARD_HIDPICO_REV2`, `BOARD_HIDPICO_REV4` (also the r5 pcb), `BOARD_HIDPICO_REV6` (the UX rev 1 board) and `BOARD_HIDPICO_REV7` (chip-down rp2350a + rm2; selects its own sdk board header, `boards/amigahid_rev7.h`, so leave `PICO_BOARD` unset: `cmake -B build/ -S . -DBOARD_TYPE=BOARD_HIDPICO_REV7 -DENABLE_BLUETOOTH_HID=ON`). revision 3 users should not use the pcb as it has a faulty pin assignment which can spontaneously reset the rp2040 controller, so please do not use it.
 
 you can also enable generation of debug symbols so as to use `openocd` and `gdb` to debug a running target over serial-wire debug (swd). to do this, add the parameter `-DCMAKE_BUILD_TYPE=Debug`, e.g.:
 
