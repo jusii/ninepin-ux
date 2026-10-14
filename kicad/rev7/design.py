@@ -135,7 +135,7 @@ BLOCKS = [
    ("U1", "MCU_RaspberryPi:RP2350A", "RP2350A", "Package_DFN_QFN:QFN-60-1EP_7x7mm_P0.4mm_EP3.4x3.4mm", RP, {"LCSC": "C42411118"}),
    ("L1", "Device:L", "3.3uH", "Inductor_SMD:L_Murata_DFE201610P", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C42411119", "MPN": "AOTA-B201610S3R3-101-T", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; add a silk dot at pad 1 and check the reel orientation at JLCPCB"}),
    C("C38", "4.7uF", "dvdd", "GND", C0805, Note="core regulator output cap at L1/VREG_FB"),
-   C("C20", "4.7uF", "dvdd", "GND"), C("C21", "100nF", "dvdd", "GND"), C("C22", "100nF", "dvdd", "GND"),
+   C("C20", "4.7uF", "dvdd", "GND", Note="0603 10V, fits the comb pitch"), C("C21", "100nF", "dvdd", "GND"), C("C22", "100nF", "dvdd", "GND"),
    C("C23", "100nF", "+3V3", "GND"), C("C24", "100nF", "+3V3", "GND"), C("C25", "100nF", "+3V3", "GND"), C("C26", "100nF", "+3V3", "GND"), C("C27", "100nF", "+3V3", "GND"), C("C28", "100nF", "+3V3", "GND"),
    C("C29", "4.7uF", "+3V3", "GND"), C("C30", "100nF", "+3V3", "GND"),
    R("R50", "33", "+3V3", "adc_avdd", Note="ADC_AVDD filter"), C("C31", "1uF", "adc_avdd", "GND"),

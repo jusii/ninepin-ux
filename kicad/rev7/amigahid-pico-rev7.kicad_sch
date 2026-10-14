@@ -24854,6 +24854,15 @@
 				)
 			)
 		)
+		(property "Note" "0603 10V, fits the comb pitch"
+			(at 626.11 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "5d9994b1-e7e2-5f0b-b3a7-babf08997534")
 		)
