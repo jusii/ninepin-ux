@@ -59,7 +59,7 @@
 	(attr through_hole)
 	(duplicate_pad_numbers_are_jumpers no)
 	(fp_line
-		(start -7.11 0.24)
+		(start -7.11 3.2)
 		(end -7.11 12.51)
 		(stroke
 			(width 0.15)
@@ -79,7 +79,7 @@
 		(uuid "62c374e7-872b-4bef-bc34-20e41d2f46ad")
 	)
 	(fp_line
-		(start 7.11 0.24)
+		(start 7.11 3.2)
 		(end 7.11 12.51)
 		(stroke
 			(width 0.15)

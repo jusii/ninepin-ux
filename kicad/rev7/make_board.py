@@ -98,6 +98,9 @@ def place(ref, fpid, value, x, y, rot, comp=None):
         for k, v in comp["fields"].items():
             if k not in ("Footprint", "Datasheet", "Description", "Reference", "Value"):
                 fp.SetField(k, v)
+        for f in fp.GetFields():                 # extra fields are data, not silk
+            if f.GetName() not in ("Reference", "Value"):
+                f.SetVisible(False); f.SetLayer(pcbnew.F_Fab)
     for pad in fp.Pads():
         nn = padnet.get((ref, pad.GetNumber()))
         if nn and not nn.startswith("unconnected-"):
@@ -168,7 +171,8 @@ rect(kx0, ky0, kx1, ky1, C); text("RM2 antenna keep-out, no metal, all layers", 
 g = F.GAP; o = F.OVH
 rect(-g, -g, W + g, H + g, D); rect(-o, -o, W + o, H + o, D)
 text("hid-pico Amiga UX rev7", W / 2, H + o + 2.5, D, 1.2)
-text("hid-pico Amiga UX rev7", 50, 59.0, pcbnew.F_SilkS, 1.0)
+t = pcbnew.PCB_TEXT(b); t.SetText("hid-pico Amiga UX rev7"); t.SetPosition(P(50, 30)); t.SetLayer(pcbnew.B_SilkS)
+t.SetTextSize(VECTOR2I(mm(1.5), mm(1.5))); t.SetTextThickness(mm(0.25)); t.SetMirrored(True); b.Add(t)
 
 b.Save(OUT)
 # pcbnew's Save rewrites the project file and drops the netclass patterns: re-apply the project
