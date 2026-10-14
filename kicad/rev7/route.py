@@ -80,10 +80,14 @@ S = comb("S", 1.0, CY + 9.0, stop={"38": CY + 7.2, "39": pad("C20", 1)[1], "45":
 for x in (CX - 0.8, CX + 0.8):
     for y in (CY - 1.1, CY - 0.1): via("GND", x, y)
 
-# ---- north: IOVDD 1 / DVDD 6 / IOVDD 11 caps at the column tops ----
-for num, cap, pwr in (("1", "C23", "/+3V3"), ("6", "C21", "/dvdd"), ("11", "C24", "/+3V3")):
-    x, ytop = N[num]; p1 = pad(cap, 1); p2 = pad(cap, 2)
-    track(pwr, [(x, ytop), p1]); gnd_stub(p2, 0, -1.5); via(pwr, x, ytop + 0.6)
+# ---- north: IOVDD 1 / DVDD 6 / IOVDD 11 go to the planes through vias on their columns; the
+# caps are parked north of the lanes with their own vias. i2c/uart/3V3(11) columns also drop
+# to B.Cu here (they continue north on the bottom).
+for num in ("1", "6", "11", "2", "3", "4", "5"):
+    x, ytop = N[num]; via(padnet("U1", num), x, ytop + 0.3)
+for cap, pwr in (("C23", "/+3V3"), ("C21", "/dvdd"), ("C24", "/+3V3")):
+    p1 = pad(cap, 1); p2 = pad(cap, 2)
+    via(pwr, p1[0], p1[1] - 1.3); track(pwr, [p1, (p1[0], p1[1] - 1.3)]); gnd_stub(p2, 0, -1.3)
 # ---- east: QSPI ----
 p1 = pad("U8", 1); route("/qspi_ss", (p1[0], p1[1] - 0.3), (p1[0], 27.0), "straight"); route("/qspi_ss", (p1[0], 27.0), pad("R52", 1), "diag")
 for num, netn, pnum, xv in (("57", "/qspi_sd0", 5, 52.6), ("56", "/qspi_sclk", 6, 53.6), ("55", "/qspi_sd3", 7, 54.4)):

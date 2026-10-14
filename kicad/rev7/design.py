@@ -28,11 +28,11 @@ def RPACK(ref, nets, common):
     return (ref, "Device:R_Pack04", "4x10k", "Resistor_SMD:R_Array_Convex_4x0603", m, {"LCSC": "C29718"})
 
 # Amiga-facing 5 V nets, in bus-switch order
-KBD_OUT = ["kbclock", "kbdata", "kbreset"]
-KBD_IN = ["kbin_clk", "kbin_dat"]
+KBD_OUT = ["kbreset", "kbdata", "kbclock"]   # order = bus-switch pin order, chosen for planar fans on the board
+KBD_IN = ["kbin_dat", "kbin_clk"]
 PORT1 = ["cont1_hq", "cont1_vq", "cont1_h", "cont1_v", "cont1_b1", "cont1_b2", "cont1_b3"]
 PORT2 = ["cont2_hq", "cont2_vq", "cont2_h", "cont2_v", "cont2_b1", "cont2_b2", "cont2_b3"]
-AMIGA_NETS = KBD_OUT + KBD_IN + PORT1 + PORT2          # 19
+AMIGA_NETS = KBD_IN + KBD_OUT + PORT1 + PORT2          # 19: U6 = kbin, kbd out, port 1 hq..b1; U7 = port 1 b2/b3, port 2
 U6_A = AMIGA_NETS[:10]
 U7_A = AMIGA_NETS[10:] + ["NC"]
 

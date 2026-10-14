@@ -80,8 +80,7 @@ NC = "__NC__"          # pin must be unconnected
 
 # Amiga-facing 5 V nets, in bus-switch order (design.py AMIGA_NETS)
 AMIGA_NETS = [
-    "kbclock", "kbdata", "kbreset",
-    "kbin_clk", "kbin_dat",
+    "kbin_dat", "kbin_clk", "kbreset", "kbdata", "kbclock",
     "cont1_hq", "cont1_vq", "cont1_h", "cont1_v", "cont1_b1", "cont1_b2", "cont1_b3",
     "cont2_hq", "cont2_vq", "cont2_h", "cont2_v", "cont2_b1", "cont2_b2", "cont2_b3",
 ]

@@ -58,8 +58,8 @@ CONNECTORS = [
     ("J13", "USB-C", "Connector_USB", "USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal", USBC_X, USBC_Y, 90, "power + flashing"),
     ("J1",  "A500 KBD OUT", "Connector_PinHeader_2.54mm", "PinHeader_1x08_P2.54mm_Vertical", 13.0, 14.0, 90, ""),
     ("J8",  "A500 KBD IN",  "Connector_PinHeader_2.54mm", "PinHeader_1x08_P2.54mm_Vertical", 38.0, 14.0, 90, ""),
-    ("J2",  "SWD", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", 43.0, 10.0, 90, "SWCLK GND SWDIO"),
-    ("J7",  "SPARE / UART", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", 52.0, 9.5, 90, "GND 3V3 TX RX"),
+    ("J2",  "SWD", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", 15.0, 10.0, 90, "SWCLK GND SWDIO"),
+    ("J7",  "SPARE / UART", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", 42.5, 9.5, 90, "GND 3V3 TX RX"),
     ("SW1", "BOOT",  "Button_Switch_THT", "SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", SW_X, SW_Y[0], -90, "right-angle, actuator through east wall"),
     ("SW2", "RESET", "Button_Switch_THT", "SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", SW_X, SW_Y[1], -90, "right-angle, actuator through east wall"),
     ("LED1", "WS2812B-2020", "LED_SMD", "LED_WS2812B-2020_PLCC4_2.0x2.0mm", LED[0], LED[1], 0, "lid peek hole"),
@@ -68,7 +68,7 @@ CONNECTORS = [
 # ---- OLED: 0.96" SSD1306 module, 27.5 x 27.8 pcb, holes 23.5 x 23.8 on 2.0 insets, 1x4
 # header on the top-hole line. Plugs into J3 (1x4 female, 8.4 mm) + four M2 posts (11 mm).
 OLED_PCB = (27.5, 27.8)
-OLED_X0, OLED_Y0 = 62.0, 11.0            # NE, pulled toward centre, clear of the RM2 antenna
+OLED_X0, OLED_Y0 = 60.5, 11.0            # NE, pulled toward centre, clear of the RM2 antenna
 OLED_HOLES = [(OLED_X0 + 2.0, OLED_Y0 + 2.0), (OLED_X0 + 25.5, OLED_Y0 + 2.0),
               (OLED_X0 + 2.0, OLED_Y0 + 25.8), (OLED_X0 + 25.5, OLED_Y0 + 25.8)]
 OLED_GLASS = (26.7, 19.3)                 # window; glass sits in the lower part of the module
