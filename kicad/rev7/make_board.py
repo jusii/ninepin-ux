@@ -29,7 +29,10 @@ comps = {}
 for c in root.find("components"):
     ref = c.get("ref")
     fields = {f.get("name"): (f.text or "") for f in (c.find("fields") if c.find("fields") is not None else [])}
-    comps[ref] = dict(fp=c.findtext("footprint") or "", value=c.findtext("value") or "", fields=fields)
+    sp = c.find("sheetpath"); ts = c.findtext("tstamps") or ""
+    path = ((sp.get("tstamps") if sp is not None else "/") or "/").rstrip("/") + "/" + ts
+    comps[ref] = dict(fp=c.findtext("footprint") or "", value=c.findtext("value") or "", fields=fields, path=path,
+                      datasheet=c.findtext("datasheet") or "", description=c.findtext("description") or "")
 padnet = {}
 for n in root.find("nets"):
     for node in n:
@@ -78,14 +81,23 @@ def load_fp(fpid):
     assert fp, fpid
     return fp
 
-def place(ref, fpid, value, x, y, rot, fields=None):
+def place(ref, fpid, value, x, y, rot, comp=None):
     fp = load_fp(fpid)
+    lib, name = fpid.split(":", 1)
+    fp.SetFPID(pcbnew.LIB_ID(lib, name))
     fp.SetReference(ref); fp.SetValue(value)
     fp.SetPosition(P(x, y)); fp.SetOrientationDegrees(rot)
-    for k, v in (fields or {}).items():
-        if k in ("LCSC", "MPN") and hasattr(fp, "SetField"):
-            try: fp.SetField(k, v)
-            except Exception: pass
+    fp.Reference().SetLayer(pcbnew.F_Fab)        # refs off the silk: JLC assembles from the pos file
+    fp.Reference().SetVisible(True)
+    if comp is None:                             # board-only item (mounting holes)
+        fp.SetBoardOnly(True)
+        fp.SetAttributes(fp.GetAttributes() | pcbnew.FP_EXCLUDE_FROM_BOM | pcbnew.FP_EXCLUDE_FROM_POS_FILES)
+    else:
+        fp.SetPath(pcbnew.KIID_PATH(comp["path"]))
+        fp.SetField("Datasheet", comp.get("datasheet", "")); fp.SetField("Description", comp.get("description", ""))
+        for k, v in comp["fields"].items():
+            if k not in ("Footprint", "Datasheet", "Description", "Reference", "Value"):
+                fp.SetField(k, v)
     for pad in fp.Pads():
         nn = padnet.get((ref, pad.GetNumber()))
         if nn and not nn.startswith("unconnected-"):
@@ -118,20 +130,20 @@ for ref, c in sorted(comps.items(), key=lambda kv: (re.sub(r"\d+", "", kv[0]), i
     elif c["value"] == "PESD5V0S1BA" and padnet.get((ref, "1"), "").lstrip("/") in PL.TVS_ROWS: x, y, rot = PL.TVS_ROWS[padnet[(ref, "1")].lstrip("/")]
     else:
         x, y, rot = park_x, park_y, 0; park_y += 4.0; missing.append(ref)
-    place(ref, fpid, c["value"], x, y, rot, c["fields"])
+    place(ref, fpid, c["value"], x, y, rot, c)
 if missing: print("UNPLACED (parked east of the board):", missing)
 
 # planes and pours
 def zone(netname, layer, pts, prio, name, fill_clear=0.25, minw=0.2):
     z = pcbnew.ZONE(b); z.SetLayer(layer); z.SetNet(net(netname)); z.SetZoneName(name)
     z.SetAssignedPriority(prio); z.SetLocalClearance(mm(fill_clear)); z.SetMinThickness(mm(minw))
-    z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL); z.SetThermalReliefGap(mm(0.3)); z.SetThermalReliefSpokeWidth(mm(0.3))
+    z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL); z.SetThermalReliefGap(mm(0.25)); z.SetThermalReliefSpokeWidth(mm(0.4))
     ol = z.Outline(); ol.NewOutline()
     for (x, y) in pts: ol.Append(mm(x), mm(y))
     b.Add(z); return z
 board_pts = [(0, 0), (W, 0), (W, H), (0, H)]
 zone("GND", pcbnew.In1_Cu, board_pts, 0, "gnd_plane")
-zone("+3V3", pcbnew.In2_Cu, board_pts, 0, "3v3_plane")
+zone("/+3V3", pcbnew.In2_Cu, board_pts, 0, "3v3_plane")
 zone("GND", pcbnew.F_Cu, board_pts, 0, "gnd_top")
 zone("GND", pcbnew.B_Cu, board_pts, 0, "gnd_bottom")
 
@@ -159,4 +171,22 @@ text("hid-pico Amiga UX rev7", W / 2, H + o + 2.5, D, 1.2)
 text("hid-pico Amiga UX rev7", 50, 59.0, pcbnew.F_SilkS, 1.0)
 
 b.Save(OUT)
-print("saved", OUT, "footprints", len(list(b.GetFootprints())), "nets", len(nets))
+# pcbnew's Save rewrites the project file and drops the netclass patterns: re-apply the project
+# settings so the file is deterministic and the Power class survives (pcbnew's Save() drops the netclass patterns).
+import json
+PRO = OUT.replace(".kicad_pcb", ".kicad_pro")
+j = json.load(open(PRO))
+ns = j["net_settings"]
+default = [c for c in ns["classes"] if c["name"] == "Default"][0]
+default.update({"clearance": 0.15, "track_width": 0.2, "via_diameter": 0.6, "via_drill": 0.3, "diff_pair_width": 0.2, "diff_pair_gap": 0.15})
+power = dict(default); power.update({"name": "Power", "clearance": 0.2, "track_width": 0.6, "via_diameter": 0.8, "via_drill": 0.4})
+ns["classes"] = [default, power]
+ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V")]
+if ns.get("meta", {}).get("version", 0) < 3: ns["meta"] = {"version": 3}
+r = j["board"]["design_settings"]["rules"]
+r.update({"min_clearance": 0.15, "min_track_width": 0.15, "min_via_diameter": 0.5, "min_through_hole_diameter": 0.3, "min_hole_to_hole": 0.5,
+          "min_hole_clearance": 0.15, "min_copper_edge_clearance": 0.3, "min_silk_clearance": 0.15, "min_via_annular_width": 0.1})
+j["board"]["design_settings"]["track_widths"] = [0.0, 0.2, 0.3, 0.6, 1.0]
+j["board"]["design_settings"]["via_dimensions"] = [{"diameter": 0.0, "drill": 0.0}, {"diameter": 0.6, "drill": 0.3}, {"diameter": 0.8, "drill": 0.4}]
+open(PRO, "w").write(json.dumps(j, indent=2) + "\n")
+print("saved", OUT, "footprints", len(list(b.GetFootprints())), "nets", len(nets), "| project netclasses re-applied")

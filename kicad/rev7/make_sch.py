@@ -104,7 +104,8 @@ def E_prop(name, val, x, y, hide, rot=0):
     return f'\t\t(property "{name}" "{val}"\n\t\t\t(at {fx(x)} {fx(y)} {rot}){h}\n\t\t\t(effects\n\t\t\t\t(font\n\t\t\t\t\t(size 1.27 1.27)\n\t\t\t\t)\n\t\t\t)\n\t\t)\n'
 
 def E_symbol(lib_id, ref, value, fp, x, y, rot, pins, extra, props_lib, key, ref_xy=None, val_xy=None):
-    s = f'\t(symbol\n\t\t(lib_id "{lib_id}")\n\t\t(at {fx(x)} {fx(y)} {rot})\n\t\t(unit 1)\n\t\t(exclude_from_sim no)\n\t\t(in_bom yes)\n\t\t(on_board yes)\n\t\t(dnp no)\n\t\t(uuid "{U("s", key)}")\n'
+    in_bom = extra.get("in_bom", "yes")
+    s = f'\t(symbol\n\t\t(lib_id "{lib_id}")\n\t\t(at {fx(x)} {fx(y)} {rot})\n\t\t(unit 1)\n\t\t(exclude_from_sim no)\n\t\t(in_bom {in_bom})\n\t\t(on_board yes)\n\t\t(dnp no)\n\t\t(uuid "{U("s", key)}")\n'
     rx, ry = ref_xy or (x, y - 2.54); vx, vy = val_xy or (x, y + 2.54)
     hidden_ref = ref.startswith("#")
     s += E_prop("Reference", ref, rx, ry, hidden_ref)

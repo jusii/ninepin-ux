@@ -95,7 +95,7 @@ BLOCKS = [
    ("J12", "rev7:MiniDIN6_PS2_Socket", "KBD IN (from keyboard)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbin_dat", "2": "NC", "3": "GND", "4": "KBIN_5V", "5": "kbin_clk", "6": "NC", "SH": "GND"}, {"Sourcing": "hand-fitted THT"}),
    ("J1", "Connector_Generic:Conn_01x08", "A500 KBD OUT", PIN % 8, {"1": "kbclock", "2": "kbdata", "3": "kbreset", "4": "AMIGA_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
    ("J8", "Connector_Generic:Conn_01x08", "A500 KBD IN", PIN % 8, {"1": "kbin_clk", "2": "kbin_dat", "3": "kbreset", "4": "KBIN_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
-   ("JP1", "Jumper:SolderJumper_2_Open", "KBIN PWRLED", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm", {"1": "kb_pwrled", "2": "kb_pwrled_bal"}, {}),
+   ("JP1", "Jumper:SolderJumper_2_Open", "KBIN PWRLED", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm", {"1": "kb_pwrled", "2": "kb_pwrled_bal"}, {"in_bom": "no"}),
    R("R45", "470", "kb_pwrled_bal", "SYS5V"),
    TVS("D29", "kb_pwrled"), TVS("D30", "kb_drvled"),
  ]},
