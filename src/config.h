@@ -124,13 +124,13 @@
 #  define KBD_AMIGA_DAT 5       // kbdata_lo
 #  define KBD_AMIGA_CLK 6       // kbclock_lo
 
-#  define QM1_AMIGA_HQ  7       // cont1_hq_lo
-#  define QM1_AMIGA_VQ  8       // cont1_vq_lo
-#  define QM1_AMIGA_H   9       // cont1_h_lo
-#  define QM1_AMIGA_V   11      // cont1_v_lo
+#  define QM1_AMIGA_B3  7       // cont1_b3_lo (GPIO7-13 follow the bus-switch pin order, see design.py)
+#  define QM1_AMIGA_B2  8       // cont1_b2_lo
+#  define QM1_AMIGA_V   9       // cont1_v_lo
 #  define QM1_AMIGA_B1  10      // cont1_b1_lo
-#  define QM1_AMIGA_B2  12      // cont1_b2_lo
-#  define QM1_AMIGA_B3  13      // cont1_b3_lo
+#  define QM1_AMIGA_H   11      // cont1_h_lo
+#  define QM1_AMIGA_VQ  12      // cont1_vq_lo
+#  define QM1_AMIGA_HQ  13      // cont1_hq_lo
 
 // dedicated real amiga keyboard input, as on rev6
 #  define HAS_KBD_IN

@@ -80,10 +80,12 @@ NC = "__NC__"          # pin must be unconnected
 
 # Amiga-facing 5 V nets, in bus-switch order (design.py AMIGA_NETS)
 AMIGA_NETS = [
-    "kbin_dat", "kbin_clk", "kbreset", "kbdata", "kbclock",
-    "cont1_hq", "cont1_vq", "cont1_h", "cont1_b1", "cont1_v", "cont1_b2", "cont1_b3",
-    "cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3",
+    "kbreset", "kbdata", "kbclock", "cont1_b3", "cont1_b2", "cont1_v", "cont1_b1", "cont1_h", "cont1_vq", "cont1_hq",
+    "kbin_clk", "kbin_dat", "cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3",
 ]
+RPACKS = {"RN1": ["cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"], "RN2": ["NC", "cont1_hq", "cont1_vq", "cont1_h"],
+          "RN3": ["kbreset", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
+PULLUPS = {"cont2_v": "R61", "cont2_b1": "R62", "cont2_h": "R63", "cont2_vq": "R64", "cont2_hq": "R65", "cont2_b2": "R66", "cont2_b3": "R67"}
 
 # every connector pin each Amiga net must reach -- and nothing else of connector kind
 AMIGA_CONN = {
@@ -115,7 +117,14 @@ def b_pin(k):
 
 # pull-up array slot: net index i -> RN(1 + i//4) element i%4, pin i%4+1, common pin 8-i%4
 def rpack_slot(i):
-    return "RN%d" % (1 + i // 4), str(i % 4 + 1), str(8 - i % 4)
+    net = AMIGA_NETS[i]
+    if net in PULLUPS:
+        return PULLUPS[net], "1", "2"
+    for rn, nets in RPACKS.items():
+        if net in nets:
+            k = nets.index(net)
+            return rn, str(k + 1), str(8 - k)
+    raise KeyError(net)
 
 
 # RP2350A: gpio -> package pin (QFN-60) and gpio -> net
@@ -128,8 +137,8 @@ GPIO_PIN = {
 GPIO_NET = {
     0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
-    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_b1_lo",
-    11: "cont1_v_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
+    7: "cont1_b3_lo", 8: "cont1_b2_lo", 9: "cont1_v_lo", 10: "cont1_b1_lo",
+    11: "cont1_h_lo", 12: "cont1_vq_lo", 13: "cont1_hq_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
     16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
@@ -178,7 +187,7 @@ VALUE_FOOTPRINT = [
     (r"^RP2350A$",       r"^Package_DFN_QFN:QFN-60-"),
 ]
 # minimum population of each listed value (catches a part silently dropped)
-VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 21, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
+VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1UL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
                "RM2": 1, "RP2350A": 1}
 
 # ---------------------------------------------------------------------------
@@ -509,11 +518,11 @@ def check_amiga(rep, nl, D):
                 "net %s: expected exactly {%s}, got {%s}" % (net, fmt(want), fmt(nodes)))
         # the parts on it are what they should be
         cbtd = [r for r, _ in nodes if nl.value(r).startswith("SN74CBTD3861")]
-        packs = [r for r, _ in nodes if nl.lib_id(r) == "Device:R_Pack04"
+        packs = [r for r, _ in nodes if (nl.lib_id(r) == "Device:R_Pack04" or nl.lib_id(r) == "Device:R")
                  and near(parse_value(nl.value(r).replace("4x", "")), 10e3)]
-        pesd = [r for r, _ in nodes if nl.value(r) == "PESD5V0S1BA"]
+        pesd = [r for r, _ in nodes if nl.value(r) in ("PESD5V0S1BA", "PESD5V0S1UL")]
         rep.chk("C.%s.parts" % net, len(cbtd) == 1 and len(packs) == 1 and len(pesd) == 1,
-                "net %s: want one CBTD3861 / one 4x10k array / one PESD5V0S1BA, got %s / %s / %s"
+                "net %s: want one CBTD3861 / one 10k pull-up / one PESD5V0S1BA, got %s / %s / %s"
                 % (net, cbtd, packs, pesd))
         rep.eq("C.%s.pin_func" % net, nl.pin_func.get((sw, a_pin(k))), "A%d" % (k + 1),
                "%s pin %s function" % (sw, a_pin(k)))
@@ -534,7 +543,12 @@ def check_amiga(rep, nl, D):
     # U7 B10/A10 unused
     rep.eq("C.U7.A10_nc", nl.net_of("U7", "11"), NC, "U7 pin 11 (A10)")
     rep.eq("C.U7.B10_nc", nl.net_of("U7", "13"), NC, "U7 pin 13 (B10)")
-    rep.eq("C.RN5.4_nc", (nl.net_of("RN5", "4"), nl.net_of("RN5", "5")), (NC, NC), "RN5 element 4")
+    rep.eq("C.spec.rpacks", {k: list(v) for k, v in D.RPACKS.items()}, RPACKS, "design.py RPACKS")
+    rep.eq("C.spec.pullups", dict(D.PULLUPS), PULLUPS, "design.py PULLUPS")
+    for rn, nets in RPACKS.items():
+        for k, n in enumerate(nets):
+            if n == "NC":
+                rep.eq("C.%s.%d_nc" % (rn, k + 1), (nl.net_of(rn, str(k + 1)), nl.net_of(rn, str(8 - k))), (NC, "AMIGA_5V_FUSED"), "%s element %d (spare: common side tied)" % (rn, k + 1))
 
     # full gpio map against the RP2350A pins, by pin number, and the symbol's pin names
     for g in range(30):
@@ -572,9 +586,11 @@ def check_power(rep, nl):
     # AMIGA_5V_FUSED: exactly the fuse, D1, the switch VCCs, decoupling, array commons, sense divider
     fused = {("F1", "2"), ("D1", "2"), ("U6", "24"), ("U7", "24"), ("C13", "1"), ("C14", "1"),
              ("R46", "1"), ("R60", "1")}
-    for i in range(len(AMIGA_NETS)):
-        rn, _, com = rpack_slot(i)
-        fused.add((rn, com))
+    for rn, nets in RPACKS.items():
+        for k in range(4):
+            fused.add((rn, str(8 - k)))          # all commons, spare elements included
+    for r in PULLUPS.values():
+        fused.add((r, "2"))
     got = nl.nodes("AMIGA_5V_FUSED")
     rep.chk("D.AMIGA_5V_FUSED.nodes", got == fused,
             "AMIGA_5V_FUSED: expected exactly {%s}, got {%s}" % (fmt(fused), fmt(got)))
@@ -584,13 +600,12 @@ def check_power(rep, nl):
         rep.eq("D.%s.oe" % u, (pf.get((u, "23")), nl.net_of(u, "23")), ("~{OE}", GND), "%s pin 23 (/OE)" % u)
         rep.eq("D.%s.gnd" % u, nl.net_of(u, "12"), GND, "%s pin 12" % u)
     commons = {}
-    for n in range(1, 6):
-        rn = "RN%d" % n
+    for rn in RPACKS:
         for p in ("5", "6", "7", "8"):
             net = nl.net_of(rn, p)
             if net != NC:
                 commons.setdefault(rn, set()).add(net)
-    rep.chk("D.arrays.common", len(commons) == 5 and all(v == {"AMIGA_5V_FUSED"} for v in commons.values()),
+    rep.chk("D.arrays.common", len(commons) == len(RPACKS) and all(v == {"AMIGA_5V_FUSED"} for v in commons.values()),
             "array common sides: %s" % {k: sorted(v) for k, v in sorted(commons.items())})
     for bad in ("SYS5V", "+3V3", "AUX_5V"):
         leak = {(r, p) for r, p in nl.nodes(bad) if r in ("U6", "U7") or r.startswith("RN")}

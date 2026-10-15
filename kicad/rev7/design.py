@@ -18,25 +18,40 @@ PIN = "Connector_PinHeader_2.54mm:PinHeader_1x0%d_P2.54mm_Vertical"
 
 def R(ref, val, a, b, **x): return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
 def C(ref, val, a, b, fp=C0603, **x): return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
-def TVS(ref, net): return (ref, "Device:D_TVS", "PESD5V0S1BA", SOD323, {"1": net, "2": "GND"},
-                           {"LCSC": "C19224", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"})
-def RPACK(ref, nets, common):
+def TVS(ref, net):
+    if net.startswith("cont1_"):   # port 1 clamps sit in two tight rows north of P1: the SOD-882 variant of the same part
+        return (ref, "Device:D_TVS", "PESD5V0S1UL", "Diode_SMD:D_SOD-882", {"1": net, "2": "GND"},
+                {"LCSC": "C2060734", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf", "Note": "LCSC code to verify before order"})
+    return (ref, "Device:D_TVS", "PESD5V0S1BA", SOD323, {"1": net, "2": "GND"},
+            {"LCSC": "C19224", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"})
+ 
+def RPACK(ref, nets, common, fp="Resistor_SMD:R_Array_Convex_4x0603", lcsc="C29718"):
     m = {}
     for i, n in enumerate(nets):   # pins 1-4 = R1.1..R4.1, pins 8..5 = R1.2..R4.2
         m[str(i + 1)] = n
-        m[str(8 - i)] = common if n != "NC" else "NC"
-    return (ref, "Device:R_Pack04", "4x10k", "Resistor_SMD:R_Array_Convex_4x0603", m, {"LCSC": "C29718"})
+        m[str(8 - i)] = common          # the common side is tied even for spare elements (keeps the 0402 pad gaps legal)
+    return (ref, "Device:R_Pack04", "4x10k", fp, m, {"LCSC": lcsc})
 
 # Amiga-facing 5 V nets, in bus-switch order
-KBD_OUT = ["kbreset", "kbdata", "kbclock"]   # order = bus-switch pin order, chosen for planar fans on the board
+KBD_OUT = ["kbreset", "kbdata", "kbclock"]   # order = bus-switch pin order (A1..A3 at U6's west end)
 KBD_IN = ["kbin_dat", "kbin_clk"]
-# port orders = bus-switch pin orders: the Amiga side comes out west->east in DE9 pin x order (v b1 h vq hq b2 b3)
-# so the lines fan to the connectors without crossing; the GPIO numbers follow the same order on the MCU side
-PORT1 = ["cont1_hq", "cont1_vq", "cont1_h", "cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"]
+# Bus-switch pin orders are chosen for planar fans on the board (see placement.py / route.py):
+# U6 sits at the west edge north of the radio module; port 1 leaves its A row on the bottom layer, runs
+# down the west edge and enters P1 from the north (hq..v) and from between its pin rows (b3, b2); the
+# keyboard trio sits at the east end next to J1. U7 is under the OLED: kbin on A1/A2 from J12, port 2 on
+# A3..A9 fanning straight south into P2 in DE9 pin order.
+PORT1 = ["cont1_b3", "cont1_b2", "cont1_v", "cont1_b1", "cont1_h", "cont1_vq", "cont1_hq"]
 PORT2 = ["cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3"]
-AMIGA_NETS = KBD_IN + KBD_OUT + PORT1 + PORT2          # 19: U6 = kbin, kbd out, port 1 hq..b1; U7 = port 1 b2/b3, port 2
-U6_A = AMIGA_NETS[:10]
-U7_A = AMIGA_NETS[10:] + ["NC"]
+U6_A = KBD_OUT + PORT1
+U7_A = ["kbin_clk", "kbin_dat"] + PORT2 + ["NC"]
+AMIGA_NETS = U6_A + U7_A[:9]                           # 19, in switch order; TVS D10.. follow this order
+# 10k pull-up arrays, placed where the lines pass: RN1-3 north of P1, RN4 by J1, RN5 by J12/J8, RN6/7 under P2
+# RN1/RN2 are 0402 arrays on U6's A pads (0.5 mm pitch suits the 0.635 pin pitch); the rest are 0603 arrays
+RPACKS = {"RN1": ["cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"], "RN2": ["NC", "cont1_hq", "cont1_vq", "cont1_h"],
+          "RN3": ["kbreset", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
+# port 2 pull-ups are discrete 0402 10k on the lines north of P2 (no room for arrays between the clamp rows)
+PULLUPS = {"cont2_v": "R61", "cont2_b1": "R62", "cont2_h": "R63", "cont2_vq": "R64", "cont2_hq": "R65", "cont2_b2": "R66", "cont2_b3": "R67"}
+RPACK_FP = {"RN1": ("Resistor_SMD:R_Array_Convex_4x0402", "C25518"), "RN2": ("Resistor_SMD:R_Array_Convex_4x0402", "C25518")}
 
 def CBTD(ref, nets):
     m = {"1": "NC", "12": "GND", "23": "GND", "24": "AMIGA_5V_FUSED"}
@@ -50,7 +65,7 @@ def CBTD(ref, nets):
 GPIO = {
     0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
-    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_b1_lo", 11: "cont1_v_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
+    7: "cont1_b3_lo", 8: "cont1_b2_lo", 9: "cont1_v_lo", 10: "cont1_b1_lo", 11: "cont1_h_lo", 12: "cont1_vq_lo", 13: "cont1_hq_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
     16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
@@ -110,12 +125,11 @@ BLOCKS = [
    "VCC = AMIGA_5V_FUSED: the diode-dropped gate limits the B side to ~2.6-3.0 V typ (TI fig. 2) and the RP2350 internal pull-up completes the rise to 3.3 V. OE tied low (always on). Keep VCC >= 4.5 V.",
    "F1 is fitted: this rail is the switch supply. Cabling only the DE9 ports to a running Amiga leaves the rail dead and the port pull-ups drag the lines low - connect the keyboard cable or USB-C first (as rev6).",
    "With the Amiga off the switches are open and the B side floats: firmware enables the RP2350 internal pull-ups on every _lo input.",
-   "Amiga-side pull-ups: 19 x 10k to AMIGA_5V_FUSED in 4-element arrays (RN5 element 4 spare). ESD clamps D10-D28 on every Amiga-facing line."], "parts": [
+   "Amiga-side pull-ups: 19 x 10k to AMIGA_5V_FUSED in seven 4-element arrays placed where the lines pass (9 elements spare). ESD clamps D10-D28 on every Amiga-facing line."], "parts": [
    CBTD("U6", U6_A), CBTD("U7", U7_A),
    C("C13", "100nF", "AMIGA_5V_FUSED", "GND"), C("C14", "100nF", "AMIGA_5V_FUSED", "GND"),
-   RPACK("RN1", AMIGA_NETS[0:4], "AMIGA_5V_FUSED"), RPACK("RN2", AMIGA_NETS[4:8], "AMIGA_5V_FUSED"), RPACK("RN3", AMIGA_NETS[8:12], "AMIGA_5V_FUSED"),
-   RPACK("RN4", AMIGA_NETS[12:16], "AMIGA_5V_FUSED"), RPACK("RN5", AMIGA_NETS[16:19] + ["NC"], "AMIGA_5V_FUSED"),
- ] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
+   ] + [RPACK(r, n, "AMIGA_5V_FUSED", *RPACK_FP.get(r, ("Resistor_SMD:R_Array_Convex_4x0603", "C29718"))) for r, n in RPACKS.items()]
+     + [(r, "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", {"1": n, "2": "AMIGA_5V_FUSED"}, {"LCSC": "C25744"}) for n, r in PULLUPS.items()] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
  {"title": "usb: USB-C (power + device for flashing), USB-A host, 2:1 mux on the RP2350 USB PHY", "notes": [
    "U5 selects D1 (USB-C) when usb_sel is low, which R48 guarantees at reset, so a fresh board enumerates on USB-C. Firmware sets GPIO27 high to switch to the USB-A host port.",
    "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."], "parts": [

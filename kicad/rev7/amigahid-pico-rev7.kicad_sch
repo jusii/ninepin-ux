@@ -14861,7 +14861,7 @@
 		)
 		(uuid "b752c9a7-4420-5ef6-aeba-c6450b0f61ca")
 	)
-	(text "Amiga-side pull-ups: 19 x 10k to AMIGA_5V_FUSED in 4-element arrays (RN5 element 4 spare). ESD clamps D10-D28 on every Amiga-facing line."
+	(text "Amiga-side pull-ups: 19 x 10k to AMIGA_5V_FUSED in seven 4-element arrays placed where the lines pass (9 elements spare). ESD clamps D10-D28 on every Amiga-facing line."
 		(exclude_from_sim no)
 		(at 20 484.92 0)
 		(effects
@@ -15026,7 +15026,7 @@
 		)
 		(uuid "f66569f0-8ebf-5dfb-99cf-10fe59665514")
 	)
-	(label "kbin_dat"
+	(label "kbreset"
 		(at 48.26 520.7 180)
 		(effects
 			(font
@@ -15047,7 +15047,7 @@
 		)
 		(uuid "e0747ec4-2d2e-54e2-97cb-bb4b799f5fc9")
 	)
-	(label "kbin_clk"
+	(label "kbdata"
 		(at 48.26 523.24 180)
 		(effects
 			(font
@@ -15068,7 +15068,7 @@
 		)
 		(uuid "4e01aa61-0ebe-5adc-8b42-f887e53568ca")
 	)
-	(label "kbreset"
+	(label "kbclock"
 		(at 48.26 525.78 180)
 		(effects
 			(font
@@ -15089,7 +15089,7 @@
 		)
 		(uuid "48892c81-2f25-557e-b01c-83f8613c1ea7")
 	)
-	(label "kbdata"
+	(label "cont1_b3"
 		(at 48.26 528.32 180)
 		(effects
 			(font
@@ -15110,7 +15110,7 @@
 		)
 		(uuid "266dce21-5dc2-5c01-8f24-6d603c6e4863")
 	)
-	(label "kbclock"
+	(label "cont1_b2"
 		(at 48.26 530.86 180)
 		(effects
 			(font
@@ -15131,7 +15131,7 @@
 		)
 		(uuid "d71cae48-0c48-55bb-9745-9ff6b1f969f9")
 	)
-	(label "cont1_hq"
+	(label "cont1_v"
 		(at 48.26 533.4 180)
 		(effects
 			(font
@@ -15152,7 +15152,7 @@
 		)
 		(uuid "ec2117df-b5f5-563a-a742-0ee597f85e81")
 	)
-	(label "cont1_vq"
+	(label "cont1_b1"
 		(at 48.26 535.94 180)
 		(effects
 			(font
@@ -15194,7 +15194,7 @@
 		)
 		(uuid "6e707b09-48b6-52bc-abda-e1301c5bc855")
 	)
-	(label "cont1_b1"
+	(label "cont1_vq"
 		(at 48.26 541.02 180)
 		(effects
 			(font
@@ -15215,7 +15215,7 @@
 		)
 		(uuid "54db4817-a6bb-5946-8da6-387dd80c00d1")
 	)
-	(label "cont1_v"
+	(label "cont1_hq"
 		(at 48.26 543.56 180)
 		(effects
 			(font
@@ -15304,7 +15304,7 @@
 		)
 		(uuid "628cfd92-9eb0-5b7f-b128-5d15c3ab9144")
 	)
-	(label "cont1_v_lo"
+	(label "cont1_hq_lo"
 		(at 83.82 543.56 0)
 		(effects
 			(font
@@ -15325,7 +15325,7 @@
 		)
 		(uuid "3604cbf0-29d0-5648-9ead-7616541be1dc")
 	)
-	(label "cont1_b1_lo"
+	(label "cont1_vq_lo"
 		(at 83.82 541.02 0)
 		(effects
 			(font
@@ -15367,7 +15367,7 @@
 		)
 		(uuid "0aba96f1-8521-5574-ade0-5bdbfe4572bd")
 	)
-	(label "cont1_vq_lo"
+	(label "cont1_b1_lo"
 		(at 83.82 535.94 0)
 		(effects
 			(font
@@ -15388,7 +15388,7 @@
 		)
 		(uuid "6fb5d509-0f7a-508d-8904-0b6d1afaf379")
 	)
-	(label "cont1_hq_lo"
+	(label "cont1_v_lo"
 		(at 83.82 533.4 0)
 		(effects
 			(font
@@ -15409,7 +15409,7 @@
 		)
 		(uuid "d66a453d-7ac0-5f82-9d4a-18031a1dfecc")
 	)
-	(label "kbclock_lo"
+	(label "cont1_b2_lo"
 		(at 83.82 530.86 0)
 		(effects
 			(font
@@ -15430,7 +15430,7 @@
 		)
 		(uuid "7d7295c7-bca6-5880-ab51-e3862168002e")
 	)
-	(label "kbdata_lo"
+	(label "cont1_b3_lo"
 		(at 83.82 528.32 0)
 		(effects
 			(font
@@ -15451,7 +15451,7 @@
 		)
 		(uuid "3765f814-3e04-5256-bf6c-f0614a00cf5b")
 	)
-	(label "kbreset_lo"
+	(label "kbclock_lo"
 		(at 83.82 525.78 0)
 		(effects
 			(font
@@ -15472,7 +15472,7 @@
 		)
 		(uuid "2dbdc9e6-0c9a-5adc-b9ef-5f75d21c9cda")
 	)
-	(label "kbin_clk_lo"
+	(label "kbdata_lo"
 		(at 83.82 523.24 0)
 		(effects
 			(font
@@ -15493,7 +15493,7 @@
 		)
 		(uuid "ddfeaf7d-c17d-54b7-a8f0-181b2e18833c")
 	)
-	(label "kbin_dat_lo"
+	(label "kbreset_lo"
 		(at 83.82 520.7 0)
 		(effects
 			(font
@@ -15746,7 +15746,7 @@
 		)
 		(uuid "3963e339-a041-5eb0-83d2-f9b2de544182")
 	)
-	(label "cont1_b2"
+	(label "kbin_clk"
 		(at 139.7 520.7 180)
 		(effects
 			(font
@@ -15767,7 +15767,7 @@
 		)
 		(uuid "4a8cb73e-4052-5fc0-8776-62bd68e163f4")
 	)
-	(label "cont1_b3"
+	(label "kbin_dat"
 		(at 139.7 523.24 180)
 		(effects
 			(font
@@ -16158,7 +16158,7 @@
 		)
 		(uuid "bf5e922f-b4b0-54d6-b658-ae9c08e05608")
 	)
-	(label "cont1_b3_lo"
+	(label "kbin_dat_lo"
 		(at 175.26 523.24 0)
 		(effects
 			(font
@@ -16179,7 +16179,7 @@
 		)
 		(uuid "9729643f-b78b-5f04-9550-2eba1db57a7e")
 	)
-	(label "cont1_b2_lo"
+	(label "kbin_clk_lo"
 		(at 175.26 520.7 0)
 		(effects
 			(font
@@ -16599,7 +16599,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
+		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0402"
 			(at 320.04 518.16 0)
 			(hide yes)
 			(effects
@@ -16626,7 +16626,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C29718"
+		(property "LCSC" "C25518"
 			(at 320.04 518.16 0)
 			(hide yes)
 			(effects
@@ -16671,7 +16671,7 @@
 		)
 		(uuid "89a5467d-8dd8-560b-9368-32ede87c01ea")
 	)
-	(label "kbin_dat"
+	(label "cont1_b1"
 		(at 314.96 528.32 270)
 		(effects
 			(font
@@ -16692,7 +16692,7 @@
 		)
 		(uuid "3f417c98-eb49-58e1-b433-2b5f8099c77e")
 	)
-	(label "kbin_clk"
+	(label "cont1_v"
 		(at 317.5 528.32 270)
 		(effects
 			(font
@@ -16713,7 +16713,7 @@
 		)
 		(uuid "c9922c8e-c00a-5c79-a55c-58dbcc85843e")
 	)
-	(label "kbreset"
+	(label "cont1_b2"
 		(at 320.04 528.32 270)
 		(effects
 			(font
@@ -16734,7 +16734,7 @@
 		)
 		(uuid "b2d0255b-de7d-5d3f-824f-53ca810bf067")
 	)
-	(label "kbdata"
+	(label "cont1_b3"
 		(at 322.58 528.32 270)
 		(effects
 			(font
@@ -16853,7 +16853,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
+		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0402"
 			(at 58.42 604.52 0)
 			(hide yes)
 			(effects
@@ -16880,7 +16880,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C29718"
+		(property "LCSC" "C25518"
 			(at 58.42 604.52 0)
 			(hide yes)
 			(effects
@@ -16914,26 +16914,9 @@
 			(uuid "724779ea-9390-5bea-a2b8-55101a71a922")
 		)
 	)
-	(wire
-		(pts
-			(xy 53.34 609.6)
-			(xy 53.34 614.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "de268592-1709-5aaf-b5c7-d7e638711a73")
-	)
-	(label "kbclock"
-		(at 53.34 614.68 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "bcc31343-dbf7-56d3-8795-75375e62a447")
+	(no_connect
+		(at 53.34 609.6)
+		(uuid "464b3349-d515-53c6-966b-8123486f3cea")
 	)
 	(wire
 		(pts
@@ -17179,7 +17162,7 @@
 		)
 		(uuid "f08df7ab-1812-5a0f-8f3a-382c9ef261b3")
 	)
-	(label "cont1_b1"
+	(label "kbreset"
 		(at 127 614.68 270)
 		(effects
 			(font
@@ -17200,7 +17183,7 @@
 		)
 		(uuid "97d2d58c-9770-5c62-8bd1-50debb30e7ee")
 	)
-	(label "cont1_v"
+	(label "kbdata"
 		(at 129.54 614.68 270)
 		(effects
 			(font
@@ -17221,7 +17204,7 @@
 		)
 		(uuid "85897f92-3917-531e-8f50-522ff814aecc")
 	)
-	(label "cont1_b2"
+	(label "kbclock"
 		(at 132.08 614.68 270)
 		(effects
 			(font
@@ -17231,26 +17214,9 @@
 		)
 		(uuid "174463bd-c494-58f7-ace1-6ea50f82abf6")
 	)
-	(wire
-		(pts
-			(xy 134.62 609.6)
-			(xy 134.62 614.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "556cfb9d-58a5-5bfa-83a9-4a1737ea5612")
-	)
-	(label "cont1_b3"
-		(at 134.62 614.68 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "29652770-7815-5451-8318-d943fc1af0fe")
+	(no_connect
+		(at 134.62 609.6)
+		(uuid "5f9644a2-e1cc-55ef-84e0-b6c392506e54")
 	)
 	(wire
 		(pts
@@ -17422,47 +17388,13 @@
 			(uuid "a053063b-5e80-544d-ab27-10ab42b3784b")
 		)
 	)
-	(wire
-		(pts
-			(xy 200.66 609.6)
-			(xy 200.66 614.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "96b8a539-d20e-50c5-b261-9fb06845ded9")
+	(no_connect
+		(at 200.66 609.6)
+		(uuid "c8950816-fa54-51ed-8870-baeeb108eb27")
 	)
-	(label "cont2_v"
-		(at 200.66 614.68 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "873dad14-2c9b-5090-afbd-23556bacf65b")
-	)
-	(wire
-		(pts
-			(xy 203.2 609.6)
-			(xy 203.2 614.68)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "16e64e44-d17d-5402-a203-07ce8efd1550")
-	)
-	(label "cont2_b1"
-		(at 203.2 614.68 270)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "e2c2dd7b-eeec-52c0-88ed-555eaf99998a")
+	(no_connect
+		(at 203.2 609.6)
+		(uuid "f2084631-1ad4-5de3-8204-1ec1b10888d2")
 	)
 	(wire
 		(pts
@@ -17475,7 +17407,7 @@
 		)
 		(uuid "8f62cae6-2098-58ff-ac05-3e77d420fe13")
 	)
-	(label "cont2_h"
+	(label "kbin_dat"
 		(at 205.74 614.68 270)
 		(effects
 			(font
@@ -17496,7 +17428,7 @@
 		)
 		(uuid "0b204b12-97c5-5eb7-9496-1eb5ef465be7")
 	)
-	(label "cont2_vq"
+	(label "kbin_clk"
 		(at 208.28 614.68 270)
 		(effects
 			(font
@@ -17591,32 +17523,32 @@
 		(uuid "a159a6c1-15ae-5286-906d-fc9b8ee266bf")
 	)
 	(symbol
-		(lib_id "Device:R_Pack04")
-		(at 279.4 604.52 0)
+		(lib_id "Device:R")
+		(at 261.62 603.25 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
 		(on_board yes)
 		(dnp no)
-		(uuid "7b850fb8-690f-5462-b7ac-f0dccc13631d")
-		(property "Reference" "RN5"
-			(at 273.32 595.17 0)
+		(uuid "b9bd8c1e-c88b-559a-9590-6ac445adea20")
+		(property "Reference" "R61"
+			(at 263.62 601.98 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "4x10k"
-			(at 273.32 597.71 0)
+		(property "Value" "10k"
+			(at 263.62 604.52 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Resistor_SMD:R_Array_Convex_4x0603"
-			(at 279.4 604.52 0)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 261.62 603.25 0)
 			(hide yes)
 			(effects
 				(font
@@ -17625,7 +17557,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 279.4 604.52 0)
+			(at 261.62 603.25 0)
 			(hide yes)
 			(effects
 				(font
@@ -17633,8 +17565,8 @@
 				)
 			)
 		)
-		(property "Description" "4 resistor network, parallel topology"
-			(at 279.4 604.52 0)
+		(property "Description" "Resistor"
+			(at 261.62 603.25 0)
 			(hide yes)
 			(effects
 				(font
@@ -17642,8 +17574,8 @@
 				)
 			)
 		)
-		(property "LCSC" "C29718"
-			(at 279.4 604.52 0)
+		(property "LCSC" "C25744"
+			(at 261.62 603.25 0)
 			(hide yes)
 			(effects
 				(font
@@ -17652,167 +17584,717 @@
 			)
 		)
 		(pin "1"
-			(uuid "508b4448-16fa-5631-b030-4245028eb8a9")
+			(uuid "ae795e25-60fa-5974-87e7-41e7740603b6")
 		)
 		(pin "2"
-			(uuid "42ce57af-b60c-532a-9448-53e6455227f5")
-		)
-		(pin "3"
-			(uuid "ca8b6553-89d8-58d0-83c9-cdbc5e8d4e25")
-		)
-		(pin "4"
-			(uuid "2cefce22-89ff-5ecc-8d62-d27cb7e07bc4")
-		)
-		(pin "5"
-			(uuid "96694898-b56a-582c-84b9-7a22273ad71a")
-		)
-		(pin "6"
-			(uuid "b414a7b3-e875-5f03-a2b2-9c21e1e69860")
-		)
-		(pin "7"
-			(uuid "a456b326-0517-56ab-bc4e-e9428d14c94d")
-		)
-		(pin "8"
-			(uuid "dd74f145-7699-5504-8c31-019fc1a05362")
+			(uuid "e7c8cd6c-f71e-516d-84d2-54b7e8b4e146")
 		)
 	)
 	(wire
 		(pts
-			(xy 274.32 609.6)
-			(xy 274.32 614.68)
+			(xy 261.62 599.44)
+			(xy 261.62 594.36)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "93fdb9ca-d2b1-5694-9004-17faf77d052f")
+		(uuid "d7adf241-a5f9-5af2-9abd-88a9d9d6e86b")
+	)
+	(label "cont2_v"
+		(at 261.62 594.36 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "79fb0590-3585-55bf-892f-99179a5237c7")
+	)
+	(wire
+		(pts
+			(xy 261.62 607.06)
+			(xy 261.62 612.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b93b48e3-9ecf-5363-acd8-400f57fa396c")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 261.62 612.14 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "3a0c24d2-18df-5b42-a013-fd436b6ea5f0")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 300.99 603.25 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "1dc3d3c4-32b0-576c-bf24-0e836f16b894")
+		(property "Reference" "R62"
+			(at 302.99 601.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 302.99 604.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 300.99 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 300.99 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 300.99 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 300.99 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "78a9259c-5b4a-5123-ac5d-1540ca292c0b")
+		)
+		(pin "2"
+			(uuid "7626dc5a-4003-559e-aafe-0cc9c6116bce")
+		)
+	)
+	(wire
+		(pts
+			(xy 300.99 599.44)
+			(xy 300.99 594.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "722a3f69-9556-5308-b456-e9925f917f64")
+	)
+	(label "cont2_b1"
+		(at 300.99 594.36 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f5c0e857-fa99-56c4-9d5e-ef8771eba021")
+	)
+	(wire
+		(pts
+			(xy 300.99 607.06)
+			(xy 300.99 612.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "332f5483-7c80-5f7b-9102-98993f22288d")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 300.99 612.14 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "d90bdd21-bbd3-591f-8e48-d2e02f792f48")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 340.36 603.25 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ff70e8e5-7232-5428-80e0-c1ea09cc1fa6")
+		(property "Reference" "R63"
+			(at 342.36 601.98 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 342.36 604.52 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 340.36 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 340.36 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 340.36 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 340.36 603.25 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "a1bb5637-f285-567f-943b-617f6ca6e292")
+		)
+		(pin "2"
+			(uuid "2c9c624e-e4c8-53ea-a14d-03d7a38645bb")
+		)
+	)
+	(wire
+		(pts
+			(xy 340.36 599.44)
+			(xy 340.36 594.36)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f81a7680-2a28-534a-b2cf-070dbc5110dd")
+	)
+	(label "cont2_h"
+		(at 340.36 594.36 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "9a75f925-6eb7-5e13-b965-6931c4b0ed45")
+	)
+	(wire
+		(pts
+			(xy 340.36 607.06)
+			(xy 340.36 612.14)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4d3d07c7-1f57-5e8c-8ea9-9e668e61937f")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 340.36 612.14 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "50b0dbef-cfda-589b-b9f5-978f4c47bcee")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 39.37 657.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "ac0bec2b-5ad0-5b25-bb93-94a23a915571")
+		(property "Reference" "R64"
+			(at 41.37 656.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 41.37 659.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 39.37 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 39.37 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 39.37 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 39.37 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "74b885cf-7f0c-5d17-836f-178ccd4260a4")
+		)
+		(pin "2"
+			(uuid "5db655bc-a4e5-51f5-9f55-516d4e282b3f")
+		)
+	)
+	(wire
+		(pts
+			(xy 39.37 654.05)
+			(xy 39.37 648.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "b9d54417-4907-5098-a627-9a377633f141")
+	)
+	(label "cont2_vq"
+		(at 39.37 648.97 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "496190d7-84f6-5abf-83fb-29dbf5a596a8")
+	)
+	(wire
+		(pts
+			(xy 39.37 661.67)
+			(xy 39.37 666.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ecf84de-ec62-5ace-9319-891b30710f4b")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 39.37 666.75 270)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "e23e884b-869b-53f1-9e34-0066c8b73ffc")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 80.01 657.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "7c30b55c-3081-56fb-902f-c06e1f238f30")
+		(property "Reference" "R65"
+			(at 82.01 656.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 82.01 659.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 80.01 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 80.01 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 80.01 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 80.01 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "27340411-3805-56ec-8d01-f9062573f9bc")
+		)
+		(pin "2"
+			(uuid "55749898-4ed6-5c37-ba9f-7e392b70d417")
+		)
+	)
+	(wire
+		(pts
+			(xy 80.01 654.05)
+			(xy 80.01 648.97)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1b717e08-9124-522f-8e42-01e2299ad045")
 	)
 	(label "cont2_hq"
-		(at 274.32 614.68 270)
+		(at 80.01 648.97 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e715a9c3-e8ff-5824-a2b1-e694f5b619ae")
+	)
+	(wire
+		(pts
+			(xy 80.01 661.67)
+			(xy 80.01 666.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "5ef75da8-e6f1-53ee-a311-de514e372b65")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 80.01 666.75 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "0c4236f4-3afd-55e8-ac8e-259d896385c3")
+		(uuid "9f1ff65b-8201-5284-8d87-0fe5c740e266")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 119.38 657.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "b2adef44-55d4-5148-87d7-c2fed5bbfec3")
+		(property "Reference" "R66"
+			(at 121.38 656.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 121.38 659.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 119.38 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 119.38 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 119.38 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 119.38 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "cc6c82d4-cb1c-58a1-b5e1-74edb6f10d02")
+		)
+		(pin "2"
+			(uuid "6c5f86de-69c1-5331-98fb-6bd9b96b9a4c")
+		)
 	)
 	(wire
 		(pts
-			(xy 276.86 609.6)
-			(xy 276.86 614.68)
+			(xy 119.38 654.05)
+			(xy 119.38 648.97)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f19d9bdc-fda7-5658-9181-d18b52d08002")
+		(uuid "14cc97a6-51a4-5ae1-9b25-9f3993c154b0")
 	)
 	(label "cont2_b2"
-		(at 276.86 614.68 270)
+		(at 119.38 648.97 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "5f3fff9e-1e46-5d7a-8a90-ecbf957184b6")
+	)
+	(wire
+		(pts
+			(xy 119.38 661.67)
+			(xy 119.38 666.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "1a8304b8-65fd-549e-96ff-fe7930c3dba5")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 119.38 666.75 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "45223ff7-ee95-5e3c-b2ec-c6f2cb02acd6")
+		(uuid "69a9c168-8325-56bf-bc17-af4946082bb3")
+	)
+	(symbol
+		(lib_id "Device:R")
+		(at 158.75 657.86 0)
+		(unit 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(uuid "5eab2787-91d3-5086-b558-25e8686982c0")
+		(property "Reference" "R67"
+			(at 160.75 656.59 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k"
+			(at 160.75 659.13 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "Resistor_SMD:R_0402_1005Metric"
+			(at 158.75 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 158.75 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" "Resistor"
+			(at 158.75 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25744"
+			(at 158.75 657.86 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e185b065-5d2f-5de7-a6da-f9b1d66ead87")
+		)
+		(pin "2"
+			(uuid "9f64ca1c-de1f-5dc6-8f77-7f82281ef4ff")
+		)
 	)
 	(wire
 		(pts
-			(xy 279.4 609.6)
-			(xy 279.4 614.68)
+			(xy 158.75 654.05)
+			(xy 158.75 648.97)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f2da2404-a431-548c-a9b8-3d98f3cabf0c")
+		(uuid "e64ed5d5-32ff-574c-ab89-149bb89d897a")
 	)
 	(label "cont2_b3"
-		(at 279.4 614.68 270)
+		(at 158.75 648.97 90)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "f128e4bf-76b4-5d0f-b5ad-ebb26cfb3382")
+	)
+	(wire
+		(pts
+			(xy 158.75 661.67)
+			(xy 158.75 666.75)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "e5180fdb-0305-55ba-b0f2-52ea8ab554f0")
+	)
+	(label "AMIGA_5V_FUSED"
+		(at 158.75 666.75 270)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify right bottom)
 		)
-		(uuid "2c9b2743-7e6c-55d7-89eb-e22b46a89a8b")
-	)
-	(no_connect
-		(at 281.94 609.6)
-		(uuid "0b5d91cf-320d-5340-8060-0f6fda6e6df8")
-	)
-	(no_connect
-		(at 281.94 599.44)
-		(uuid "436aa38d-a184-5690-b58b-e0fb385e804d")
-	)
-	(wire
-		(pts
-			(xy 279.4 599.44)
-			(xy 279.4 594.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "10b3c9ce-111d-501a-ae2c-18f1d8d350d6")
-	)
-	(label "AMIGA_5V_FUSED"
-		(at 279.4 594.36 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "5c0d8b2e-08ea-5e3a-b521-2e1025a68964")
-	)
-	(wire
-		(pts
-			(xy 276.86 599.44)
-			(xy 276.86 594.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "899fac0b-1378-5a14-8136-91a7b5982f9c")
-	)
-	(label "AMIGA_5V_FUSED"
-		(at 276.86 594.36 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "83ac8555-bc36-5993-bda0-23baa34f87a4")
-	)
-	(wire
-		(pts
-			(xy 274.32 599.44)
-			(xy 274.32 594.36)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "9f3bf7ea-b91b-5783-bb88-7bdc21fe8342")
-	)
-	(label "AMIGA_5V_FUSED"
-		(at 274.32 594.36 90)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "8512ec44-83de-5b59-9bb9-1397d0a0ca38")
+		(uuid "21c05efa-3d5f-5c77-846f-49ed4070c542")
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 337.82 599.44 0)
+		(at 200.66 654.05 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17820,7 +18302,7 @@
 		(dnp no)
 		(uuid "5ca521fa-cb67-5034-8094-566aeecc1289")
 		(property "Reference" "D10"
-			(at 339.82 598.17 0)
+			(at 202.66 652.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17828,7 +18310,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 339.82 600.71 0)
+			(at 202.66 655.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17836,7 +18318,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 337.82 599.44 0)
+			(at 200.66 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17845,7 +18327,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 337.82 599.44 0)
+			(at 200.66 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17854,7 +18336,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 337.82 599.44 0)
+			(at 200.66 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17863,7 +18345,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 337.82 599.44 0)
+			(at 200.66 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17880,8 +18362,8 @@
 	)
 	(wire
 		(pts
-			(xy 334.01 599.44)
-			(xy 328.93 599.44)
+			(xy 196.85 654.05)
+			(xy 191.77 654.05)
 		)
 		(stroke
 			(width 0)
@@ -17889,8 +18371,8 @@
 		)
 		(uuid "d0976e7c-c993-5dab-a65f-edd32e75463b")
 	)
-	(label "kbin_dat"
-		(at 328.93 599.44 180)
+	(label "kbreset"
+		(at 191.77 654.05 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -17901,8 +18383,8 @@
 	)
 	(wire
 		(pts
-			(xy 341.63 599.44)
-			(xy 346.71 599.44)
+			(xy 204.47 654.05)
+			(xy 209.55 654.05)
 		)
 		(stroke
 			(width 0)
@@ -17912,7 +18394,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 346.71 599.44 270)
+		(at 209.55 654.05 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17920,7 +18402,7 @@
 		(dnp no)
 		(uuid "5e56ef42-9638-5ab1-ad50-72be95349484")
 		(property "Reference" "#PWR034"
-			(at 346.71 599.44 0)
+			(at 209.55 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17929,7 +18411,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 350.52 599.44 0)
+			(at 213.36 654.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17937,7 +18419,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 346.71 599.44 0)
+			(at 209.55 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17946,7 +18428,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 346.71 599.44 0)
+			(at 209.55 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17955,7 +18437,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 346.71 599.44 0)
+			(at 209.55 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -17969,7 +18451,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 41.91 654.05 0)
+		(at 245.11 654.05 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -17977,7 +18459,7 @@
 		(dnp no)
 		(uuid "febd83bf-37f4-5ce9-b1b7-6730759b23ab")
 		(property "Reference" "D11"
-			(at 43.91 652.78 0)
+			(at 247.11 652.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17985,7 +18467,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 43.91 655.32 0)
+			(at 247.11 655.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -17993,7 +18475,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 41.91 654.05 0)
+			(at 245.11 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18002,7 +18484,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 41.91 654.05 0)
+			(at 245.11 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18011,7 +18493,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 41.91 654.05 0)
+			(at 245.11 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18020,7 +18502,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 41.91 654.05 0)
+			(at 245.11 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18037,8 +18519,8 @@
 	)
 	(wire
 		(pts
-			(xy 38.1 654.05)
-			(xy 33.02 654.05)
+			(xy 241.3 654.05)
+			(xy 236.22 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18046,8 +18528,8 @@
 		)
 		(uuid "8bfda6ea-29e4-5a91-ba05-1829a2404afa")
 	)
-	(label "kbin_clk"
-		(at 33.02 654.05 180)
+	(label "kbdata"
+		(at 236.22 654.05 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18058,8 +18540,8 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 654.05)
-			(xy 50.8 654.05)
+			(xy 248.92 654.05)
+			(xy 254 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18069,7 +18551,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 50.8 654.05 270)
+		(at 254 654.05 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18077,7 +18559,7 @@
 		(dnp no)
 		(uuid "849e636f-74a4-5c3d-a184-97bce848707e")
 		(property "Reference" "#PWR035"
-			(at 50.8 654.05 0)
+			(at 254 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18086,7 +18568,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 54.61 654.05 0)
+			(at 257.81 654.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18094,7 +18576,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 50.8 654.05 0)
+			(at 254 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18103,7 +18585,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 50.8 654.05 0)
+			(at 254 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18112,7 +18594,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 50.8 654.05 0)
+			(at 254 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18126,7 +18608,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 86.36 654.05 0)
+		(at 289.56 654.05 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18134,7 +18616,7 @@
 		(dnp no)
 		(uuid "addf4780-e4a0-596f-93d1-05922214dd17")
 		(property "Reference" "D12"
-			(at 88.36 652.78 0)
+			(at 291.56 652.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18142,7 +18624,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 88.36 655.32 0)
+			(at 291.56 655.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18150,7 +18632,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 86.36 654.05 0)
+			(at 289.56 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18159,7 +18641,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 86.36 654.05 0)
+			(at 289.56 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18168,7 +18650,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 86.36 654.05 0)
+			(at 289.56 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18177,7 +18659,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 86.36 654.05 0)
+			(at 289.56 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18194,8 +18676,8 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 654.05)
-			(xy 77.47 654.05)
+			(xy 285.75 654.05)
+			(xy 280.67 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18203,8 +18685,8 @@
 		)
 		(uuid "698f73b9-6fd1-5813-a39e-21b37ce16fa3")
 	)
-	(label "kbreset"
-		(at 77.47 654.05 180)
+	(label "kbclock"
+		(at 280.67 654.05 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18215,8 +18697,8 @@
 	)
 	(wire
 		(pts
-			(xy 90.17 654.05)
-			(xy 95.25 654.05)
+			(xy 293.37 654.05)
+			(xy 298.45 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18226,7 +18708,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 95.25 654.05 270)
+		(at 298.45 654.05 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18234,7 +18716,7 @@
 		(dnp no)
 		(uuid "c9004396-19db-504a-82fd-22003b4f9a73")
 		(property "Reference" "#PWR036"
-			(at 95.25 654.05 0)
+			(at 298.45 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18243,7 +18725,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 99.06 654.05 0)
+			(at 302.26 654.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18251,7 +18733,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 95.25 654.05 0)
+			(at 298.45 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18260,7 +18742,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 95.25 654.05 0)
+			(at 298.45 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18269,7 +18751,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 95.25 654.05 0)
+			(at 298.45 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18283,7 +18765,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 130.81 654.05 0)
+		(at 334.01 654.05 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18291,23 +18773,23 @@
 		(dnp no)
 		(uuid "060d8378-c1d1-58c2-820b-7fadf01f96e9")
 		(property "Reference" "D13"
-			(at 132.81 652.78 0)
+			(at 336.01 652.78 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 132.81 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 336.01 655.32 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 130.81 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18315,8 +18797,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 130.81 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18325,7 +18807,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 130.81 654.05 0)
+			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18333,8 +18815,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 130.81 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 334.01 654.05 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18351,8 +18842,8 @@
 	)
 	(wire
 		(pts
-			(xy 127 654.05)
-			(xy 121.92 654.05)
+			(xy 330.2 654.05)
+			(xy 325.12 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18360,8 +18851,8 @@
 		)
 		(uuid "f0089bd8-6e39-59ba-b1ea-5d62ff1ce6be")
 	)
-	(label "kbdata"
-		(at 121.92 654.05 180)
+	(label "cont1_b3"
+		(at 325.12 654.05 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18372,8 +18863,8 @@
 	)
 	(wire
 		(pts
-			(xy 134.62 654.05)
-			(xy 139.7 654.05)
+			(xy 337.82 654.05)
+			(xy 342.9 654.05)
 		)
 		(stroke
 			(width 0)
@@ -18383,7 +18874,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 139.7 654.05 270)
+		(at 342.9 654.05 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18391,7 +18882,7 @@
 		(dnp no)
 		(uuid "446d3fd0-54fe-5303-b952-6160d448344e")
 		(property "Reference" "#PWR037"
-			(at 139.7 654.05 0)
+			(at 342.9 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18400,7 +18891,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 143.51 654.05 0)
+			(at 346.71 654.05 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18408,7 +18899,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 139.7 654.05 0)
+			(at 342.9 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18417,7 +18908,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 139.7 654.05 0)
+			(at 342.9 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18426,7 +18917,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 139.7 654.05 0)
+			(at 342.9 654.05 0)
 			(hide yes)
 			(effects
 				(font
@@ -18440,7 +18931,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 175.26 654.05 0)
+		(at 41.91 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18448,23 +18939,23 @@
 		(dnp no)
 		(uuid "0595d4f2-c2dc-5404-acbb-6dd969227fb8")
 		(property "Reference" "D14"
-			(at 177.26 652.78 0)
+			(at 43.91 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 177.26 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 43.91 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 175.26 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18472,8 +18963,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 175.26 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18482,7 +18973,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 175.26 654.05 0)
+			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18490,8 +18981,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 175.26 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 41.91 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18508,8 +19008,8 @@
 	)
 	(wire
 		(pts
-			(xy 171.45 654.05)
-			(xy 166.37 654.05)
+			(xy 38.1 704.85)
+			(xy 33.02 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18517,8 +19017,8 @@
 		)
 		(uuid "62270b92-3e8a-5947-ab8c-ed1ed4abfdde")
 	)
-	(label "kbclock"
-		(at 166.37 654.05 180)
+	(label "cont1_b2"
+		(at 33.02 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18529,8 +19029,8 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 654.05)
-			(xy 184.15 654.05)
+			(xy 45.72 704.85)
+			(xy 50.8 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18540,7 +19040,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 184.15 654.05 270)
+		(at 50.8 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18548,7 +19048,7 @@
 		(dnp no)
 		(uuid "3e1cf214-94fa-5eb1-88a7-4165e24328cc")
 		(property "Reference" "#PWR038"
-			(at 184.15 654.05 0)
+			(at 50.8 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18557,7 +19057,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 187.96 654.05 0)
+			(at 54.61 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18565,7 +19065,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 184.15 654.05 0)
+			(at 50.8 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18574,7 +19074,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 184.15 654.05 0)
+			(at 50.8 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18583,7 +19083,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 184.15 654.05 0)
+			(at 50.8 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18597,7 +19097,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 219.71 654.05 0)
+		(at 86.36 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18605,23 +19105,23 @@
 		(dnp no)
 		(uuid "98aa5803-748b-5586-b292-1e3aa31abc0f")
 		(property "Reference" "D15"
-			(at 221.71 652.78 0)
+			(at 88.36 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 221.71 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 88.36 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 219.71 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18629,8 +19129,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 219.71 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18639,7 +19139,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 219.71 654.05 0)
+			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18647,8 +19147,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 219.71 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 86.36 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18665,8 +19174,8 @@
 	)
 	(wire
 		(pts
-			(xy 215.9 654.05)
-			(xy 210.82 654.05)
+			(xy 82.55 704.85)
+			(xy 77.47 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18674,8 +19183,8 @@
 		)
 		(uuid "93df7c72-b544-5e4b-a83c-a940d034e097")
 	)
-	(label "cont1_hq"
-		(at 210.82 654.05 180)
+	(label "cont1_v"
+		(at 77.47 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18686,8 +19195,8 @@
 	)
 	(wire
 		(pts
-			(xy 223.52 654.05)
-			(xy 228.6 654.05)
+			(xy 90.17 704.85)
+			(xy 95.25 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18697,7 +19206,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 228.6 654.05 270)
+		(at 95.25 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18705,7 +19214,7 @@
 		(dnp no)
 		(uuid "cc6bcd5e-7870-5663-8f0d-bef949a34543")
 		(property "Reference" "#PWR039"
-			(at 228.6 654.05 0)
+			(at 95.25 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18714,7 +19223,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 232.41 654.05 0)
+			(at 99.06 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18722,7 +19231,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 228.6 654.05 0)
+			(at 95.25 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18731,7 +19240,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 228.6 654.05 0)
+			(at 95.25 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18740,7 +19249,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 228.6 654.05 0)
+			(at 95.25 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18754,7 +19263,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 262.89 654.05 0)
+		(at 130.81 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18762,23 +19271,23 @@
 		(dnp no)
 		(uuid "13887d9a-1994-534b-80bd-6c2c67c04bd6")
 		(property "Reference" "D16"
-			(at 264.89 652.78 0)
+			(at 132.81 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 264.89 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 132.81 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 262.89 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18786,8 +19295,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 262.89 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18796,7 +19305,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 262.89 654.05 0)
+			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18804,8 +19313,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 262.89 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 130.81 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18822,8 +19340,8 @@
 	)
 	(wire
 		(pts
-			(xy 259.08 654.05)
-			(xy 254 654.05)
+			(xy 127 704.85)
+			(xy 121.92 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18831,8 +19349,8 @@
 		)
 		(uuid "a16746fa-ef11-5987-a1a5-60ecc30b686a")
 	)
-	(label "cont1_vq"
-		(at 254 654.05 180)
+	(label "cont1_b1"
+		(at 121.92 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -18843,8 +19361,8 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 654.05)
-			(xy 271.78 654.05)
+			(xy 134.62 704.85)
+			(xy 139.7 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18854,7 +19372,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 271.78 654.05 270)
+		(at 139.7 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18862,7 +19380,7 @@
 		(dnp no)
 		(uuid "09daf9bc-5786-562c-91b6-61dfc339f4a1")
 		(property "Reference" "#PWR040"
-			(at 271.78 654.05 0)
+			(at 139.7 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18871,7 +19389,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 275.59 654.05 0)
+			(at 143.51 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -18879,7 +19397,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 271.78 654.05 0)
+			(at 139.7 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18888,7 +19406,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 271.78 654.05 0)
+			(at 139.7 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18897,7 +19415,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 271.78 654.05 0)
+			(at 139.7 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18911,7 +19429,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 307.34 654.05 0)
+		(at 175.26 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -18919,23 +19437,23 @@
 		(dnp no)
 		(uuid "e72ea802-17a8-5508-b2e7-bd6954931c42")
 		(property "Reference" "D17"
-			(at 309.34 652.78 0)
+			(at 177.26 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 309.34 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 177.26 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 307.34 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18943,8 +19461,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 307.34 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18953,7 +19471,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 307.34 654.05 0)
+			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18961,8 +19479,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 307.34 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 175.26 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -18979,8 +19506,8 @@
 	)
 	(wire
 		(pts
-			(xy 303.53 654.05)
-			(xy 298.45 654.05)
+			(xy 171.45 704.85)
+			(xy 166.37 704.85)
 		)
 		(stroke
 			(width 0)
@@ -18989,7 +19516,7 @@
 		(uuid "a9fac8a9-a919-5a49-ab57-872b56221830")
 	)
 	(label "cont1_h"
-		(at 298.45 654.05 180)
+		(at 166.37 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19000,8 +19527,8 @@
 	)
 	(wire
 		(pts
-			(xy 311.15 654.05)
-			(xy 316.23 654.05)
+			(xy 179.07 704.85)
+			(xy 184.15 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19011,7 +19538,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 316.23 654.05 270)
+		(at 184.15 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19019,7 +19546,7 @@
 		(dnp no)
 		(uuid "7c9b18fb-a5e7-5dc9-9199-78251ce14797")
 		(property "Reference" "#PWR041"
-			(at 316.23 654.05 0)
+			(at 184.15 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19028,7 +19555,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 320.04 654.05 0)
+			(at 187.96 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19036,7 +19563,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 316.23 654.05 0)
+			(at 184.15 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19045,7 +19572,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 316.23 654.05 0)
+			(at 184.15 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19054,7 +19581,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 316.23 654.05 0)
+			(at 184.15 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19068,7 +19595,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 351.79 654.05 0)
+		(at 219.71 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19076,23 +19603,23 @@
 		(dnp no)
 		(uuid "0c4a39de-2cb5-54f3-89a8-678f19791fdd")
 		(property "Reference" "D18"
-			(at 353.79 652.78 0)
+			(at 221.71 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 353.79 655.32 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 221.71 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 351.79 654.05 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19100,8 +19627,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 351.79 654.05 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19110,7 +19637,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 351.79 654.05 0)
+			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19118,8 +19645,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 351.79 654.05 0)
+		(property "LCSC" "C2060734"
+			(at 219.71 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19136,8 +19672,8 @@
 	)
 	(wire
 		(pts
-			(xy 347.98 654.05)
-			(xy 342.9 654.05)
+			(xy 215.9 704.85)
+			(xy 210.82 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19145,8 +19681,8 @@
 		)
 		(uuid "e6ce34ab-2af1-59da-b788-5f752e944bf5")
 	)
-	(label "cont1_b1"
-		(at 342.9 654.05 180)
+	(label "cont1_vq"
+		(at 210.82 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19157,8 +19693,8 @@
 	)
 	(wire
 		(pts
-			(xy 355.6 654.05)
-			(xy 360.68 654.05)
+			(xy 223.52 704.85)
+			(xy 228.6 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19168,7 +19704,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 360.68 654.05 270)
+		(at 228.6 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19176,7 +19712,7 @@
 		(dnp no)
 		(uuid "c0190208-2615-59de-93f6-fff88a36ba1b")
 		(property "Reference" "#PWR042"
-			(at 360.68 654.05 0)
+			(at 228.6 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19185,7 +19721,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 364.49 654.05 0)
+			(at 232.41 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19193,7 +19729,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 360.68 654.05 0)
+			(at 228.6 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19202,7 +19738,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 360.68 654.05 0)
+			(at 228.6 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19211,7 +19747,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 360.68 654.05 0)
+			(at 228.6 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19225,7 +19761,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 41.91 697.23 0)
+		(at 262.89 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19233,23 +19769,23 @@
 		(dnp no)
 		(uuid "d62a166b-45a7-54d4-9342-08fb8c8d305b")
 		(property "Reference" "D19"
-			(at 43.91 695.96 0)
+			(at 264.89 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1BA"
-			(at 43.91 698.5 0)
+		(property "Value" "PESD5V0S1UL"
+			(at 264.89 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
 				)
 			)
 		)
-		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 41.91 697.23 0)
+		(property "Footprint" "Diode_SMD:D_SOD-882"
+			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19257,8 +19793,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 41.91 697.23 0)
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19267,7 +19803,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 41.91 697.23 0)
+			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19275,8 +19811,17 @@
 				)
 			)
 		)
-		(property "LCSC" "C19224"
-			(at 41.91 697.23 0)
+		(property "LCSC" "C2060734"
+			(at 262.89 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "LCSC code to verify before order"
+			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19293,8 +19838,8 @@
 	)
 	(wire
 		(pts
-			(xy 38.1 697.23)
-			(xy 33.02 697.23)
+			(xy 259.08 704.85)
+			(xy 254 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19302,8 +19847,8 @@
 		)
 		(uuid "2453c450-a818-5d10-b9f2-ea03b13fb9cb")
 	)
-	(label "cont1_v"
-		(at 33.02 697.23 180)
+	(label "cont1_hq"
+		(at 254 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19314,8 +19859,8 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 697.23)
-			(xy 50.8 697.23)
+			(xy 266.7 704.85)
+			(xy 271.78 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19325,7 +19870,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 50.8 697.23 270)
+		(at 271.78 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19333,7 +19878,7 @@
 		(dnp no)
 		(uuid "3d149dd8-3b11-5891-b41f-415f1e60e1b2")
 		(property "Reference" "#PWR043"
-			(at 50.8 697.23 0)
+			(at 271.78 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19342,7 +19887,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 54.61 697.23 0)
+			(at 275.59 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19350,7 +19895,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 50.8 697.23 0)
+			(at 271.78 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19359,7 +19904,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 50.8 697.23 0)
+			(at 271.78 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19368,7 +19913,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 50.8 697.23 0)
+			(at 271.78 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19382,7 +19927,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 86.36 697.23 0)
+		(at 307.34 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19390,7 +19935,7 @@
 		(dnp no)
 		(uuid "45973022-a0c2-56ae-8808-fce173dc7610")
 		(property "Reference" "D20"
-			(at 88.36 695.96 0)
+			(at 309.34 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19398,7 +19943,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 88.36 698.5 0)
+			(at 309.34 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19406,7 +19951,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 86.36 697.23 0)
+			(at 307.34 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19415,7 +19960,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 86.36 697.23 0)
+			(at 307.34 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19424,7 +19969,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 86.36 697.23 0)
+			(at 307.34 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19433,7 +19978,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 86.36 697.23 0)
+			(at 307.34 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19450,8 +19995,8 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 697.23)
-			(xy 77.47 697.23)
+			(xy 303.53 704.85)
+			(xy 298.45 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19459,8 +20004,8 @@
 		)
 		(uuid "4f259009-d2cf-57df-9705-8d9b0f252d45")
 	)
-	(label "cont1_b2"
-		(at 77.47 697.23 180)
+	(label "kbin_clk"
+		(at 298.45 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19471,8 +20016,8 @@
 	)
 	(wire
 		(pts
-			(xy 90.17 697.23)
-			(xy 95.25 697.23)
+			(xy 311.15 704.85)
+			(xy 316.23 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19482,7 +20027,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 95.25 697.23 270)
+		(at 316.23 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19490,7 +20035,7 @@
 		(dnp no)
 		(uuid "9d25f2cf-0354-5798-9e3f-4836f688b6ba")
 		(property "Reference" "#PWR044"
-			(at 95.25 697.23 0)
+			(at 316.23 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19499,7 +20044,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 99.06 697.23 0)
+			(at 320.04 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19507,7 +20052,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 95.25 697.23 0)
+			(at 316.23 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19516,7 +20061,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 95.25 697.23 0)
+			(at 316.23 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19525,7 +20070,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 95.25 697.23 0)
+			(at 316.23 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19539,7 +20084,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 130.81 697.23 0)
+		(at 351.79 704.85 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19547,7 +20092,7 @@
 		(dnp no)
 		(uuid "745577bc-7488-5b19-a02e-d4676a9eb6a0")
 		(property "Reference" "D21"
-			(at 132.81 695.96 0)
+			(at 353.79 703.58 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19555,7 +20100,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 132.81 698.5 0)
+			(at 353.79 706.12 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19563,7 +20108,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 130.81 697.23 0)
+			(at 351.79 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19572,7 +20117,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 130.81 697.23 0)
+			(at 351.79 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19581,7 +20126,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 130.81 697.23 0)
+			(at 351.79 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19590,7 +20135,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 130.81 697.23 0)
+			(at 351.79 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19607,8 +20152,8 @@
 	)
 	(wire
 		(pts
-			(xy 127 697.23)
-			(xy 121.92 697.23)
+			(xy 347.98 704.85)
+			(xy 342.9 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19616,8 +20161,8 @@
 		)
 		(uuid "d5b799c0-9522-5a33-84a9-3e84c3e2626b")
 	)
-	(label "cont1_b3"
-		(at 121.92 697.23 180)
+	(label "kbin_dat"
+		(at 342.9 704.85 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19628,8 +20173,8 @@
 	)
 	(wire
 		(pts
-			(xy 134.62 697.23)
-			(xy 139.7 697.23)
+			(xy 355.6 704.85)
+			(xy 360.68 704.85)
 		)
 		(stroke
 			(width 0)
@@ -19639,7 +20184,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 139.7 697.23 270)
+		(at 360.68 704.85 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19647,7 +20192,7 @@
 		(dnp no)
 		(uuid "98031b76-7ace-533f-86e0-fb00c6ce5c72")
 		(property "Reference" "#PWR045"
-			(at 139.7 697.23 0)
+			(at 360.68 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19656,7 +20201,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 143.51 697.23 0)
+			(at 364.49 704.85 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19664,7 +20209,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 139.7 697.23 0)
+			(at 360.68 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19673,7 +20218,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 139.7 697.23 0)
+			(at 360.68 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19682,7 +20227,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 139.7 697.23 0)
+			(at 360.68 704.85 0)
 			(hide yes)
 			(effects
 				(font
@@ -19696,7 +20241,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 175.26 697.23 0)
+		(at 41.91 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19704,7 +20249,7 @@
 		(dnp no)
 		(uuid "2390cf3b-89df-59c3-81b6-2a8377db3172")
 		(property "Reference" "D22"
-			(at 177.26 695.96 0)
+			(at 43.91 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19712,7 +20257,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 177.26 698.5 0)
+			(at 43.91 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19720,7 +20265,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 175.26 697.23 0)
+			(at 41.91 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19729,7 +20274,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 175.26 697.23 0)
+			(at 41.91 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19738,7 +20283,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 175.26 697.23 0)
+			(at 41.91 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19747,7 +20292,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 175.26 697.23 0)
+			(at 41.91 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19764,8 +20309,8 @@
 	)
 	(wire
 		(pts
-			(xy 171.45 697.23)
-			(xy 166.37 697.23)
+			(xy 38.1 748.03)
+			(xy 33.02 748.03)
 		)
 		(stroke
 			(width 0)
@@ -19774,7 +20319,7 @@
 		(uuid "7dc7e148-e54d-539c-8cd5-958024e6184b")
 	)
 	(label "cont2_v"
-		(at 166.37 697.23 180)
+		(at 33.02 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19785,8 +20330,8 @@
 	)
 	(wire
 		(pts
-			(xy 179.07 697.23)
-			(xy 184.15 697.23)
+			(xy 45.72 748.03)
+			(xy 50.8 748.03)
 		)
 		(stroke
 			(width 0)
@@ -19796,7 +20341,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 184.15 697.23 270)
+		(at 50.8 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19804,7 +20349,7 @@
 		(dnp no)
 		(uuid "33001d3d-c4dc-554a-9bfe-b991a88f8d74")
 		(property "Reference" "#PWR046"
-			(at 184.15 697.23 0)
+			(at 50.8 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19813,7 +20358,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 187.96 697.23 0)
+			(at 54.61 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19821,7 +20366,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 184.15 697.23 0)
+			(at 50.8 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19830,7 +20375,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 184.15 697.23 0)
+			(at 50.8 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19839,7 +20384,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 184.15 697.23 0)
+			(at 50.8 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19853,7 +20398,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 219.71 697.23 0)
+		(at 86.36 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19861,7 +20406,7 @@
 		(dnp no)
 		(uuid "8b7ca836-37b2-5221-814d-16498086ca09")
 		(property "Reference" "D23"
-			(at 221.71 695.96 0)
+			(at 88.36 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19869,7 +20414,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 221.71 698.5 0)
+			(at 88.36 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19877,7 +20422,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 219.71 697.23 0)
+			(at 86.36 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19886,7 +20431,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 219.71 697.23 0)
+			(at 86.36 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19895,7 +20440,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 219.71 697.23 0)
+			(at 86.36 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19904,7 +20449,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 219.71 697.23 0)
+			(at 86.36 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19921,8 +20466,8 @@
 	)
 	(wire
 		(pts
-			(xy 215.9 697.23)
-			(xy 210.82 697.23)
+			(xy 82.55 748.03)
+			(xy 77.47 748.03)
 		)
 		(stroke
 			(width 0)
@@ -19931,7 +20476,7 @@
 		(uuid "c87eec60-c3fb-501b-a2cf-042121d55c0a")
 	)
 	(label "cont2_b1"
-		(at 210.82 697.23 180)
+		(at 77.47 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -19942,8 +20487,8 @@
 	)
 	(wire
 		(pts
-			(xy 223.52 697.23)
-			(xy 228.6 697.23)
+			(xy 90.17 748.03)
+			(xy 95.25 748.03)
 		)
 		(stroke
 			(width 0)
@@ -19953,7 +20498,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 228.6 697.23 270)
+		(at 95.25 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -19961,7 +20506,7 @@
 		(dnp no)
 		(uuid "b53a41a4-cc63-5c5e-8a72-f387faad1e22")
 		(property "Reference" "#PWR047"
-			(at 228.6 697.23 0)
+			(at 95.25 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19970,7 +20515,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 232.41 697.23 0)
+			(at 99.06 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -19978,7 +20523,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 228.6 697.23 0)
+			(at 95.25 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19987,7 +20532,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 228.6 697.23 0)
+			(at 95.25 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -19996,7 +20541,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 228.6 697.23 0)
+			(at 95.25 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20010,7 +20555,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 262.89 697.23 0)
+		(at 130.81 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20018,7 +20563,7 @@
 		(dnp no)
 		(uuid "06f52e06-3419-590b-8455-d7c42e30c510")
 		(property "Reference" "D24"
-			(at 264.89 695.96 0)
+			(at 132.81 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20026,7 +20571,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 264.89 698.5 0)
+			(at 132.81 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20034,7 +20579,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 262.89 697.23 0)
+			(at 130.81 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20043,7 +20588,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 262.89 697.23 0)
+			(at 130.81 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20052,7 +20597,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 262.89 697.23 0)
+			(at 130.81 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20061,7 +20606,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 262.89 697.23 0)
+			(at 130.81 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20078,8 +20623,8 @@
 	)
 	(wire
 		(pts
-			(xy 259.08 697.23)
-			(xy 254 697.23)
+			(xy 127 748.03)
+			(xy 121.92 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20088,7 +20633,7 @@
 		(uuid "b32dcbfa-1a99-549e-8a3b-546101eff977")
 	)
 	(label "cont2_h"
-		(at 254 697.23 180)
+		(at 121.92 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20099,8 +20644,8 @@
 	)
 	(wire
 		(pts
-			(xy 266.7 697.23)
-			(xy 271.78 697.23)
+			(xy 134.62 748.03)
+			(xy 139.7 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20110,7 +20655,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 271.78 697.23 270)
+		(at 139.7 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20118,7 +20663,7 @@
 		(dnp no)
 		(uuid "d0548777-81f4-5996-879d-b08adfa96087")
 		(property "Reference" "#PWR048"
-			(at 271.78 697.23 0)
+			(at 139.7 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20127,7 +20672,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 275.59 697.23 0)
+			(at 143.51 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20135,7 +20680,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 271.78 697.23 0)
+			(at 139.7 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20144,7 +20689,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 271.78 697.23 0)
+			(at 139.7 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20153,7 +20698,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 271.78 697.23 0)
+			(at 139.7 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20167,7 +20712,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 307.34 697.23 0)
+		(at 175.26 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20175,7 +20720,7 @@
 		(dnp no)
 		(uuid "e57a5993-ab3f-5da4-9577-11c8d70e0209")
 		(property "Reference" "D25"
-			(at 309.34 695.96 0)
+			(at 177.26 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20183,7 +20728,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 309.34 698.5 0)
+			(at 177.26 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20191,7 +20736,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 307.34 697.23 0)
+			(at 175.26 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20200,7 +20745,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 307.34 697.23 0)
+			(at 175.26 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20209,7 +20754,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 307.34 697.23 0)
+			(at 175.26 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20218,7 +20763,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 307.34 697.23 0)
+			(at 175.26 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20235,8 +20780,8 @@
 	)
 	(wire
 		(pts
-			(xy 303.53 697.23)
-			(xy 298.45 697.23)
+			(xy 171.45 748.03)
+			(xy 166.37 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20245,7 +20790,7 @@
 		(uuid "57f13ed7-c8a9-5181-b223-7f31201ac068")
 	)
 	(label "cont2_vq"
-		(at 298.45 697.23 180)
+		(at 166.37 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20256,8 +20801,8 @@
 	)
 	(wire
 		(pts
-			(xy 311.15 697.23)
-			(xy 316.23 697.23)
+			(xy 179.07 748.03)
+			(xy 184.15 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20267,7 +20812,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 316.23 697.23 270)
+		(at 184.15 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20275,7 +20820,7 @@
 		(dnp no)
 		(uuid "8f2ea00a-a058-5338-941d-5426003b30b3")
 		(property "Reference" "#PWR049"
-			(at 316.23 697.23 0)
+			(at 184.15 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20284,7 +20829,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 320.04 697.23 0)
+			(at 187.96 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20292,7 +20837,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 316.23 697.23 0)
+			(at 184.15 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20301,7 +20846,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 316.23 697.23 0)
+			(at 184.15 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20310,7 +20855,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 316.23 697.23 0)
+			(at 184.15 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20324,7 +20869,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 351.79 697.23 0)
+		(at 219.71 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20332,7 +20877,7 @@
 		(dnp no)
 		(uuid "88225023-cda8-5cbe-9732-752ea54c3494")
 		(property "Reference" "D26"
-			(at 353.79 695.96 0)
+			(at 221.71 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20340,7 +20885,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 353.79 698.5 0)
+			(at 221.71 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20348,7 +20893,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 351.79 697.23 0)
+			(at 219.71 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20357,7 +20902,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 351.79 697.23 0)
+			(at 219.71 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20366,7 +20911,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 351.79 697.23 0)
+			(at 219.71 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20375,7 +20920,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 351.79 697.23 0)
+			(at 219.71 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20392,8 +20937,8 @@
 	)
 	(wire
 		(pts
-			(xy 347.98 697.23)
-			(xy 342.9 697.23)
+			(xy 215.9 748.03)
+			(xy 210.82 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20402,7 +20947,7 @@
 		(uuid "7453c8e8-b021-5bd7-a01f-5bfd4b234531")
 	)
 	(label "cont2_hq"
-		(at 342.9 697.23 180)
+		(at 210.82 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20413,8 +20958,8 @@
 	)
 	(wire
 		(pts
-			(xy 355.6 697.23)
-			(xy 360.68 697.23)
+			(xy 223.52 748.03)
+			(xy 228.6 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20424,7 +20969,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 360.68 697.23 270)
+		(at 228.6 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20432,7 +20977,7 @@
 		(dnp no)
 		(uuid "d77d65b9-fd32-5209-a697-261ed9990b4f")
 		(property "Reference" "#PWR050"
-			(at 360.68 697.23 0)
+			(at 228.6 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20441,7 +20986,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 364.49 697.23 0)
+			(at 232.41 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20449,7 +20994,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 360.68 697.23 0)
+			(at 228.6 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20458,7 +21003,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 360.68 697.23 0)
+			(at 228.6 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20467,7 +21012,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 360.68 697.23 0)
+			(at 228.6 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20481,7 +21026,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 41.91 740.41 0)
+		(at 262.89 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20489,7 +21034,7 @@
 		(dnp no)
 		(uuid "d814e3ed-1721-5007-8ff0-87f25cb9fdd8")
 		(property "Reference" "D27"
-			(at 43.91 739.14 0)
+			(at 264.89 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20497,7 +21042,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 43.91 741.68 0)
+			(at 264.89 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20505,7 +21050,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 41.91 740.41 0)
+			(at 262.89 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20514,7 +21059,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 41.91 740.41 0)
+			(at 262.89 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20523,7 +21068,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 41.91 740.41 0)
+			(at 262.89 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20532,7 +21077,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 41.91 740.41 0)
+			(at 262.89 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20549,8 +21094,8 @@
 	)
 	(wire
 		(pts
-			(xy 38.1 740.41)
-			(xy 33.02 740.41)
+			(xy 259.08 748.03)
+			(xy 254 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20559,7 +21104,7 @@
 		(uuid "a89f8dfd-87e8-5293-89b3-6c1d4a82649c")
 	)
 	(label "cont2_b2"
-		(at 33.02 740.41 180)
+		(at 254 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20570,8 +21115,8 @@
 	)
 	(wire
 		(pts
-			(xy 45.72 740.41)
-			(xy 50.8 740.41)
+			(xy 266.7 748.03)
+			(xy 271.78 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20581,7 +21126,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 50.8 740.41 270)
+		(at 271.78 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20589,7 +21134,7 @@
 		(dnp no)
 		(uuid "42282ee3-5c1c-58a4-a536-1508c08b281a")
 		(property "Reference" "#PWR051"
-			(at 50.8 740.41 0)
+			(at 271.78 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20598,7 +21143,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 54.61 740.41 0)
+			(at 275.59 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20606,7 +21151,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 50.8 740.41 0)
+			(at 271.78 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20615,7 +21160,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 50.8 740.41 0)
+			(at 271.78 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20624,7 +21169,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 50.8 740.41 0)
+			(at 271.78 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20638,7 +21183,7 @@
 	)
 	(symbol
 		(lib_id "Device:D_TVS")
-		(at 86.36 740.41 0)
+		(at 307.34 748.03 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20646,7 +21191,7 @@
 		(dnp no)
 		(uuid "fe2a3943-a3d3-53fe-91cf-1c1792ca354b")
 		(property "Reference" "D28"
-			(at 88.36 739.14 0)
+			(at 309.34 746.76 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20654,7 +21199,7 @@
 			)
 		)
 		(property "Value" "PESD5V0S1BA"
-			(at 88.36 741.68 0)
+			(at 309.34 749.3 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20662,7 +21207,7 @@
 			)
 		)
 		(property "Footprint" "Diode_SMD:D_SOD-323"
-			(at 86.36 740.41 0)
+			(at 307.34 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20671,7 +21216,7 @@
 			)
 		)
 		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"
-			(at 86.36 740.41 0)
+			(at 307.34 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20680,7 +21225,7 @@
 			)
 		)
 		(property "Description" "Bidirectional transient-voltage-suppression diode"
-			(at 86.36 740.41 0)
+			(at 307.34 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20689,7 +21234,7 @@
 			)
 		)
 		(property "LCSC" "C19224"
-			(at 86.36 740.41 0)
+			(at 307.34 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20706,8 +21251,8 @@
 	)
 	(wire
 		(pts
-			(xy 82.55 740.41)
-			(xy 77.47 740.41)
+			(xy 303.53 748.03)
+			(xy 298.45 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20716,7 +21261,7 @@
 		(uuid "59e5e594-2d29-5710-b4da-771e4b40e691")
 	)
 	(label "cont2_b3"
-		(at 77.47 740.41 180)
+		(at 298.45 748.03 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -20727,8 +21272,8 @@
 	)
 	(wire
 		(pts
-			(xy 90.17 740.41)
-			(xy 95.25 740.41)
+			(xy 311.15 748.03)
+			(xy 316.23 748.03)
 		)
 		(stroke
 			(width 0)
@@ -20738,7 +21283,7 @@
 	)
 	(symbol
 		(lib_id "power:GND")
-		(at 95.25 740.41 270)
+		(at 316.23 748.03 270)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -20746,7 +21291,7 @@
 		(dnp no)
 		(uuid "9473bb20-de14-51f0-9c97-60c6af59ba11")
 		(property "Reference" "#PWR052"
-			(at 95.25 740.41 0)
+			(at 316.23 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20755,7 +21300,7 @@
 			)
 		)
 		(property "Value" "GND"
-			(at 99.06 740.41 0)
+			(at 320.04 748.03 0)
 			(effects
 				(font
 					(size 1.27 1.27)
@@ -20763,7 +21308,7 @@
 			)
 		)
 		(property "Footprint" ""
-			(at 95.25 740.41 0)
+			(at 316.23 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20772,7 +21317,7 @@
 			)
 		)
 		(property "Datasheet" ""
-			(at 95.25 740.41 0)
+			(at 316.23 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -20781,7 +21326,7 @@
 			)
 		)
 		(property "Description" "Power symbol creates a global label with name \"GND\" , ground"
-			(at 95.25 740.41 0)
+			(at 316.23 748.03 0)
 			(hide yes)
 			(effects
 				(font
@@ -23629,7 +24174,7 @@
 		)
 		(uuid "b7a85cee-73f3-51a3-9964-2ad8d202f2fd")
 	)
-	(label "cont1_hq_lo"
+	(label "cont1_b3_lo"
 		(at 499.11 269.24 0)
 		(effects
 			(font
@@ -23650,7 +24195,7 @@
 		)
 		(uuid "71bc799f-993a-5904-beae-3418081cec92")
 	)
-	(label "cont1_vq_lo"
+	(label "cont1_b2_lo"
 		(at 499.11 271.78 0)
 		(effects
 			(font
@@ -23671,7 +24216,7 @@
 		)
 		(uuid "d0b9a2fa-8ebe-5998-8751-d9e55e4520ed")
 	)
-	(label "cont1_h_lo"
+	(label "cont1_v_lo"
 		(at 499.11 274.32 0)
 		(effects
 			(font
@@ -23713,7 +24258,7 @@
 		)
 		(uuid "a36bbc5c-07db-5864-9099-6233ff36b622")
 	)
-	(label "cont1_v_lo"
+	(label "cont1_h_lo"
 		(at 499.11 279.4 0)
 		(effects
 			(font
@@ -23734,7 +24279,7 @@
 		)
 		(uuid "28a44850-4ea2-531a-a1c6-6c57c1879d6f")
 	)
-	(label "cont1_b2_lo"
+	(label "cont1_vq_lo"
 		(at 499.11 281.94 0)
 		(effects
 			(font
@@ -23755,7 +24300,7 @@
 		)
 		(uuid "19af2d56-aa5a-533a-bcd6-8a3c756a8da6")
 	)
-	(label "cont1_b3_lo"
+	(label "cont1_hq_lo"
 		(at 499.11 284.48 0)
 		(effects
 			(font

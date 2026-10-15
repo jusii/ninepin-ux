@@ -130,7 +130,7 @@ for ref, c in sorted(comps.items(), key=lambda kv: (re.sub(r"\d+", "", kv[0]), i
     if not fpid: raise SystemExit("no footprint: " + ref)
     if ref in conn_pos: x, y, rot = conn_pos[ref]
     elif ref in PL.P: x, y, rot = PL.P[ref]
-    elif c["value"] == "PESD5V0S1BA" and padnet.get((ref, "1"), "").lstrip("/") in PL.TVS_ROWS: x, y, rot = PL.TVS_ROWS[padnet[(ref, "1")].lstrip("/")]
+    elif c["value"].startswith("PESD5V0S1") and padnet.get((ref, "1"), "").lstrip("/") in PL.TVS_ROWS: x, y, rot = PL.TVS_ROWS[padnet[(ref, "1")].lstrip("/")]
     else:
         x, y, rot = park_x, park_y, 0; park_y += 4.0; missing.append(ref)
     place(ref, fpid, c["value"], x, y, rot, c)
