@@ -171,9 +171,24 @@ rect(kx0, ky0, kx1, ky1, C); text("RM2 antenna keep-out, no metal, all layers", 
 g = F.GAP; o = F.OVH
 rect(-g, -g, W + g, H + g, D); rect(-o, -o, W + o, H + o, D)
 text("hid-pico Amiga UX rev7", W / 2, H + o + 2.5, D, 1.2)
-t = pcbnew.PCB_TEXT(b); t.SetText("hid-pico Amiga UX rev7"); t.SetPosition(P(50, 30)); t.SetLayer(pcbnew.B_SilkS)
+t = pcbnew.PCB_TEXT(b); t.SetText("amigahid-pico-UX rev7"); t.SetPosition(P(50, 30)); t.SetLayer(pcbnew.B_SilkS)
 t.SetTextSize(VECTOR2I(mm(1.5), mm(1.5))); t.SetTextThickness(mm(0.25)); t.SetMirrored(True); b.Add(t)
 
+# 3D bodies: rev6's STEP models for the mini-DIN sockets and the OLED-on-posts, simple VRML bodies for the RM2, the 1812
+# fuses and the WS2812 (kicad 10 ships none), and the QFN-56 7x7 body standing in for the QFN-60 (same package outline)
+D3 = "${KIPRJMOD}/rev7.3dshapes/"
+def model(fp, path, replace=False):
+    if replace: fp.Models().clear()
+    m = pcbnew.FP_3DMODEL(); m.m_Filename = path; fp.Add3DModel(m)
+for fp in b.GetFootprints():
+    ref = fp.GetReference(); name = str(fp.GetFPID().GetLibItemName())
+    if ref in ("J10", "J12"): model(fp, D3 + "MiniDIN6_Socket_MD-60S.step")
+    if ref == "U9": model(fp, D3 + "RaspberryPi_RM2.wrl")
+    if ref in ("H5", "H6", "H7", "H8"): model(fp, D3 + "M2_post_11mm.step")
+    if ref == "H6": model(fp, D3 + "OLED_0.96in_128x64_on_posts.step")
+    if name.startswith("Fuse_1812_"): model(fp, D3 + "Fuse_1812.wrl", replace=True)
+    if name.startswith("LED_WS2812B-2020"): model(fp, D3 + "LED_WS2812B-2020.wrl", replace=True)
+    if name.startswith("QFN-60-1EP_7x7mm"): model(fp, "${KICAD10_3DMODEL_DIR}/Package_DFN_QFN.3dshapes/QFN-56-1EP_7x7mm_P0.4mm_EP3.2x3.2mm.step", replace=True)
 b.Save(OUT)
 # pcbnew's Save rewrites the project file and drops the netclass patterns: re-apply the project
 # settings so the file is deterministic and the Power class survives (pcbnew's Save() drops the netclass patterns).
