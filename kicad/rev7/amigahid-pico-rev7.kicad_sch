@@ -9243,7 +9243,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C20198"
+		(property "LCSC" "C84140"
 			(at 39.37 69.85 0)
 			(hide yes)
 			(effects
@@ -9838,7 +9838,7 @@
 				)
 			)
 		)
-		(property "Note" "10 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"
+		(property "Note" "25 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"
 			(at 247.65 69.85 0)
 			(hide yes)
 			(effects
@@ -9995,6 +9995,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C15850"
+			(at 287.02 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "aeb179f7-2a40-58a3-ad3a-962de0271f18")
 		)
@@ -10135,6 +10144,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 326.39 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 326.39 69.85 0)
 			(hide yes)
 			(effects
@@ -10291,7 +10309,25 @@
 				)
 			)
 		)
-		(property "Note" "10 V rated"
+		(property "LCSC" "C413656"
+			(at 367.03 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "EEEFKC151XAP"
+			(at 367.03 69.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "16 V 105 C, SMD 6.3x7.7"
 			(at 367.03 69.85 0)
 			(hide yes)
 			(effects
@@ -10448,6 +10484,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 39.37 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "fbf4886a-57a2-5a80-8be1-5ca16315fa96")
 		)
@@ -10588,6 +10633,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 80.01 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C15850"
 			(at 80.01 121.92 0)
 			(hide yes)
 			(effects
@@ -10744,6 +10798,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 119.38 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "1286872e-e2ee-5883-a41f-d0d461c14803")
 		)
@@ -10892,7 +10955,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2865999"
+		(property "LCSC" "C2868428"
 			(at 180.34 120.65 0)
 			(hide yes)
 			(effects
@@ -11115,6 +11178,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C15849"
+			(at 240.03 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "c6bb62a0-cae1-5682-962c-27f88c967f9d")
 		)
@@ -11255,6 +11327,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 279.4 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C15849"
 			(at 279.4 121.92 0)
 			(hide yes)
 			(effects
@@ -11411,6 +11492,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C15850"
+			(at 320.04 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "6db33f37-7185-59b8-97a8-5fec58127924")
 		)
@@ -11559,6 +11649,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C25803"
+			(at 359.41 121.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Note" "Amiga-on sense divider to ADC2; firmware threshold ~2.5 V"
 			(at 359.41 121.92 0)
 			(hide yes)
@@ -11661,6 +11760,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 39.37 175.26 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25803"
 			(at 39.37 175.26 0)
 			(hide yes)
 			(effects
@@ -11817,6 +11925,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 80.01 175.26 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "ca1d3b47-f085-5cff-83a9-2ce4f428f55f")
 		)
@@ -11957,6 +12074,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 119.38 175.26 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C21190"
 			(at 119.38 175.26 0)
 			(hide yes)
 			(effects
@@ -12241,6 +12367,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 203.2 175.26 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "4621bb8e-ac13-539e-bffb-0a35697650fc")
 		)
@@ -12423,7 +12558,25 @@
 				)
 			)
 		)
-		(property "Sourcing" "hand-fitted THT"
+		(property "LCSC" "C6089346"
+			(at 60.96 260.35 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "CUI MD-60S"
+			(at 60.96 260.35 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"
 			(at 60.96 260.35 0)
 			(hide yes)
 			(effects
@@ -12713,7 +12866,25 @@
 				)
 			)
 		)
-		(property "Sourcing" "hand-fitted THT"
+		(property "LCSC" "C6089346"
+			(at 142.24 260.35 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "CUI MD-60S"
+			(at 142.24 260.35 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"
 			(at 142.24 260.35 0)
 			(hide yes)
 			(effects
@@ -13672,6 +13843,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23179"
+			(at 39.37 322.58 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "b63d1902-76eb-554a-9e97-53a802c0dd66")
 		)
@@ -14110,7 +14290,25 @@
 				)
 			)
 		)
-		(property "Sourcing" "TE 5747840-4 / NorComp 182-009-113R531, 4-40 flush insert, hand-fitted"
+		(property "LCSC" "C305939"
+			(at 60.96 411.48 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "TE 5747840-4"
+			(at 60.96 411.48 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"
 			(at 60.96 411.48 0)
 			(hide yes)
 			(effects
@@ -14489,7 +14687,25 @@
 				)
 			)
 		)
-		(property "Sourcing" "TE 5747840-4 / NorComp 182-009-113R531, 4-40 flush insert, hand-fitted"
+		(property "LCSC" "C305939"
+			(at 134.62 411.48 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "MPN" "TE 5747840-4"
+			(at 134.62 411.48 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"
 			(at 134.62 411.48 0)
 			(hide yes)
 			(effects
@@ -16330,6 +16546,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 223.52 516.89 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8893446a-76d1-5e40-b0fa-8c30221bd1df")
 		)
@@ -16470,6 +16695,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 262.89 516.89 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 262.89 516.89 0)
 			(hide yes)
 			(effects
@@ -16626,7 +16860,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25518"
+		(property "LCSC" "C25725"
 			(at 320.04 518.16 0)
 			(hide yes)
 			(effects
@@ -16880,7 +17114,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25518"
+		(property "LCSC" "C25725"
 			(at 58.42 604.52 0)
 			(hide yes)
 			(effects
@@ -18815,7 +19049,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
@@ -18824,7 +19058,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
@@ -18981,7 +19215,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
@@ -18990,7 +19224,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
@@ -19147,7 +19381,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
@@ -19156,7 +19390,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
@@ -19313,7 +19547,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
@@ -19322,7 +19556,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
@@ -19479,7 +19713,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
@@ -19488,7 +19722,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
@@ -19645,7 +19879,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
@@ -19654,7 +19888,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
@@ -19811,7 +20045,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2060734"
+		(property "LCSC" "C85402"
 			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
@@ -19820,7 +20054,7 @@
 				)
 			)
 		)
-		(property "Note" "LCSC code to verify before order"
+		(property "MPN" "PESD5V0S1UL,315"
 			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
@@ -21837,6 +22071,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23186"
+			(at 519.43 67.31 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "8eba3294-0dc4-5b2e-9b43-5c77723d0213")
 		)
@@ -21977,6 +22220,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 558.8 67.31 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C23186"
 			(at 558.8 67.31 0)
 			(hide yes)
 			(effects
@@ -22395,7 +22647,16 @@
 				)
 			)
 		)
-		(property "Sourcing" "hand-fitted THT"
+		(property "MPN" "Molex 676432910"
+			(at 690.88 68.58 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly"
 			(at 690.88 68.58 0)
 			(hide yes)
 			(effects
@@ -23320,6 +23581,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 593.09 148.59 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "cf6c364e-9847-52d2-81c0-a5e0f4d7d034")
 		)
@@ -23460,6 +23730,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 632.46 148.59 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25803"
 			(at 632.46 148.59 0)
 			(hide yes)
 			(effects
@@ -25251,6 +25530,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C1779"
+			(at 586.74 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Note" "core regulator output cap at L1/VREG_FB"
 			(at 586.74 247.65 0)
 			(hide yes)
@@ -25400,6 +25688,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 626.11 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C19666"
 			(at 626.11 247.65 0)
 			(hide yes)
 			(effects
@@ -25565,6 +25862,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 665.48 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "321729d4-7dca-5ab9-8500-f04a62fb1d9d")
 		)
@@ -25705,6 +26011,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 706.12 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 706.12 247.65 0)
 			(hide yes)
 			(effects
@@ -25861,6 +26176,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 745.49 247.65 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "d13e7f46-e527-5092-883a-ecd297ad2131")
 		)
@@ -26001,6 +26325,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 429.26 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 429.26 382.27 0)
 			(hide yes)
 			(effects
@@ -26157,6 +26490,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 469.9 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "2ce6fce2-7eb8-5760-b873-a21206b31c63")
 		)
@@ -26297,6 +26639,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 509.27 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 509.27 382.27 0)
 			(hide yes)
 			(effects
@@ -26453,6 +26804,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 548.64 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e9d942d7-6189-5343-a716-3da515339419")
 		)
@@ -26593,6 +26953,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 588.01 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 588.01 382.27 0)
 			(hide yes)
 			(effects
@@ -26749,6 +27118,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C19666"
+			(at 628.65 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "72e4b539-8f92-5766-9187-4b427c970366")
 		)
@@ -26889,6 +27267,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 668.02 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C14663"
 			(at 668.02 382.27 0)
 			(hide yes)
 			(effects
@@ -27045,6 +27432,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23140"
+			(at 707.39 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Note" "ADC_AVDD filter"
 			(at 707.39 382.27 0)
 			(hide yes)
@@ -27147,6 +27543,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 748.03 382.27 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C15849"
 			(at 748.03 382.27 0)
 			(hide yes)
 			(effects
@@ -27303,6 +27708,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23140"
+			(at 429.26 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Note" "VREG_AVDD filter per the RP2350 minimal design"
 			(at 429.26 434.34 0)
 			(hide yes)
@@ -27405,6 +27819,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 469.9 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1779"
 			(at 469.9 434.34 0)
 			(hide yes)
 			(effects
@@ -27561,6 +27984,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C25190"
+			(at 509.27 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(property "Note" "USB series termination, close to U1"
 			(at 509.27 434.34 0)
 			(hide yes)
@@ -27663,6 +28095,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 548.64 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25190"
 			(at 548.64 434.34 0)
 			(hide yes)
 			(effects
@@ -28073,6 +28514,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 665.48 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e2403651-a140-5545-af57-ea9e03be3485")
 		)
@@ -28221,7 +28671,7 @@
 				)
 			)
 		)
-		(property "MPN" "C&K PTS645VL58-2 LFS"
+		(property "LCSC" "C285519"
 			(at 707.39 430.53 0)
 			(hide yes)
 			(effects
@@ -28230,7 +28680,16 @@
 				)
 			)
 		)
-		(property "Sourcing" "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"
+		(property "MPN" "C&K PTS645VK392LFS"
+			(at 707.39 430.53 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; same land as the VL58, 3.85 mm actuator sits ~2 mm inside the wall hole"
 			(at 707.39 430.53 0)
 			(hide yes)
 			(effects
@@ -28387,6 +28846,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C21190"
+			(at 750.57 434.34 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "72ff1b33-042e-5699-99b9-17773afdda9c")
 		)
@@ -28488,7 +28956,7 @@
 				)
 			)
 		)
-		(property "MPN" "C&K PTS645VL58-2 LFS"
+		(property "LCSC" "C285519"
 			(at 433.07 499.11 0)
 			(hide yes)
 			(effects
@@ -28497,7 +28965,16 @@
 				)
 			)
 		)
-		(property "Sourcing" "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"
+		(property "MPN" "C&K PTS645VK392LFS"
+			(at 433.07 499.11 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Sourcing" "JLCPCB THT assembly; same land as the VL58, 3.85 mm actuator sits ~2 mm inside the wall hole"
 			(at 433.07 499.11 0)
 			(hide yes)
 			(effects
@@ -28646,6 +29123,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 476.25 502.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C21190"
 			(at 476.25 502.92 0)
 			(hide yes)
 			(effects
@@ -28957,6 +29443,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C21190"
+			(at 589.28 502.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f85fb831-676e-5720-9e74-79974aadccc2")
 		)
@@ -29050,6 +29545,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 628.65 502.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1644"
 			(at 628.65 502.92 0)
 			(hide yes)
 			(effects
@@ -29198,6 +29702,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 668.02 502.92 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1644"
 			(at 668.02 502.92 0)
 			(hide yes)
 			(effects
@@ -29984,7 +30497,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C1017"
+		(property "LCSC" "C19330"
 			(at 521.97 589.28 0)
 			(hide yes)
 			(effects
@@ -30095,6 +30608,15 @@
 			)
 		)
 		(property "Description" "Unpolarized capacitor"
+			(at 561.34 589.28 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C1779"
 			(at 561.34 589.28 0)
 			(hide yes)
 			(effects
@@ -30251,6 +30773,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C14663"
+			(at 600.71 589.28 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "f28aa93b-18b4-55e7-a40a-7eca282a21dd")
 		)
@@ -30399,6 +30930,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23179"
+			(at 640.08 589.28 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "1f59abfc-7a1c-5f7d-aa92-fdb5e1a983d6")
 		)
@@ -30492,6 +31032,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 680.72 589.28 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C25804"
 			(at 680.72 589.28 0)
 			(hide yes)
 			(effects
@@ -30838,6 +31387,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C23162"
+			(at 496.57 694.69 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "3ef2d4e8-858c-571e-8e56-870b2b99d93c")
 		)
@@ -30931,6 +31489,15 @@
 			)
 		)
 		(property "Description" "Resistor"
+			(at 535.94 694.69 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "LCSC" "C23162"
 			(at 535.94 694.69 0)
 			(hide yes)
 			(effects
@@ -31418,6 +31985,15 @@
 				)
 			)
 		)
+		(property "LCSC" "C21190"
+			(at 730.25 694.69 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
 		(pin "1"
 			(uuid "e0646417-c123-5622-8092-1fbc43635357")
 		)
@@ -31519,7 +32095,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C2937625"
+		(property "LCSC" "C2691448"
 			(at 448.31 751.84 0)
 			(hide yes)
 			(effects
@@ -31528,7 +32104,7 @@
 				)
 			)
 		)
-		(property "Note" "1x3 header cut from stock; or PZ254V-11-04P"
+		(property "MPN" "PZ254V-11-04P"
 			(at 448.31 751.84 0)
 			(hide yes)
 			(effects

@@ -170,11 +170,9 @@ QSPI = {
 
 RM2_GND = ["1", "4", "7", "11", "15", "21"]
 
-# BOM: parts that may lack an LCSC number. F1 is bench-sized and not assembled; the
-# five connectors are hand-fitted THT. Each must say so in its Sourcing field.
-LCSC_EXEMPT = {"P1": "hand-fitted", "P2": "hand-fitted",
-               "J10": "hand-fitted", "J12": "hand-fitted", "J4": "hand-fitted",
-               "SW1": "hand-fitted", "SW2": "hand-fitted"}
+# BOM: every assembled part carries an LCSC number, THT connectors and switches included (JLCPCB places
+# them too, decided 2026-10-15 after the parts review); only board-only items are exempt.
+LCSC_EXEMPT = {}
 GENERIC_PASSIVE_LIBS = {"Device:R", "Device:C", "Device:L", "Device:FerriteBead"}
 BOARD_ONLY_LIBS = ("Jumper:SolderJumper",)    # copper only, nothing to source
 # value regex -> footprint regex: every part whose value matches must use that footprint
@@ -815,7 +813,7 @@ def check_bom(rep, nl, D):
     for r, c in sorted(nl.comps.items()):
         if c["fields"].get("LCSC"):
             continue
-        if r in LCSC_EXEMPT or c["lib_id"] in GENERIC_PASSIVE_LIBS or c["lib_id"].startswith(BOARD_ONLY_LIBS):
+        if r in LCSC_EXEMPT or c["lib_id"].startswith(BOARD_ONLY_LIBS):
             continue
         nolcsc.append("%s (%s %s)" % (r, c["lib_id"], c["value"]))
     rep.chk("H.lcsc", not nolcsc, "parts without an LCSC field: %s" % "; ".join(nolcsc))

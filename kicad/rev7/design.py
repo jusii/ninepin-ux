@@ -16,12 +16,16 @@ CELEC = "Capacitor_SMD:CP_Elec_6.3x7.7"
 SOD323 = "Diode_SMD:D_SOD-323"
 PIN = "Connector_PinHeader_2.54mm:PinHeader_1x0%d_P2.54mm_Vertical"
 
-def R(ref, val, a, b, **x): return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
-def C(ref, val, a, b, fp=C0603, **x): return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
+# LCSC basic parts for the generic passives (JLCPCB API 2026-10-15); 27R is extended-preferred, no basic 27R exists
+R_LCSC = {"100k": "C25803", "1k": "C21190", "470": "C23179", "5.1k": "C23186", "33": "C23140", "27": "C25190", "10k": "C25804", "4.7k": "C23162"}
+C_LCSC = {("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666",
+          ("10uF", C0805): "C15850", ("4.7uF", C0805): "C1779", ("22uF", C0805): "C45783", ("150uF", CELEC): "C413656"}
+def R(ref, val, a, b, **x): x.setdefault("LCSC", R_LCSC[val]); return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
+def C(ref, val, a, b, fp=C0603, **x): x.setdefault("LCSC", C_LCSC[(val, fp)]); return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
 def TVS(ref, net):
     if net.startswith("cont1_"):   # port 1 clamps sit in two tight rows north of P1: the SOD-882 variant of the same part
         return (ref, "Device:D_TVS", "PESD5V0S1UL", "Diode_SMD:D_SOD-882", {"1": net, "2": "GND"},
-                {"LCSC": "C2060734", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf", "Note": "LCSC code to verify before order"})
+                {"LCSC": "C85402", "MPN": "PESD5V0S1UL,315", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"})
     return (ref, "Device:D_TVS", "PESD5V0S1BA", SOD323, {"1": net, "2": "GND"},
             {"LCSC": "C19224", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"})
  
@@ -51,7 +55,7 @@ RPACKS = {"RN1": ["cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"], "RN2": ["NC", 
           "RN3": ["kbreset", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
 # port 2 pull-ups are discrete 0402 10k on the lines north of P2 (no room for arrays between the clamp rows)
 PULLUPS = {"cont2_v": "R61", "cont2_b1": "R62", "cont2_h": "R63", "cont2_vq": "R64", "cont2_hq": "R65", "cont2_b2": "R66", "cont2_b3": "R67"}
-RPACK_FP = {"RN1": ("Resistor_SMD:R_Array_Convex_4x0402", "C25518"), "RN2": ("Resistor_SMD:R_Array_Convex_4x0402", "C25518")}
+RPACK_FP = {"RN1": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725"), "RN2": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725")}
 
 def CBTD(ref, nets):
     m = {"1": "NC", "12": "GND", "23": "GND", "24": "AMIGA_5V_FUSED"}
@@ -89,15 +93,15 @@ BLOCKS = [
    "AMIGA_5V (keyboard connector / A500 header) -> F1 -> AMIGA_5V_FUSED -> D1 -> SYS5V; USB-C -> D2 -> SYS5V. Either source alone runs the board.",
    "AMIGA_5V_FUSED feeds the bus switches and the Amiga-side pull-ups only, so a USB-C-powered board never back-feeds an Amiga that is off.",
    "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, mux). R60 bleeds D1 leakage off the fused rail."], "parts": [
-   ("F1", "Device:Polyfuse", "750mA", "Fuse:Fuse_1812_4532Metric", {"1": "AMIGA_5V", "2": "AMIGA_5V_FUSED"}, {"MPN": "MF-MSMF075-2", "LCSC": "C20198", "Note": "fitted at assembly: AMIGA_5V_FUSED is the bus-switch supply, an empty F1 would mute the Amiga side. LCSC code to verify before order"}),
+   ("F1", "Device:Polyfuse", "750mA", "Fuse:Fuse_1812_4532Metric", {"1": "AMIGA_5V", "2": "AMIGA_5V_FUSED"}, {"MPN": "MF-MSMF075-2", "LCSC": "C84140", "Note": "fitted at assembly: AMIGA_5V_FUSED is the bus-switch supply, an empty F1 would mute the Amiga side. LCSC code to verify before order"}),
    ("D1", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AMIGA_5V_FUSED"}, {"LCSC": "C8678"}),
    ("D2", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AUX_5V"}, {"LCSC": "C8678"}),
    ("F2", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "USBA_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
    ("F3", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "KBIN_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
-   C("C1", "22uF", "SYS5V", "GND", C0805, LCSC="C45783", Note="10 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
-   C("C4", "150uF", "USBA_5V", "GND", CELEC, Note="10 V rated"), C("C5", "100nF", "USBA_5V", "GND"),
+   C("C1", "22uF", "SYS5V", "GND", C0805, LCSC="C45783", Note="25 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
+   C("C4", "150uF", "USBA_5V", "GND", CELEC, MPN="EEEFKC151XAP", Note="16 V 105 C, SMD 6.3x7.7"), C("C5", "100nF", "USBA_5V", "GND"),
    C("C6", "10uF", "KBIN_5V", "GND", C0805), C("C7", "100nF", "KBIN_5V", "GND"),
-   ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2865999", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX. LCSC code to verify before order"}),
+   ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2868428", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX. LCSC code to verify before order"}),
    C("C8", "1uF", "SYS5V", "GND"), C("C9", "1uF", "+3V3", "GND"), C("C10", "10uF", "+3V3", "GND", C0805),
    R("R46", "100k", "AMIGA_5V_FUSED", "amiga_sense", Note="Amiga-on sense divider to ADC2; firmware threshold ~2.5 V"), R("R47", "100k", "amiga_sense", "GND"), C("C11", "100nF", "amiga_sense", "GND"),
    R("R60", "1k", "AMIGA_5V_FUSED", "GND", Note="bleeder: keeps D1 reverse leakage from lifting the fused rail when the board runs on USB-C"),
@@ -107,8 +111,8 @@ BLOCKS = [
  {"title": "to amiga (keyboard out) / from real keyboard (keyboard in) / A500 headers", "notes": [
    "Mini-DIN6 uses the PS/2 pin positions: 1 KDAT, 3 GND, 4 +5 V, 5 KCLK. DIN5 Amigas use a passive adapter.",
    "JP1 is for standalone use only (no Amiga on J1): bridges the A500 keyboard power LED through R45."], "parts": [
-   ("J10", "rev7:MiniDIN6_PS2_Socket", "KBD OUT (to Amiga)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbdata", "2": "NC", "3": "GND", "4": "AMIGA_5V", "5": "kbclock", "6": "NC", "SH": "GND"}, {"Sourcing": "hand-fitted THT"}),
-   ("J12", "rev7:MiniDIN6_PS2_Socket", "KBD IN (from keyboard)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbin_dat", "2": "NC", "3": "GND", "4": "KBIN_5V", "5": "kbin_clk", "6": "NC", "SH": "GND"}, {"Sourcing": "hand-fitted THT"}),
+   ("J10", "rev7:MiniDIN6_PS2_Socket", "KBD OUT (to Amiga)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbdata", "2": "NC", "3": "GND", "4": "AMIGA_5V", "5": "kbclock", "6": "NC", "SH": "GND"}, {"LCSC": "C6089346", "MPN": "CUI MD-60S", "Sourcing": "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"}),
+   ("J12", "rev7:MiniDIN6_PS2_Socket", "KBD IN (from keyboard)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbin_dat", "2": "NC", "3": "GND", "4": "KBIN_5V", "5": "kbin_clk", "6": "NC", "SH": "GND"}, {"LCSC": "C6089346", "MPN": "CUI MD-60S", "Sourcing": "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"}),
    ("J1", "Connector_Generic:Conn_01x08", "A500 KBD OUT", PIN % 8, {"1": "kbclock", "2": "kbdata", "3": "kbreset", "4": "AMIGA_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
    ("J8", "Connector_Generic:Conn_01x08", "A500 KBD IN", PIN % 8, {"1": "kbin_clk", "2": "kbin_dat", "3": "kbreset", "4": "KBIN_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
    ("JP1", "Jumper:SolderJumper_2_Open", "KBIN PWRLED", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm", {"1": "kb_pwrled", "2": "kb_pwrled_bal"}, {"in_bom": "no"}),
@@ -117,9 +121,9 @@ BLOCKS = [
  ]},
  {"title": "controller ports (DE9 male, straight-through F-F cables)", "notes": ["Pin 7 (+5 V) is not connected: the ports never power the board."], "parts": [
    ("P1", "Connector:DE9_Pins_MountingHoles", "DE9 PORT 1", "rev7:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm",
-    {"1": "cont1_v", "2": "cont1_h", "3": "cont1_vq", "4": "cont1_hq", "5": "cont1_b3", "6": "cont1_b1", "7": "NC", "8": "GND", "9": "cont1_b2", "SH": "GND"}, {"Sourcing": "TE 5747840-4 / NorComp 182-009-113R531, 4-40 flush insert, hand-fitted"}),
+    {"1": "cont1_v", "2": "cont1_h", "3": "cont1_vq", "4": "cont1_hq", "5": "cont1_b3", "6": "cont1_b1", "7": "NC", "8": "GND", "9": "cont1_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"}),
    ("P2", "Connector:DE9_Pins_MountingHoles", "DE9 PORT 2", "rev7:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm",
-    {"1": "cont2_v", "2": "cont2_h", "3": "cont2_vq", "4": "cont2_hq", "5": "cont2_b3", "6": "cont2_b1", "7": "NC", "8": "GND", "9": "cont2_b2", "SH": "GND"}, {"Sourcing": "TE 5747840-4 / NorComp 182-009-113R531, 4-40 flush insert, hand-fitted"}),
+    {"1": "cont2_v", "2": "cont2_h", "3": "cont2_vq", "4": "cont2_hq", "5": "cont2_b3", "6": "cont2_b1", "7": "NC", "8": "GND", "9": "cont2_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"}),
  ]},
  {"title": "level shifting: 2x SN74CBTD3861 bus switches, Amiga side on A, RP2350 side on B", "notes": [
    "VCC = AMIGA_5V_FUSED: the diode-dropped gate limits the B side to ~2.6-3.0 V typ (TI fig. 2) and the RP2350 internal pull-up completes the rise to 3.3 V. OE tied low (always on). Keep VCC >= 4.5 V.",
@@ -138,7 +142,7 @@ BLOCKS = [
      "A5": "usb_cc1", "B5": "usb_cc2", "A6": "usbc_dp", "B6": "usbc_dp", "A7": "usbc_dm", "B7": "usbc_dm", "A8": "NC", "B8": "NC", "SH": "GND"}, {"LCSC": "C5184243", "MPN": "GCT USB4105-GF-A-120"}),
    R("R43", "5.1k", "usb_cc1", "GND"), R("R44", "5.1k", "usb_cc2", "GND"),
    ("U4", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6", {"1": "usbc_dm", "6": "usbc_dm", "3": "usbc_dp", "4": "usbc_dp", "2": "GND", "5": "AUX_5V"}, {"LCSC": "C7519"}),
-   ("J4", "Connector:USB_A", "USB-A HOST", "rev7:USB_A_Molex_67643_Horizontal", {"1": "USBA_5V", "2": "usba_dm", "3": "usba_dp", "4": "GND", "SH": "GND"}, {"LCSC": "C564920", "Sourcing": "hand-fitted THT"}),
+   ("J4", "Connector:USB_A", "USB-A HOST", "rev7:USB_A_Molex_67643_Horizontal", {"1": "USBA_5V", "2": "usba_dm", "3": "usba_dp", "4": "GND", "SH": "GND"}, {"LCSC": "C564920", "MPN": "Molex 676432910", "Sourcing": "JLCPCB THT assembly"}),
    ("U2", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6", {"1": "usba_dm", "6": "usba_dm", "3": "usba_dp", "4": "usba_dp", "2": "GND", "5": "USBA_5V"}, {"LCSC": "C7519"}),
    ("U5", "Interface_USB:TS3USB30EDGSR", "TS3USB30EDGSR", "Package_SO:MSOP-10_3x3mm_P0.5mm",
     {"1": "usb_sel", "2": "usbc_dp", "8": "usbc_dm", "3": "usba_dp", "7": "usba_dm", "4": "usb_dp_m", "6": "usb_dm_m", "5": "GND", "9": "GND", "10": "+3V3"}, {"LCSC": "C131998"}),
@@ -159,9 +163,9 @@ BLOCKS = [
    ("U8", "Memory_Flash:W25Q128JVS", "W25Q128JVSIQ", "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm",
     {"1": "qspi_ss", "2": "qspi_sd1", "3": "qspi_sd2", "4": "GND", "5": "qspi_sd0", "6": "qspi_sclk", "7": "qspi_sd3", "8": "+3V3"}, {"LCSC": "C97521"}),
    C("C32", "100nF", "+3V3", "GND"),
-   ("SW1", "Switch:SW_Push", "BOOT", "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", {"1": "qspi_ss_sw", "2": "GND"}, {"MPN": "C&K PTS645VL58-2 LFS", "Sourcing": "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"}),
+   ("SW1", "Switch:SW_Push", "BOOT", "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", {"1": "qspi_ss_sw", "2": "GND"}, {"LCSC": "C285519", "MPN": "C&K PTS645VK392LFS", "Sourcing": "JLCPCB THT assembly; same land as the VL58, 3.85 mm actuator sits ~2 mm inside the wall hole"}),
    R("R52", "1k", "qspi_ss", "qspi_ss_sw"),
-   ("SW2", "Switch:SW_Push", "RESET", "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", {"1": "run_sw", "2": "GND"}, {"MPN": "C&K PTS645VL58-2 LFS", "Sourcing": "hand-fitted THT; JLC alternative TS665ZJ C557599, land unverified"}),
+   ("SW2", "Switch:SW_Push", "RESET", "Button_Switch_THT:SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", {"1": "run_sw", "2": "GND"}, {"LCSC": "C285519", "MPN": "C&K PTS645VK392LFS", "Sourcing": "JLCPCB THT assembly; same land as the VL58, 3.85 mm actuator sits ~2 mm inside the wall hole"}),
    R("R53", "1k", "run", "run_sw", Note="RUN has an internal ~50k pull-up; 1k series as in the minimal design"),
    ("Y1", "Device:Crystal_GND24", "12MHz", "Crystal:Crystal_SMD_3225-4Pin_3.2x2.5mm", {"1": "xin", "3": "xout_r", "2": "GND", "4": "GND"}, {"LCSC": "C20625731", "MPN": "ABM8-272-T3"}),
    R("R54", "1k", "xout", "xout_r"), C("C33", "15pF", "xin", "GND"), C("C34", "15pF", "xout_r", "GND"),
@@ -174,7 +178,7 @@ BLOCKS = [
     {"1": "GND", "4": "GND", "7": "GND", "11": "GND", "15": "GND", "21": "GND", "2": "NC", "19": "NC", "20": "NC",
      "3": "wl_clk", "5": "wl_d", "6": "wl_dout", "8": "NC", "9": "wl_cs", "10": "wl_irq", "12": "wl_on", "13": "wl_on",
      "14": "wl_vin", "16": "wl_vin", "17": "NC", "18": "NC"}, {"LCSC": "C49451547", "MPN": "Raspberry Pi RM2"}),
-   ("FB1", "Device:FerriteBead", "600R@100MHz", "Inductor_SMD:L_0603_1608Metric", {"1": "+3V3", "2": "wl_vin"}, {"MPN": "BLM18AG601SN1D", "LCSC": "C1017"}),
+   ("FB1", "Device:FerriteBead", "600R@100MHz", "Inductor_SMD:L_0603_1608Metric", {"1": "+3V3", "2": "wl_vin"}, {"MPN": "BLM18AG601SN1D", "LCSC": "C19330"}),
    C("C35", "4.7uF", "wl_vin", "GND", C0805), C("C36", "100nF", "wl_vin", "GND"),
    R("R55", "470", "wl_dout", "wl_d"), R("R56", "10k", "wl_irq", "wl_d"),
  ]},
@@ -184,7 +188,7 @@ BLOCKS = [
    ("LED1", "LED:WS2812B-2020", "WS2812B-2020", "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm", {"4": "LED_VDD", "2": "GND", "3": "ws_din", "1": "NC"}, {"LCSC": "C52917434"}),
    ("Q1", "Transistor_FET:Q_NMOS_GSD", "2N7002", "Package_TO_SOT_SMD:SOT-23", {"1": "ws_drv", "2": "GND", "3": "ws_din"}, {"LCSC": "C8545", "Note": "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO26 output-invert"}),
    R("R49", "1k", "LED_VDD", "ws_din"),
-   ("J7", "Connector_Generic:Conn_01x04", "SPARE / UART", PIN % 4, {"1": "GND", "2": "+3V3", "3": "uart_rx", "4": "uart_tx"}, {"LCSC": "C2937625", "Note": "1x3 header cut from stock; or PZ254V-11-04P"}),
+   ("J7", "Connector_Generic:Conn_01x04", "SPARE / UART", PIN % 4, {"1": "GND", "2": "+3V3", "3": "uart_rx", "4": "uart_tx"}, {"LCSC": "C2691448", "MPN": "PZ254V-11-04P"}),
  ]},
 ]
 
