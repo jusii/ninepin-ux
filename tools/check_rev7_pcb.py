@@ -113,7 +113,7 @@ DE9_REFS = ["P1", "P2"]
 OLED_LOW_OK = [
     r"^R_0603_", r"^C_0603_", r"^L_0603_", r"^R_0805_", r"^C_0805_",
     r"^D_SOD-323$", r"^SSOP-24_", r"^R_Array_Convex_", r"^MSOP-10_",
-    r"^SOT-23-6$", r"^D_SMA$", r"^MountingHole_2\.2mm_M2$",
+    r"^SOT-23-6$", r"^D_SMA$", r"^MountingHole_2\.2mm_M2$", r"^WSON-6-",
 ]
 OLED_LOW_OK_REFS = {"J3": r"^PinSocket_1x04_P2\.54mm_Vertical$"}   # the socket the module plugs into
 
@@ -124,6 +124,9 @@ PKG_HEIGHTS = [
     (r"^R_0805_|^C_0805_", 1.35),
     (r"^R_Array_Convex_4x0603", 0.6),
     (r"^D_SOD-323$", 1.1),
+    (r"^D_SOD-882$", 0.5),
+    (r"^R_0402_", 0.4),
+    (r"^R_Array_Convex_4x0402", 0.5),
     (r"^D_SMA$", 2.45),
     (r"^Fuse_1812_", 2.0),
     (r"^CP_Elec_6\.3x7\.7$", 8.0),
@@ -157,7 +160,7 @@ POWER_NETCLASS_PATTERNS = [
     "/AMIGA_5V", "/AMIGA_5V_FUSED", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V",
 ]
 POWER_NETCLASS_MIN_WIDTH = 0.6        # re-targeted to rev7's M2 copper floor (rev6: 1.0)
-POWER_NETCLASS_MIN_CLEARANCE = 0.25
+POWER_NETCLASS_MIN_CLEARANCE = 0.2  # rev7 routes the 5 V rails at 0.2 (rev6: 0.25)
 NET_SETTINGS_MIN_VERSION = 3
 V33_NETS = ["/+3V3", "+3V3"]          # must stay on Default, whichever spelling exists
 # DRC rules that may never be excluded or set to ignore (rev6 list; rev6's
@@ -182,7 +185,7 @@ COPPER_LAYERS = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
 EXPECTED_ZONES = {
     # name: (net, layers)
     "gnd_plane": ("GND", ["In1.Cu"]),
-    "3v3_plane": ("+3V3", ["In2.Cu"]),
+    "3v3_plane": ("/+3V3", ["In2.Cu"]),   # rev7 names the rail /+3V3 (a sheet net, not a power symbol)
     "gnd_top": ("GND", ["F.Cu"]),
     "gnd_bottom": ("GND", ["B.Cu"]),
 }
@@ -199,8 +202,10 @@ COPPER_DEPENDENT_DRC = {
 
 # M: copper widths
 VIA_MIN_DRILL = 0.3
-VIA_MIN_DIA = 0.6
-POWER_TRACK_MIN = 0.6
+VIA_MIN_DIA = 0.5                     # signal vias 0.5/0.3; Power-net vias 0.6/0.3 (POWER_VIA_MIN)
+POWER_VIA_MIN = 0.6
+POWER_VIA_EXCEPT = {(50.0, 46.6)}     # USBA_5V into U2 pin 5 between its rows: 0.5 is all that fits
+POWER_TRACK_MIN = 0.3                 # rev7: 0.4 buses, 0.5 trunks, 0.3 short stubs (rev6: 1.0)
 TRACK_MIN = 0.2
 
 # N: rev6 freeze is check_rev7_netlist.py section I, imported verbatim
@@ -1074,7 +1079,7 @@ def check_e(rep: Report, model: Model, ol: Outline) -> None:
             if math.dist(f.pos, (x, y)) > POS_TOL or not rot_eq(f.rot, rot):
                 bad.append("%s at %.3f,%.3f rot %g, placement.py %.3f,%.3f rot %g" % (f.ref, f.pos[0], f.pos[1], f.rot, x, y, rot))
             continue
-        if f.value == "PESD5V0S1BA":
+        if f.value.startswith("PESD5V0S1"):      # SOD-323 BA and SOD-882 UL clamps
             p1 = f.pad("1")
             net = p1[0].net.lstrip("/") if p1 else ""
             if net not in PL.TVS_ROWS:
@@ -1313,8 +1318,11 @@ def check_m(rep: Report, model: Model, routed: bool) -> None:
         return
     bad = ["via on %r at %.2f,%.2f: drill %.3f dia %.3f" % (v.net, v.start[0], v.start[1], v.drill, v.width)
            for v in vias if v.drill < VIA_MIN_DRILL - 1e-6 or v.width < VIA_MIN_DIA - 1e-6]
-    rep.add("M1", "%d vias: drill >= %g, diameter >= %g" % (len(vias), VIA_MIN_DRILL, VIA_MIN_DIA), not bad, bad[:20])
     power = set(POWER_NETCLASS_PATTERNS) | {n for n, c in model.netclass.items() if c == POWER_NETCLASS}
+    bad += ["Power via on %r at %.2f,%.2f: dia %.3f < %g" % (v.net, v.start[0], v.start[1], v.width, POWER_VIA_MIN)
+            for v in vias if v.net in power and v.width < POWER_VIA_MIN - 1e-6
+            and not any(abs(v.start[0] - x) < 0.01 and abs(v.start[1] - y) < 0.01 for x, y in POWER_VIA_EXCEPT)]
+    rep.add("M1", "%d vias: drill >= %g, diameter >= %g (Power nets %g, %d listed exceptions)" % (len(vias), VIA_MIN_DRILL, VIA_MIN_DIA, POWER_VIA_MIN, len(POWER_VIA_EXCEPT)), not bad, bad[:20])
     pt = [t for t in segs if t.net in power]
     bad = ["%s %s %.3f mm at %.2f,%.2f" % (t.net, t.layer, t.width, t.start[0], t.start[1])
            for t in pt if t.width < POWER_TRACK_MIN - 1e-6]
