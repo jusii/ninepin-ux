@@ -184,7 +184,7 @@ BLOCKS = [
    ("LED1", "LED:WS2812B-2020", "WS2812B-2020", "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm", {"4": "LED_VDD", "2": "GND", "3": "ws_din", "1": "NC"}, {"LCSC": "C52917434"}),
    ("Q1", "Transistor_FET:Q_NMOS_GSD", "2N7002", "Package_TO_SOT_SMD:SOT-23", {"1": "ws_drv", "2": "GND", "3": "ws_din"}, {"LCSC": "C8545", "Note": "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO26 output-invert"}),
    R("R49", "1k", "LED_VDD", "ws_din"),
-   ("J7", "Connector_Generic:Conn_01x04", "SPARE / UART", PIN % 4, {"1": "GND", "2": "+3V3", "3": "uart_tx", "4": "uart_rx"}, {"LCSC": "C2937625", "Note": "1x3 header cut from stock; or PZ254V-11-04P"}),
+   ("J7", "Connector_Generic:Conn_01x04", "SPARE / UART", PIN % 4, {"1": "GND", "2": "+3V3", "3": "uart_rx", "4": "uart_tx"}, {"LCSC": "C2937625", "Note": "1x3 header cut from stock; or PZ254V-11-04P"}),
  ]},
 ]
 

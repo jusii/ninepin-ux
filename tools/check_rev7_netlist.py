@@ -146,8 +146,8 @@ GPIO_NET = {
 }
 # the non-Amiga gpio nets: exact node sets (U1's own pin included)
 GPIO_OTHER_NODES = {
-    "uart_tx":     {("J7", "3")},
-    "uart_rx":     {("J7", "4")},
+    "uart_tx":     {("J7", "4")},
+    "uart_rx":     {("J7", "3")},
     "i2c_sda":     {("J3", "4"), ("R41", "2")},
     "i2c_scl":     {("J3", "3"), ("R42", "2")},
     "ws_drv":      {("Q1", "1")},

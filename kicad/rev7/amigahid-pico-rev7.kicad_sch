@@ -31650,7 +31650,7 @@
 		)
 		(uuid "691b99f0-91f5-50ff-a935-a84efb6b0624")
 	)
-	(label "uart_tx"
+	(label "uart_rx"
 		(at 438.15 754.38 180)
 		(effects
 			(font
@@ -31671,7 +31671,7 @@
 		)
 		(uuid "9ecac489-2a58-5f3f-b77c-b65b7043e6cb")
 	)
-	(label "uart_rx"
+	(label "uart_tx"
 		(at 438.15 756.92 180)
 		(effects
 			(font

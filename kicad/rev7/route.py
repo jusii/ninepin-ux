@@ -103,16 +103,16 @@ n6 = N["6"]
 # BOOT: qspi_ss leaves the flash pad on F.Cu, hops through the wall on In2 at x 45.4 and runs east on B.Cu
 p1 = pad("U8", 1); r1 = pad("R52", 1); r2 = pad("R52", 2); sw = pad("SW1", 1)
 track("/qspi_ss", [p1, (p1[0] + 1.5, p1[1]), (p1[0] + 2.0, p1[1] - 0.5)]); XQ = p1[0] + 2.0
-jumper("/qspi_ss", [(XQ, p1[1] - 0.5), (XQ, 24.0)])
-track("/qspi_ss", [(XQ, 24.0), (XQ + 0.3, 23.7), (76.7, 23.7), (77.0, 23.4), (77.0, 18.7), (77.4, 18.3), (r1[0] - 0.4, 18.3), (r1[0], 17.9), (r1[0], 15.9)], "B")
-via("/qspi_ss", r1[0], 15.9); track("/qspi_ss", [(r1[0], 15.9), r1])
+jumper("/qspi_ss", [(XQ, p1[1] - 0.5), (XQ, 23.4)])
+track("/qspi_ss", [(XQ, 23.4), (XQ + 0.3, 23.7), (76.7, 23.7), (77.0, 23.4), (77.0, 18.7), (77.4, 18.3), (r1[0] - 1.2, 18.3), (r1[0] - 0.8, 17.9), (r1[0] - 0.8, r1[1])], "B")
+via("/qspi_ss", r1[0] - 0.8, r1[1]); track("/qspi_ss", [(r1[0] - 0.8, r1[1]), r1])
 track("/qspi_ss_sw", [r2, (r2[0], 12.3), (r2[0] + 0.4, 11.9), (sw[0] - 0.4, 11.9), (sw[0], 12.3), sw])
 for num, netn, pnum, xv in (("57", "/qspi_sd0", 5, 52.6), ("56", "/qspi_sclk", 6, 53.6), ("55", "/qspi_sd3", 7, 54.4)):
     e = E[num]; via(netn, *e); pp = pad("U8", pnum)
     track(netn, [e, (xv, e[1]), (xv, pp[1])], "B"); via(netn, xv, pp[1]); track(netn, [(xv, pp[1]), pp])
 p4 = pad("U8", 4); track("GND", [(p4[0] + 0.6, p4[1]), (p4[0] + 1.2, p4[1] + 0.4)]); via("GND", p4[0] + 1.2, p4[1] + 0.4)
 p8 = pad("U8", 8); track("/+3V3", [(p8[0] + 0.7, p8[1]), (p8[0] + 1.4, p8[1] - 0.4)]); via("/+3V3", p8[0] + 1.4, p8[1] - 0.4)
-c1 = pad("C32", 1); via("/+3V3", c1[0], c1[1] - 1.3); track("/+3V3", [c1, (c1[0], c1[1] - 1.3)]); gnd_stub(pad("C32", 2), 0, -1.3)
+c1 = pad("C32", 1); track("/+3V3", [c1, (c1[0], p8[1] - 0.4 - (c1[0] - p8[0] - 1.4)), (p8[0] + 1.4, p8[1] - 0.4)]); gnd_stub(pad("C32", 2), 0, 1.1)
 c30 = pad("C30", 1); route("/+3V3", E["53"], c30, "diag"); route("/+3V3", E["54"], c30, "diag"); via("/+3V3", CX + 9.4, E["53"][1]); gnd_stub(pad("C30", 2), 1.2, 0)
 for num, r, xt in (("52", "R57", 60.2), ("51", "R58", 59.4)):                  # usb pair: staggered turns clear of C5
     e = E[num]; q1 = pad(r, 1); track(padnet("U1", num), [e, (xt, e[1]), (xt + (q1[1] - e[1]), q1[1]), q1])
@@ -150,7 +150,8 @@ via("/+3V3", r1[0], r1[1] + 1.1); track("/+3V3", [r1, (r1[0], r1[1] + 1.1)]); gn
 e = S["45"]; p1 = pad("C28", 1); track("/+3V3", [e, (e[0], p1[1] - 0.23), (e[0] + 0.23, p1[1]), p1]); via("/+3V3", p1[0] - 0.9, p1[1]); gnd_stub(pad("C28", 2), 0, 1.0)
 c20 = pad("C20", 1); c21 = pad("C21", 1)                                        # DVDD caps C20 / C21 by the W side, fed from the B.Cu web
 via("/dvdd", c20[0], c20[1] + 1.5); track("/dvdd", [c20, (c20[0], c20[1] + 1.5)]); gnd_stub(pad("C20", 2), 0, 1.3)
-track("/dvdd", [(26.6, 29.4), (23.6, 29.4), (23.2, 29.0), (23.2, c20[1] + 1.5 + 0.33), (c20[0], c20[1] + 1.5)], "B")
+track("/dvdd", [(c20[0], c20[1] + 1.5), (c20[0], 26.3)], "I2"); via("/dvdd", c20[0], 26.3)                  # In2 hop under the kbin_lo lanes
+track("/dvdd", [(26.6, 29.4), (23.6, 29.4), (23.2, 29.0), (23.2, 26.3 + 0.325), (c20[0], 26.3)], "B")
 track("/dvdd", [c20, (c20[0], c21[1] + 1.3), (c21[0], c21[1] + 1.1), c21]); gnd_stub(pad("C21", 2), 0, -1.2)
 for num in ("31", "32", "33", "34", "35", "37", "40", "41", "42"):
     via(padnet("U1", num), *S[num])
@@ -242,7 +243,7 @@ for rn in ("RN1", "RN2"):
         n = padnet(rn, k)
         if n == "": continue
         e = pad(rn, k); a = [p for p in range(5, 12) if padnet("U6", p) == n][0]; pa = pad("U6", a)
-        d = e[0] - pa[0]; track(n, [(pa[0], pa[1] + 0.75), (pa[0], e[1] - 0.6 - abs(d)), (e[0], e[1] - 0.6), e])
+        d = e[0] - pa[0]; track(n, [(pa[0], pa[1] + 0.5), (pa[0], e[1] - 0.6 - abs(d)), (e[0], e[1] - 0.6), e])
 c13 = pad("C13", 1); v24 = U6B[24]
 track("/AMIGA_5V_FUSED", [(8.1, 27.9), (16.6, 27.9)], w=0.4)
 for rn in ("RN1", "RN2"):
@@ -279,7 +280,7 @@ for n, j in (("kbclock", "1"), ("kbdata", "2"), ("kbreset", "3")):              
     g = pad(t, 2); track("GND", [g, (g[0], g[1] - 0.95)]); via("GND", g[0], g[1] - 0.95)
 # FUSED to U6 and RN3: F1 pad 2 west along y 13.9 (north of the lanes), down x 9.4 into pin 24
 f1 = pad("F1", 2)
-track("/AMIGA_5V_FUSED", [f1, (f1[0], 17.0), (f1[0] - 0.8, 16.2), (36.6, 16.2), (36.6, 14.3), (36.2, 13.9), (9.4, 13.9), (9.0, 14.3), (9.0, 18.9), (v24[0], 18.9 + (v24[0] - 9.0)), v24], w=0.4)
+track("/AMIGA_5V_FUSED", [(f1[0] - 0.56, 23.1), (35.3, 23.1), (35.0, 22.8), (35.0, 14.3), (34.6, 13.9), (9.4, 13.9), (9.0, 14.3), (9.0, 18.9), (v24[0], 18.9 + (v24[0] - 9.0)), v24], w=0.4)
 for k in range(5, 9):
     e = pad("RN3", k); track("/AMIGA_5V_FUSED", [e, (e[0], 13.9)])
 # SWD: W rows 24/25 -> B.Cu north-west at x 20.3 / 20.8 -> In2 through the lane band and the keyboard lanes -> J2
@@ -297,7 +298,241 @@ track("/wl_vin", [(XV, c36[1] + 0.95), (XV, 29.1)], "B"); via("/wl_vin", XV, 29.
 track("/wl_vin", [(XV, 29.1), (fb2[0] - 0.4, 29.1), fb2])
 track("/wl_vin", [fb2, (fb2[0] + 0.6, fb2[1]), (c35[0] - 0.55, fb2[1] + (c35[0] - 0.55 - fb2[0] - 0.6)), (c35[0] - 0.55, c35[1]), c35])
 track("/wl_vin", [fb2, (17.6, fb2[1]), (17.3, fb2[1] + 0.3), (17.3, u14[1]), u14])
-track("/wl_vin", [(17.3, 29.1), (16.8, 28.6), (u16[0] + 0.5, 28.6), (u16[0], 29.1), u16])
+track("/wl_vin", [(17.6, fb2[1]), (17.3, fb2[1] - 0.3), (16.94, fb2[1] - 0.66), (u16[0] + 0.6, fb2[1] - 0.66), u16])   # north of pin 15
 via("/+3V3", 17.9, fb1[1]); track("/+3V3", [fb1, (17.9, fb1[1])])
-gnd_stub(pad("C35", 2), 0, -0.9)
+g = pad("C35", 2); track("GND", [g, (g[0], g[1] - 0.25), (g[0] + 0.4, g[1] - 0.65), (21.2, g[1] - 0.65)]); via("GND", 21.2, g[1] - 0.65)
 save("block 2")
+
+# ================= block 3a: north-east - uart/i2c, keyboard in, J1/J8/J10/J12, the 5 V rails, LDO, parked caps =================
+reload_pads()
+# uart / i2c: the In2 hops end at y 19.5 between F1's pads; B.Cu jogs north-west onto four verticals that climb
+# west of J8 and turn east onto lanes y 10.1 / 10.6 / 11.1 / 11.6 (rx, tx, scl, sda) to J7 and the OLED socket
+WALL = {"5": (35.5, 10.1), "4": (35.97, 10.6), "3": (36.43, 11.1), "2": (36.9, 11.6)}
+for num, (xv, yl) in WALL.items():
+    x = N[num][0]; n = padnet("U1", num)
+    track(n, [(x, 19.5), (xv, 19.5 - (x - xv)), (xv, yl + 0.4), (xv + 0.4, yl)], "B")
+j7 = {k: pad("J7", k) for k in ("1", "2", "3", "4")}; j3 = {k: pad("J3", k) for k in ("1", "2", "3", "4")}
+track("/uart_tx", [(36.37, 10.6), (90.6, 10.6), (91.0, 11.0), (91.0, j7["4"][1] - 0.3), j7["4"]], "B")
+track("/uart_rx", [(35.9, 10.1), (89.8, 10.1), (90.2, 9.7), (90.2, j7["3"][1] + 0.3), j7["3"]], "B")
+track("/i2c_sda", [(37.3, 11.6), (j3["4"][0] - 0.4, 11.6), (j3["4"][0], 12.0), j3["4"]], "B")
+track("/i2c_scl", [(36.83, 11.1), (74.25, 11.1)], "B"); via("/i2c_scl", 74.25, 11.1)
+track("/i2c_scl", [(74.25, 11.1), (74.25, 11.6), (j3["3"][0] - 0.4, 12.9), j3["3"]])
+r41 = pad("R41", 2); r42 = pad("R42", 2)                                         # pull-ups by the socket
+track("/i2c_scl", [j3["3"], (j3["3"][0], 14.4), (r42[0] + 1.6, r42[1]), r42]); track("/i2c_sda", [j3["4"], (j3["4"][0], r41[1] - 0.36), r41])
+for r in ("R41", "R42"):
+    p = pad(r, 1); vx = p[0] + (0.8 if r == "R41" else 0.0); vy = p[1] + (0.1 if r == "R41" else 1.0)
+    via("/+3V3", vx, vy); track("/+3V3", [p, (vx, vy)])
+p = j3["2"]; via("/+3V3", p[0], p[1] + 1.4); track("/+3V3", [p, (p[0], p[1] + 1.4)])
+p = j7["2"]; via("/+3V3", p[0] + 1.1, p[1]); track("/+3V3", [p, (p[0] + 1.1, p[1])])
+gnd_stub(j7["1"], -1.1, 0); gnd_stub(j3["1"], 0, 1.4)
+# keyboard in: F.Cu columns x 68.6 / 69.2 from the mini-DIN pins down to U7 A1/A2 (y 28.5 / 28.95), B.Cu lanes
+# y 15.3 / 15.75 west into J8 pins 1/2; clamps D20/D21 and the array RN4 hang off those
+j12 = {k: pad("J12", k) for k in ("1", "3", "4", "5", "SH")}; j8 = {k: pad("J8", k) for k in ("1", "2", "3", "4", "6", "7", "8")}
+u7a1 = pad("U7", 2); u7a2 = pad("U7", 3); d20 = pad("D20", 1); d21 = pad("D21", 1)
+track("/kbin_clk", [j12["5"], (68.6, 28.4), (69.0, 28.8), (u7a1[0] - 0.4, 28.8), (u7a1[0], 28.4), u7a1])
+track("/kbin_clk", [(68.6, d20[1]), d20]); gnd_stub(pad("D20", 2), -1.2, 0)
+track("/kbin_dat", [j12["1"], (j12["1"][0], 9.8), (69.2, 11.3), (69.2, 28.1)]); via("/kbin_dat", 69.2, 28.1)                 # hop under kbin_clk's run
+track("/kbin_dat", [(69.2, 28.1), (69.2, 28.55), (69.6, 28.95), (u7a2[0] - 0.4, 28.95), (u7a2[0], 29.35), (u7a2[0], 29.4)], "B"); via("/kbin_dat", u7a2[0], 29.4)
+track("/kbin_dat", [(u7a2[0], 29.4), u7a2])
+track("/kbin_dat", [(69.2, d21[1]), d21]); gnd_stub(pad("D21", 2), 0, -0.95)
+via("/kbin_clk", 68.6, 16.0); via("/kbin_dat", 69.2, 15.3)                      # dat (ends further east at J8) takes the northern lane
+track("/kbin_clk", [(68.6, 16.0), (j8["1"][0] + 0.4, 16.0), (j8["1"][0], 15.6), j8["1"]], "B")
+track("/kbin_dat", [(69.2, 15.3), (j8["2"][0] + 0.4, 15.3), (j8["2"][0], 14.9), j8["2"]], "B")
+rn4 = {padnet("RN4", k): pad("RN4", k) for k in (3, 4)}
+e = rn4["/kbin_clk"]; track("/kbin_clk", [j8["1"], (j8["1"][0], 15.3), (j8["1"][0] + 1.3, e[1]), e])
+e = rn4["/kbin_dat"]; track("/kbin_dat", [j8["2"], (j8["2"][0], 15.0), (41.1, 15.0), (e[0], 15.9), e])
+track("/AMIGA_5V_FUSED", [pad("RN4", 5), pad("RN4", 8)])
+# kbreset into J8 pin 3 from the F.Cu lane; KBIN_5V: J12 pin 4 -> B.Cu y 7.5 west -> via -> F.Cu into J8 pin 4; F3 / C6 / C7 on the east
+track("/kbreset", [(j8["3"][0], 12.3), j8["3"]])
+f3 = {k: pad("F3", k) for k in ("1", "2")}; c6 = pad("C6", 1); c7 = pad("C7", 1)
+track("/KBIN_5V", [j12["4"], (j12["4"][0], 7.1), (j12["4"][0] + 0.4, 7.5), (84.0, 7.5), (84.2, 7.3)], "B", w=0.3)
+via("/KBIN_5V", 84.2, 7.3); track("/KBIN_5V", [(84.2, 7.3), (84.2, 6.5), (84.8, 5.9), f3["2"]], w=0.4)
+XC = (c6[0] + c7[0]) / 2; track("/KBIN_5V", [(XC, 7.5), (XC, 9.36)], "B", w=0.3); via("/KBIN_5V", XC, 9.36)        # B.Cu tee up between the two caps
+track("/KBIN_5V", [c6, (XC - 0.09, c6[1]), (XC, 9.36), (XC + 0.08, c7[1]), c7], w=0.3)
+g6 = pad("C6", 2); g7 = pad("C7", 2); track("GND", [g6, (g6[0], 7.1), (g6[0] + 0.5, 6.6)]); track("GND", [g7, (g7[0], 7.1), (g7[0] - 0.5, 6.6)]); via("GND", (g6[0] + g7[0]) / 2, 6.6)
+track("/KBIN_5V", [(j12["4"][0], 7.5), (46.6, 7.5)], "B", w=0.3); via("/KBIN_5V", 46.6, 7.5)
+track("/KBIN_5V", [(46.6, 7.5), (46.6, 13.02), j8["4"]], w=0.4)
+# AMIGA_5V: J10 pin 4 along the north edge to J1 pin 4, then down the J8 gap at x 49.43 and west at y 17.5 into F1 pad 1
+j10 = {k: pad("J10", k) for k in ("1", "3", "4", "5", "SH")}; j1 = {k: pad("J1", k) for k in ("4", "6", "7", "8")}; f1 = {k: pad("F1", k) for k in ("1", "2")}
+track("/AMIGA_5V", [j10["4"], (j10["4"][0], 4.5), (j10["4"][0] + 1.2, 3.3), (j1["4"][0] - 0.8, 3.3), (j1["4"][0], 4.1), j1["4"]], w=0.5)
+track("/AMIGA_5V", [j1["4"], (j1["4"][0], 6.62), (48.3, 7.9), (49.43, 7.9), (49.43, 17.1), (49.03, 17.5), (f1["1"][0] + 0.3, 17.5), f1["1"]], w=0.4)
+# AMIGA_5V_FUSED east: F1 pad 2 -> via -> B.Cu y 24.35 with taps up to R46, R60, D1 pad 2, and on to C14 / U7 VCC
+r46 = pad("R46", 1); r60 = pad("R60", 1); d1 = {k: pad("D1", k) for k in ("1", "2")}; c14 = pad("C14", 1); u7v = pad("U7", 24)
+track("/AMIGA_5V_FUSED", [(f1["2"][0] + 0.56, 23.1), (39.5, 23.5), (39.9, 23.9)], w=0.4); via("/AMIGA_5V_FUSED", 39.9, 23.9, 0.6, 0.3)
+track("/AMIGA_5V_FUSED", [(39.9, 23.9), (40.35, 24.35), (75.9, 24.35)], "B", w=0.4)
+for x in (r60[0], 75.9): via("/AMIGA_5V_FUSED", x, 24.35, 0.6, 0.3)
+track("/AMIGA_5V_FUSED", [(39.5, 23.5), (40.3, 22.7), (40.3, 20.6), (40.9, 20.0), r46])
+track("/AMIGA_5V_FUSED", [(r60[0], 24.35), r60])
+track("/AMIGA_5V_FUSED", [(r46[0], r46[1] - 0.45), (r46[0], 19.1), (pad("RN4", 5)[0], 18.8), pad("RN4", 5)])
+track("/AMIGA_5V_FUSED", [(r46[0], 19.1), (d1["2"][0] - 0.9, 19.1), (d1["2"][0], 20.0), d1["2"]], w=0.3)        # D1 anode along y 19.1 north of the divider
+track("/AMIGA_5V_FUSED", [(75.9, 24.35), (75.9, 23.2), (76.4, 22.7), (76.7, 22.4), u7v], w=0.4); track("/AMIGA_5V_FUSED", [(75.9, 23.2), (75.9, 20.4), (c14[0] + 0.05, c14[1] + 0.35), c14], w=0.4)
+gnd_stub(pad("C14", 2), 0.9, 0); gnd_stub(pad("U7", 23), 0, 0.8)
+# SYS5V: D1 pad 1 -> C2 / C8 / U3 inputs along y 21.6; R45 pad 2 down x 61.83 to y 19 and west into U3; C1 and C3;
+# via (61.83, 16.4) -> B.Cu y 16.4 east -> via under D2's anode; D2 -> y 16 east to the trunk via and F3
+c2 = pad("C2", 1); c8 = pad("C8", 1); u3 = {k: pad("U3", k) for k in ("1", "3", "4", "6", "7")}; r45 = pad("R45", 2); c1 = pad("C1", 1); c3 = pad("C3", 1); d2 = pad("D2", 1)
+XS = 61.0                                                                        # SYS5V column west of the OLED post
+track("/SYS5V", [(d1["1"][0] + 1.25, 21.5), (d1["1"][0] + 1.75, 22.0), (d1["1"][0] + 2.25, 22.5), (u3["6"][0] - 0.1, 22.5), (u3["6"][0] - 0.1, u3["6"][1])], w=0.4)
+track("/SYS5V", [c2, (c2[0], 22.5)], w=0.4); track("/SYS5V", [c8, (c8[0], 22.5)], w=0.4)
+track("/SYS5V", [r45, (r45[0] - 0.4, r45[1] + 0.4), (XS, r45[1] + 0.4 + (r45[0] - 0.4 - XS)), (XS, 18.9), (59.05, 18.9), (59.05, 22.5)], w=0.4); track("/SYS5V", [(u3["4"][0] - 0.1, 18.9), (u3["4"][0] - 0.1, u3["4"][1])], w=0.4)   # x 59.05 joins the two U3 inputs west of the chip
+via("/SYS5V", XS, 16.7, 0.6, 0.3)
+track("/SYS5V", [(XS, 16.7), (79.4, 16.7), (79.8, 17.1)], "B", w=0.4); via("/SYS5V", 79.8, 17.1, 0.6, 0.3); track("/SYS5V", [(79.8, 17.1), d2], w=0.4)
+track("/SYS5V", [(u3["6"][0] - 0.1, 22.5), (u3["6"][0] + 0.4, 23.0), (c1[0] - 0.7, 23.0), (c1[0], 23.7), c1], w=0.4)
+track("/SYS5V", [(d1["1"][0] - 1.25, 21.6), (c3[0] + 0.17, 22.05), (c3[0] + 0.17, c3[1] - 0.6), c3], w=0.4)
+gnd_stub(pad("C3", 2), 0, 1.2); gnd_stub(pad("C1", 2), 0, 1.7)
+gnd_stub(c2 and pad("C2", 2), 0, -1.0); gnd_stub(pad("C8", 2), 0, -1.0)
+# LDO U3: output pin 1 -> C9 / C10 (shared 3V3 via between them); grounds
+c9 = pad("C9", 1); c10 = pad("C10", 1)
+track("/+3V3", [u3["1"], (c9[0] - 0.45, u3["1"][1]), c9, c10], w=0.4); via("/+3V3", (c9[0] + c10[0]) / 2, c9[1])
+gnd_stub(pad("C9", 2), 0, -1.0); gnd_stub(pad("C10", 2), 0, -1.0)
+g = u3["3"]; track("GND", [g, (g[0] + 0.4, g[1] - 0.4), (g[0] + 0.7, g[1] - 0.4)]); via("GND", g[0] + 0.7, g[1] - 0.4)
+via("GND", *u3["7"])
+# D2 anode on to the trunk and F3 (east corner block takes it from (92.4, 16.0))
+track("/SYS5V", [d2, (d2[0], 16.7), (d2[0] + 0.7, 16.0), (92.7, 16.0)], w=0.5); via("/SYS5V", 92.7, 16.0, 0.6, 0.3)
+track("/SYS5V", [(84.4, 16.0), (84.4, 11.1), (84.9, 10.6), (84.9, f3["1"][1] + 0.2)], w=0.5)
+# parked 3V3 caps under the OLED (two rows), vias north / south of the rows
+for ref, dy in (("C27", -1.3), ("C23", -1.3), ("C25", -1.2), ("C26", -1.2), ("C24", -1.2)):
+    p1 = pad(ref, 1); p2 = pad(ref, 2); via("/+3V3", p1[0], p1[1] + dy); track("/+3V3", [p1, (p1[0], p1[1] + dy)]); gnd_stub(p2, 0, dy)
+# keyboard LED lines: J1 pins 7/8 down into J8 pins 7/8 with the clamps on the way; JP1 / R45 balance network
+d29 = pad("D29", 1); d30 = pad("D30", 1); jp1 = {k: pad("JP1", k) for k in ("1", "2")}; r45b = pad("R45", 1)
+track("/kb_pwrled", [j1["7"], (j1["7"][0], j8["7"][1] - 2.25 - (j1["7"][0] - j8["7"][0])), (j8["7"][0], j8["7"][1] - 2.25), j8["7"]])
+track("/kb_pwrled", [(j1["7"][0], d29[1]), (d29[0] - 0.23, d29[1])]); gnd_stub(pad("D29", 2), 0, -0.85)
+track("/kb_pwrled", [j1["7"], (j1["7"][0], 3.9), (j1["7"][0] + 0.6, 3.3), (jp1["1"][0] - 0.6, 3.3), (jp1["1"][0], 3.9), jp1["1"]])
+track("/kb_drvled", [j1["8"], (j1["8"][0], j8["8"][1] - 2.25 - (j1["8"][0] - j8["8"][0])), (j8["8"][0], j8["8"][1] - 2.25), j8["8"]])
+track("/kb_drvled", [(j1["8"][0], d30[1]), (d30[0] - 0.23, d30[1])]); gnd_stub(pad("D30", 2), 0, -0.85)
+track("/kb_pwrled_bal", [jp1["2"], (jp1["2"][0], r45b[1] - (jp1["2"][0] - r45b[0])), r45b])
+gnd_stub(j1["6"], 0, 1.3); gnd_stub(j8["6"], 0, -1.4); gnd_stub(j10["3"], -1.2, 0); gnd_stub(j12["3"], -1.2, 0)
+save("block 3a")
+
+# ================= block 3b-1: centre links - dvdd web, amiga_sense, kbin_lo lanes =================
+reload_pads()
+# dvdd: W23 via -> north beside the 3V3 via -> y 29.4 (joins C20's stub) -> pin-6 via; S39 via -> y 41.4 / 42.6 -> C38 via
+track("/dvdd", [(25.4, 36.8), (25.4, 35.2), (26.0, 34.6), (26.0, 30.0), (26.6, 29.4), (33.9, 29.4), (35.0, 28.3)], "B")
+track("/dvdd", [(33.6, 43.21), (33.6, 41.7), (33.9, 41.4), (41.4, 41.4), (41.4, 42.2), (41.8, 42.6), (46.9, 42.6), (47.3, 43.0), (47.3, 44.6)], "B")
+# amiga_sense: S42 via -> In2 north-east past the qspi vias -> via north of U8 -> F.Cu up to the divider (R46 pad 2, R47, C11)
+track("/amiga_sense", [(35.4, 43.9), (35.4, 42.3), (36.0, 41.7), (40.6, 37.1), (40.6, 29.5), (42.6, 27.5), (43.3, 27.5)], "I2"); via("/amiga_sense", 43.3, 27.5)
+r46b = pad("R46", 2); r47 = pad("R47", 1); c11 = pad("C11", 1)
+track("/amiga_sense", [(43.3, 27.5), (43.3, 22.7), (43.1, 22.5), r47])
+track("/amiga_sense", [r46b, (r46b[0], 22.2), (r46b[0] + 0.3, 22.5), (c11[0] - 0.3, 22.5), (c11[0], 22.2), c11])
+# kbin_lo: W18 / W19 vias north on x 22.4 / 22.0, east on y 25.6 / 25.0 under the FUSED lane, vias under U7's body, stubs to pins 22 / 21
+u7 = {n: pad("U7", n) for n in range(13, 25)}
+track("/kbin_clk_lo", [(22.4, 31.8), (22.4, 26.0), (22.8, 25.6), (u7[22][0], 25.6)], "B"); via("/kbin_clk_lo", u7[22][0], 25.6); track("/kbin_clk_lo", [(u7[22][0], 25.6), u7[22]])
+track("/kbin_dat_lo", [(22.4, 32.8), (21.8, 32.2), (21.8, 25.6), (22.4, 25.0), (u7[21][0], 25.0)], "B"); via("/kbin_dat_lo", u7[21][0], 25.0); track("/kbin_dat_lo", [(u7[21][0], 25.0), u7[21]])
+# north and south groups join on In2 from the W23 via to the south link's corner
+track("/dvdd", [(25.4, 36.8), (25.4, 37.2), (29.9, 41.7), (32.1, 41.7), (33.6, 43.21)], "I2")                 # ends on the S39 via
+save("block 3b-1")
+
+# ================= block 3b-2: port 2 - band into U7's B row, the Amiga-side fan, clamps, pull-ups, FUSED bus =================
+reload_pads()
+u7 = {n: pad("U7", n) for n in range(1, 25)}
+# the seven band lanes turn north at their pin's x (north lane first, so the turns nest) and end on vias under the body
+for i, (num, pin) in enumerate((("27", 20), ("28", 19), ("29", 18), ("31", 17), ("32", 16), ("33", 15), ("34", 14))):
+    n = padnet("U1", num); yl = BAND[i]; xp = u7[pin][0]; yv = 24.0 if i % 2 == 0 else 24.8
+    track(n, [(74.0, yl), (xp - 0.45, yl), (xp, yl - 0.45), (xp, yv)], "B"); via(n, xp, yv); track(n, [(xp, yv), u7[pin]])
+gnd_stub(u7[12], 0, 1.0)
+# A row -> south to y 30.2 -> parallel 45-degree runs south-west -> straight down through clamp pad 1, pull-up pad 1 and the DE9 pin
+YS = 30.2
+for pin, tvs, r, p2 in (("4", "D22", "R61", "1"), ("5", "D23", "R62", "6"), ("6", "D24", "R63", "2"), ("7", "D25", "R64", "3"),
+                        ("8", "D26", "R65", "4"), ("9", "D27", "R66", "9"), ("10", "D28", "R67", "5")):
+    n = padnet("U7", pin); px, py = u7[int(pin)]; t1 = pad(tvs, 1); r1 = pad(r, 1); pp = pad("P2", p2); x = t1[0]
+    assert abs(r1[0] - x) < 0.02 and abs(pp[0] - x) < 0.02, (tvs, r, p2, t1, r1, pp)
+    track(n, [(px, py), (px, YS), (x, YS + px - x), t1])
+    if r == "R61":   track(n, [t1, (x, 45.6), (x - 0.4, 46.0), (x - 0.4, 47.7), (x, 48.1), r1, pp])     # v jogs west round R62's FUSED pad
+    elif r == "R65": track(n, [t1, r1, (x, 47.3), (x - 0.4, 47.7), (x - 0.4, 49.3), (x, 49.7), pp])     # hq jogs west round R66's FUSED pad
+    else:            track(n, [t1, r1, pp])
+for tvs, dy in (("D22", -1.0), ("D25", -1.0), ("D28", -1.0), ("D24", 1.2), ("D26", 1.2), ("D23", 1.1), ("D27", 1.1)): gnd_stub(pad(tvs, 2), 0, dy)
+# pull-ups: FUSED pads to vias on a B.Cu bus at y 47.5 between the two rows; the bus is fed from the east on F.Cu
+# (x 87.6 up the east side, y 20.9 west to the FUSED column by C14)
+FU = "/AMIGA_5V_FUSED"; YB = 47.5
+for r in ("R61", "R62", "R65", "R67"): q = pad(r, 2); track(FU, [q, (q[0], YB)]); via(FU, q[0], YB, 0.6, 0.3)
+q = pad("R63", 2); track(FU, [q, (q[0], 47.15), (75.2, YB)]); q = pad("R64", 2); track(FU, [q, (q[0], 47.88), (75.2, YB)]); via(FU, 75.2, YB, 0.6, 0.3)
+q = pad("R66", 2); track(FU, [q, (q[0], 47.87), (80.1, YB)]); via(FU, 80.1, YB, 0.6, 0.3)
+track(FU, [(pad("R61", 2)[0], YB), (87.6, YB)], "B", w=0.4); via(FU, 87.6, YB, 0.6, 0.3)
+track(FU, [(87.6, YB), (87.6, 21.3), (87.2, 20.9), (75.9, 20.9)], w=0.4)
+save("block 3b-2")
+
+# ================= block 3b-3: USB - mux, usb_sel / ws_drv lanes, USB-A and USB-C pairs, east corner, SYS5V trunk, LED, USB-A power =================
+reload_pads()
+# usb_sel: S41 via -> lane 47.2 east -> north at x 48.3 -> B.Cu y 41.4 east (just under the band) -> via by U5 pin 1
+e = S["41"]; r48 = pad("R48", 1); u1 = pad("U5", 1); vs = (u1[0] + 1.0, 41.4)
+track("/usb_sel", [e, (e[0], 46.5), (e[0] + 0.7, 47.2), (47.8, 47.2), (48.3, 46.7), (48.3, 41.9), (48.8, 41.4), vs], "B"); via("/usb_sel", *vs)
+track("/usb_sel", [vs, (vs[0], 40.4), (r48[0] + 0.3, 39.8), (r48[0], r48[1] + 0.2)]); track("/usb_sel", [r48, u1])
+gnd_stub(pad("R48", 2), 0, -1.0)
+# ws_drv: S40 via -> south on x 34.2 -> lane 56.0 (south of the DE9 / USB-A pin rows) east -> north at x 91.6 -> via -> Q1 gate
+e = S["40"]; q1 = pad("Q1", 1); vw = (92.0, 39.7)
+track("/ws_drv", [e, (e[0], 55.55), (e[0] + 0.45, 56.0), (91.15, 56.0), (91.6, 55.55), (91.6, 40.1), vw], "B"); via("/ws_drv", *vw)
+track("/ws_drv", [vw, (q1[0] - 0.71, vw[1]), (q1[0] - 0.16, q1[1]), q1])
+# USB mux U5 (rot 270): top row 5 4 3 2 1 at y 41.3, bottom 6 7 8 9 10 at y 45.5; vias under the body
+U = {n: pad("U5", n) for n in range(1, 11)}
+r57 = pad("R57", 2); r58 = pad("R58", 2); c15 = pad("C15", 1); c15g = pad("C15", 2)
+track("/usb_dp_m", [r57, (U[5][0] - 0.6, r57[1]), (U[5][0] - 0.2, r57[1] - 0.4), (U[4][0] - 0.4, r57[1] - 0.4), (U[4][0], r57[1]), (U[4][0], U[4][1] - 0.7)])
+track("/usb_dm_m", [r58, (U[5][0] - 0.9, r58[1]), (U[5][0] - 0.7, r58[1] + 0.2), (U[5][0] - 0.7, U[6][1] - 0.6), (U[5][0] - 0.4, U[6][1] - 0.3), U[6]])
+for n, y in ((5, 42.3), (9, 44.5)): g = U[n]; track("GND", [g, (g[0], y)]); via("GND", g[0], y)
+track("/+3V3", [U[10], (U[10][0], c15[1] - (U[10][0] - c15[0])), c15]); via("/+3V3", c15[0], 48.5); track("/+3V3", [c15, (c15[0], 48.5)])
+via("GND", c15g[0], 48.5); track("GND", [c15g, (c15g[0], 48.5)])
+# usba pair west to U2 / J4: dp (pin 3) via -> lane 42.9; dm (pin 7) via -> lane 44.5
+u2 = {n: pad("U2", n) for n in range(1, 7)}
+p3 = U[3]; v3 = (p3[0], 43.1); track("/usba_dp", [p3, v3]); via("/usba_dp", *v3)
+track("/usba_dp", [v3, (p3[0] - 0.2, 42.9), (52.1, 42.9), (51.3, 42.1)], "B"); via("/usba_dp", 51.3, 42.1)
+track("/usba_dp", [(51.3, 42.1), (50.75, 42.65), (50.75, u2[4][1] - 0.3), u2[4]]); p = pad("J4", 3); track("/usba_dp", [u2[3], (u2[3][0], p[1] - (p[0] - u2[3][0])), p])
+p7 = U[7]; v7 = (p7[0] - 0.6, 43.8); track("/usba_dm", [p7, (p7[0], 44.4), v7]); via("/usba_dm", *v7)
+track("/usba_dm", [v7, (v7[0] - 0.7, 44.5), (49.5, 44.5), (49.0, 45.0)], "B"); via("/usba_dm", 49.0, 45.0)
+track("/usba_dm", [(49.0, 45.0), u2[6]]); p = pad("J4", 2); track("/usba_dm", [u2[1], (u2[1][0], p[1] - (p[0] - u2[1][0])), p])
+gnd_stub(u2[2], 0, 1.3); track("/usba_dp", [u2[4], u2[3]]); track("/usba_dm", [u2[6], u2[1]])      # USBLC6 pass-throughs
+# usbc pair east to U4 on B.Cu lanes 42.1 (dp, pin 2) and 42.6 (dm, pin 8), north-east into vias under U4's south pins
+u4 = {n: pad("U4", n) for n in range(1, 7)}
+v2 = (U[2][0], 42.4); track("/usbc_dp", [U[2], v2]); via("/usbc_dp", *v2)
+vdp = (u4[4][0], 39.4); track("/usbc_dp", [v2, (v2[0] + 0.3, 42.1), (vdp[0] - 2.7, 42.1), vdp], "B"); via("/usbc_dp", *vdp); track("/usbc_dp", [vdp, u4[4]]); track("/usbc_dp", [u4[4], u4[3]]); track("/usbc_dm", [u4[6], u4[1]])
+v8 = (U[8][0], 44.0); track("/usbc_dm", [U[8], v8]); via("/usbc_dm", *v8)
+vdm = (u4[6][0], 39.4); track("/usbc_dm", [v8, (v8[0] + 1.4, 42.6), (vdm[0] - 3.2, 42.6), vdm], "B"); via("/usbc_dm", *vdm); track("/usbc_dm", [vdm, u4[6]])
+# east corner: U4, USB-C receptacle J13, AUX_5V, CC resistors, shield grounds
+J = {}
+for fp in b.GetFootprints():
+    if fp.GetReference() == "J13":
+        for pd in fp.Pads(): J.setdefault(pd.GetNumber(), (pd.GetPosition().x / 1e6, pd.GetPosition().y / 1e6))
+xw = J["A6"][0] - 0.575; xe = J["A6"][0] + 0.575
+g = u4[2]; track("GND", [g, (g[0], 35.0)]); via("GND", g[0], 35.0)
+a5 = u4[5]; via("/AUX_5V", a5[0], 37.0); track("/AUX_5V", [a5, (a5[0], 37.0)])
+track("/AUX_5V", [(a5[0], 37.0), (a5[0] - 0.8, 37.8), (88.4, 37.8), (87.6, 37.0), (87.6, 29.7), (88.0, 29.3), (89.4, 29.3), (90.0, 28.7), (90.0, 28.2)], "B"); via("/AUX_5V", 90.0, 28.2)
+track("/AUX_5V", [(90.0, 28.2), (90.4, J["B4"][1]), J["B4"]])
+track("/AUX_5V", [J["A4"], (xe, J["A4"][1]), (xe + 0.23, J["A4"][1] - 0.23), (95.6, J["A4"][1] - 0.23), (95.6, J["A9"][1] + 0.23), (xe + 0.23, J["A9"][1] + 0.23), (xe, J["A9"][1]), J["A9"]])
+d2b = pad("D2", 2); track("/AUX_5V", [d2b, (91.6, d2b[1]), (92.2, d2b[1] + 0.6), (92.2, 28.0), (92.5, 28.3), (92.8, J["B4"][1]), J["B4"]], w=0.5)
+track("/usbc_dp", [u4[3], (u4[3][0], 31.3), (u4[3][0] + 0.3, 31.0), (91.6, 31.0), (91.6 + (31.0 - J["B6"][1]), J["B6"][1]), J["B6"]])
+track("/usbc_dp", [J["B6"], (xe + 0.3, J["B6"][1]), (xe + 0.3, J["A6"][1]), J["A6"]])
+dv = (90.4, 31.7); track("/usbc_dm", [u4[1], (u4[1][0], 35.1)]); via("/usbc_dm", u4[1][0], 35.1)
+track("/usbc_dm", [(u4[1][0], 35.1), (u4[1][0] - 0.3, 34.8), (dv[0], 34.3), dv], "B"); via("/usbc_dm", *dv)
+track("/usbc_dm", [dv, (dv[0] + 0.05, J["B7"][1]), J["B7"]]); track("/usbc_dm", [(xw - 0.3, J["B7"][1]), (xw - 0.3, J["A7"][1]), J["A7"]])
+r43 = pad("R43", 1); r43g = pad("R43", 2); r44 = pad("R44", 1); r44g = pad("R44", 2)
+track("/usb_cc1", [r43, (r43[0], 32.55), (r43[0] + 0.3, J["A5"][1]), J["A5"]]); track("GND", [r43g, (r43g[0], 33.7), (r43g[0] - 0.3, 34.0), (r43g[0] - 0.3, 34.2)]); via("GND", r43g[0] - 0.3, 34.2)
+track("/usb_cc2", [r44, (r44[0] + 0.3, r44[1]), (r44[0] + 0.55, J["B5"][1]), J["B5"]]); track("GND", [r44g, (r44g[0], 30.4)]); via("GND", r44g[0], 30.4)
+for a, sh in (("A1", (94.22, 35.32)), ("B12", (94.22, 35.32)), ("A12", (94.22, 26.68)), ("B1", (94.22, 26.68))):
+    p = J[a]; track("GND", [p, (p[0], p[1] + (0.4 if sh[1] > p[1] else -0.4)), sh])
+# SYS5V trunk: via (92.7, 16) -> B.Cu south on x 92.7 -> branch via at D3 pad 2 -> on to the south edge, west on y 57.6 (between the ws_drv
+# and run_sw lanes), via at x 61.6 and an F.Cu riser up to F2
+d3s = pad("D3", 2); f2s = pad("F2", 1)
+track("/SYS5V", [(92.7, 16.0), (92.7, 57.2), (92.3, 57.6), (62.0, 57.6), (61.6, 57.2), (61.6, 56.9)], "B", w=0.4)
+via("/SYS5V", 92.7, d3s[1], 0.6, 0.3); track("/SYS5V", [(92.7, d3s[1]), d3s], w=0.5)
+via("/SYS5V", 61.6, 56.9, 0.6, 0.3); track("/SYS5V", [(61.6, 56.9), (61.6, f2s[1])], w=0.5)                  # F.Cu riser between the two shields
+# LED corner: D3 cathode -> y 43.4 east -> x 96.5 up -> C12 -> round the east side -> R49 -> LED pin 4; Q1 drain -> LED pin 3 -> R49
+d3l = pad("D3", 1); q = {n: pad("Q1", n) for n in (1, 2, 3)}; l = {n: pad("LED1", n) for n in (2, 3, 4)}; r49 = pad("R49", 1); r49b = pad("R49", 2); c12 = pad("C12", 1); c12g = pad("C12", 2)
+track("/LED_VDD", [d3l, (d3l[0] + 1.0, d3l[1]), (d3l[0] + 1.7, d3l[1] - 0.7), (d3l[0] + 1.7, 43.4), (96.1, 43.4), (96.5, 43.0), (96.5, c12[1] + 0.3), (96.8, c12[1]), c12])
+track("/LED_VDD", [c12, (97.75, c12[1]), (98.3, c12[1] - 0.55), (98.3, r49[1] + 0.4), (97.9, r49[1]), r49]); track("/LED_VDD", [r49, (l[4][0], r49[1]), l[4]])
+track("GND", [c12g, (96.6, c12g[1])]); via("GND", 96.6, c12g[1])
+track("/ws_din", [q[3], (q[3][0], l[3][1] + 0.28), l[3]]); track("/ws_din", [l[3], (r49b[0] - 0.5, l[3][1]), (r49b[0] - 0.2, r49b[1]), r49b])
+track("GND", [q[2], (93.9, q[2][1] + 0.65)]); via("GND", 93.9, q[2][1] + 0.65)
+track("GND", [l[2], (l[2][0], l[2][1] + 0.95)]); via("GND", l[2][0], l[2][1] + 0.95)
+# USB-A power: F2 top pad -> via -> B.Cu -> via below C4 -> C4 pad 1; C5 from F2 on F.Cu; U2 pin 5 and J4 pin 1 on F.Cu between U2's rows
+f2u = pad("F2", 2); c4 = pad("C4", 1); c4g = pad("C4", 2); c5 = pad("C5", 1); c5g = pad("C5", 2); j4 = pad("J4", 1)
+via("/USBA_5V", f2u[0], 45.1, 0.6, 0.3); track("/USBA_5V", [f2u, (f2u[0], 45.1)], w=0.5)
+track("/USBA_5V", [(f2u[0], 45.1), (f2u[0] - 0.8, 45.9), (c4[0] + 0.2, 45.9)], "B", w=0.5); via("/USBA_5V", c4[0] + 0.2, 45.9, 0.6, 0.3)
+track("/USBA_5V", [(c4[0] + 0.2, 45.9), (c4[0] + 0.2, c4[1])], w=0.5)
+track("/USBA_5V", [(f2u[0] + 0.5, f2u[1]), (64.4, f2u[1]), (64.4 + (f2u[1] - c5[1] - 0.2), c5[1] + 0.2), c5], w=0.4)
+# U2 VBUS from a via between its rows; J4 pin 1 on B.Cu round the west of U2 (the pass-throughs own the F.Cu between the rows)
+track("/USBA_5V", [(c4[0] + 0.2, 45.9), (c4[0] - 0.3, 46.4), (u2[5][0] + 0.2, 46.4), (u2[5][0], 46.6), (u2[5][0], 47.9), (u2[5][0] - 0.5, 48.4), (47.6, 48.4), (47.3, 48.7), (47.3, j4[1] - (47.3 - j4[0])), j4], "B", w=0.4)
+via("/USBA_5V", u2[5][0], 46.6); track("/USBA_5V", [(u2[5][0], 46.6), u2[5]], w=0.3)
+track("GND", [c4g, (c4g[0], 45.3)]); via("GND", c4g[0], 45.3); track("GND", [c5g, (c5g[0], c5g[1] + 0.8)]); via("GND", c5g[0], c5g[1] + 0.8)
+# run_sw: R53's via -> In2 south-east under the band vias and the S staircase -> via east of the port-1 clamps -> B.Cu
+# south on x 32 -> along the south edge on y 59.0 -> north on x 93.3 (between the trunk and SW2's posts) -> SW2 pin 1
+rs = pad("R53", 2); v0 = (rs[0] + 0.2, rs[1]); sw2 = pad("SW2", 1)
+track("/run_sw", [v0, (v0[0], 43.2), (v0[0] + 0.4, 43.6), (27.2, 43.6), (31.2, 47.6), (32.0, 47.6)], "I2"); via("/run_sw", 32.0, 47.6)
+track("/run_sw", [(32.0, 47.6), (32.0, 58.6), (32.4, 59.0), (92.9, 59.0), (93.3, 58.6), (93.3, 46.6), (93.6, 46.3), (sw2[0] - 0.3, 46.3), sw2], "B")
+save("block 3b-3")
