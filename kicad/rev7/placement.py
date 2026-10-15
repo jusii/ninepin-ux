@@ -12,19 +12,20 @@ P = {
  # neighbouring tracks by 0.45) but never in adjacent columns at the same height.
  "U1": MCU,
  # north comb: columns x = cx+k, comb top y = cy-9.2; caps at the top of their column
- "C23": (70.9, 20.0, 0), "C21": (24.4, 20.5, 0), "C24": (73.9, 23.0, 0),   # plane caps: DVDD by the chip, IOVDD ones parked under the OLED
+ "C23": (30.0, 27.1, 90), "C21": (35.5, 27.45, 0), "C24": (40.5, 27.45, 0),   # 0402 caps at the N-side column vias: IOVDD 11, DVDD 6, IOVDD 1
  # east comb: rows y = cy+1.2k, comb end x = cx+10.5; flash pads 1-3 on rows -7..-5
- "U8":  (CX + 14.0, CY - 6.5, 0),  "C32": (52.9, 26.9, 0),  "R52": (91.3, 14.3, 90),
- "C30": (CX + 12.0, CY - 0.6, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),
- "C29": (CX + 12.3, CY + 4.65, 0),  "L1":  (CX + 12.0, CY + 6.6, 180), "C38": (CX + 15.15, CY + 6.6, 0),
- "R59": (46.7, CY + 8.7, 180), "C37": (43.0, 46.6, 180),
+ "U8":  (CX + 14.0, CY - 6.5, 0),  "C32": (52.9, 26.9, 0),  "R52": (44.9, 26.3, 0),      # BOOT resistor at the flash, so the chip-select line has no stub
+ "C30": (41.6, 36.0, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),   # USB_OTP/QSPI_IOVDD cap and the USB series Rs right off the E pins
+ "C29": (41.4, 42.2, 270),  "L1":  (43.6, 42.2, 180), "C38": (45.8, 42.2, 270),   # CIN | L | COUT across the VIN..PGND rows (RP2350 DS fig. 26)
+ "R59": (43.6, 47.0, 180), "C37": (43.6, 45.5, 0),                             # AVDD filter below the group
  # west comb: rows y = cy+k, comb end x = cx-9.0
- "C25": (67.0, 23.0, 0),  "R54": (CX - 8.1, CY - 1.0, 180), "C22": (CX + 15.6, CY + 3.4, 0),
- "R53": (23.7, CY + 3.0, 180), "C26": (70.9, 23.0, 0),
+ "R54": (CX - 8.1, CY - 1.0, 180), "C22": (47.6, 41.2, 0),  # DVDD 39: 0402 at the S39 via
+ "R53": (23.7, CY + 3.0, 180),
  "Y1":  (CX - 12.4, CY - 1.5, 180), "C33": (19.6, 32.65, 180), "C34": (CX - 14.1, CY + 1.8, 270),
  # south comb: columns x = cx+k, comb bottom y = cy+9.0
- "C27": (67.0, 20.0, 0), "C20": (24.3, 22.5, 0),
- "R50": (37.3, 47.5, 90),  "C31": (39.7, 47.8, 0), "C28": (40.0, 44.6, 270),
+ "C27": (67.0, 20.0, 0), "C20": (25.3, 37.1, 180),   # C20: DVDD 23 on its own column; C27 stays as plane bulk under the OLED
+ "R50": (37.3, 47.5, 90),  "C31": (39.7, 47.8, 0), "C28": (39.1, 45.0, 270),
+ "C25": (24.4, 34.0, 180), "C26": (25.2, 44.3, 0),                             # IOVDD 20 / 30 at the W-side vias
 
  # --- RM2 ---
  "FB1": (18.8, 30.35, 90), "C35": (20.6, 30.1, 90), "C36": (19.3, 22.5, 90),
@@ -36,7 +37,7 @@ P = {
  "C9":  (62.7, 20.8, 90), "C10": (64.5, 20.8, 90), "C2":  (56.3, 20.8, 90), "C3":  (48.0, 25.4, 0),
  "C1":  (63.5, 24.5, 0),
  # --- KBIN fuse and caps east of J12, AUX diode and CC resistors by the USB-C ---
- "F3":  (85.3, 7.5, 90),  "C6":  (80.4, 8.5, 90),  "C7":  (82.4, 8.5, 90),
+ "F3":  (81.4, 7.5, 90),  "C6":  (81.8, 11.6, 0),  "C7":  (81.8, 13.5, 0),   # F3 against the mini-DIN, its caps below it, the header and expander east
  "D2":  (82.2, 17.4, 0),  "R43": (91.0, 33.0, 0),  "R44": (90.9, 29.5, 180),
  # --- bus switches: U6 MCU row south (lanes), U7 MCU row north (vias); arrays east ---
  "U6":  (13.0, 22.0, 90), "U7":  (80.65, 25.0, 90),
@@ -46,7 +47,8 @@ P = {
  "R61": (70.55, 48.5, 180), "R62": (71.93, 46.8, 180), "R63": (74.34, 46.8, 0), "R64": (76.09, 48.5, 180), "R65": (78.86, 46.8, 180), "R66": (80.24, 48.5, 180), "R67": (82.65, 46.8, 0),                                # port 2, east of the clamp rows, fed by B.Cu stubs from the P2 pins
  "R41": (77.3, 16.5, 90), "R42": (72.7, 16.5, 90),   # i2c pull-ups by the OLED socket
  # --- usb ---
- "U5":  (68.0, 43.4, 270), "C15": (67.5, 47.9, 180),   "R48": (69.0, 38.7, 90),
+ "R70": (53.3, 47.85, 180), "R71": (48.1, 43.8, 0),     # PIO-USB 27R at U2 (the mux is gone)
+ "U10": (92.5, 10.6, 180), "C39": (90.0, 14.4, 0), "R68": (94.3, 24.0, 0), "R69": (97.4, 24.0, 0),   # I/O expander east of the OLED post, VBUS sense divider under the AUX lane
  "F2":  (62.4, 46.0, 90), "C4":  (55.5, 43.4, 180),  "C5":  (65.35, 44.0, 270), "U2":  (50.0, 46.6, 90),
  "U4":  (90.25, 37.0, 270),
  "Q1":  (94.2, 41.2, 0),  "R49": (97.3, 38.0, 270), "D3":  (90.3, 43.5, 270), "C12": (97.3, 41.1, 90),

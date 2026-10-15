@@ -12,13 +12,14 @@ COMMENTS = ["rev7 - RP2350A + RM2 chip-down, CBTD3861 bus switches, USB-C + USB-
 R0603 = "Resistor_SMD:R_0603_1608Metric"
 C0603 = "Capacitor_SMD:C_0603_1608Metric"
 C0805 = "Capacitor_SMD:C_0805_2012Metric"
+C0402 = "Capacitor_SMD:C_0402_1005Metric"
 CELEC = "Capacitor_SMD:CP_Elec_6.3x7.7"
 SOD323 = "Diode_SMD:D_SOD-323"
 PIN = "Connector_PinHeader_2.54mm:PinHeader_1x0%d_P2.54mm_Vertical"
 
 # LCSC basic parts for the generic passives (JLCPCB API 2026-10-15); 27R is extended-preferred, no basic 27R exists
 R_LCSC = {"100k": "C25803", "1k": "C21190", "470": "C23179", "5.1k": "C23186", "33": "C23140", "27": "C25190", "10k": "C25804", "4.7k": "C23162"}
-C_LCSC = {("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666",
+C_LCSC = {("100nF", C0402): "C1525", ("4.7uF", C0402): "C23733", ("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666",
           ("10uF", C0805): "C15850", ("4.7uF", C0805): "C1779", ("22uF", C0805): "C45783", ("150uF", CELEC): "C413656"}
 def R(ref, val, a, b, **x): x.setdefault("LCSC", R_LCSC[val]); return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
 def C(ref, val, a, b, fp=C0603, **x): x.setdefault("LCSC", C_LCSC[(val, fp)]); return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
@@ -67,13 +68,13 @@ def CBTD(ref, nets):
 
 # RP2350A GPIO map (firmware pin map lives here; rev6 numbers kept where possible)
 GPIO = {
-    0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
+    0: "i2c_sda", 1: "i2c_scl", 2: "ws_drv", 3: "exp_int",     # i2c0 on 0/1; 2 drives the status LED inverter, 3 is the I/O expander interrupt
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
     7: "cont1_b3_lo", 8: "cont1_b2_lo", 9: "cont1_v_lo", 10: "cont1_b1_lo", 11: "cont1_h_lo", 12: "cont1_vq_lo", 13: "cont1_hq_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
     16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
-    26: "ws_drv", 27: "usb_sel", 28: "amiga_sense", 29: "wl_clk",   # 26/27 are not 5 V tolerant: keep them off the Amiga lines
+    26: "pio_dp", 27: "pio_dm", 28: "amiga_sense", 29: "wl_clk",   # 26/27 = PIO-USB host pair (D+ first) for the USB-A port; not 5 V tolerant
 }
 RP_PINS = {"2": 0, "3": 1, "4": 2, "5": 3, "7": 4, "8": 5, "9": 6, "10": 7, "12": 8, "13": 9, "14": 10, "15": 11, "16": 12,
            "17": 13, "18": 14, "19": 15, "27": 16, "28": 17, "29": 18, "31": 19, "32": 20, "33": 21, "34": 22, "35": 23,
@@ -84,7 +85,7 @@ RP.update({"1": "+3V3", "11": "+3V3", "20": "+3V3", "30": "+3V3", "38": "+3V3", 
            "44": "adc_avdd", "46": "vreg_avdd", "47": "GND", "48": "vreg_lx", "49": "+3V3", "50": "dvdd",
            "53": "+3V3", "54": "+3V3",
            "21": "xin", "22": "xout", "24": "swclk", "25": "swdio", "26": "run",
-           "51": "usb_dm", "52": "usb_dp",   # 27R series to the mux (usb_dm_m / usb_dp_m)
+           "51": "usb_dm", "52": "usb_dp",   # 27R series (R58 / R57) straight to the USB-C ESD part and J13
            "55": "qspi_sd3", "56": "qspi_sclk", "57": "qspi_sd0", "58": "qspi_sd2", "59": "qspi_sd1", "60": "qspi_ss",
            "61": "GND"})
 
@@ -134,8 +135,8 @@ BLOCKS = [
    C("C13", "100nF", "AMIGA_5V_FUSED", "GND"), C("C14", "100nF", "AMIGA_5V_FUSED", "GND"),
    ] + [RPACK(r, n, "AMIGA_5V_FUSED", *RPACK_FP.get(r, ("Resistor_SMD:R_Array_Convex_4x0603", "C29718"))) for r, n in RPACKS.items()]
      + [(r, "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", {"1": n, "2": "AMIGA_5V_FUSED"}, {"LCSC": "C25744"}) for n, r in PULLUPS.items()] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
- {"title": "usb: USB-C (power + device for flashing), USB-A host, 2:1 mux on the RP2350 USB PHY", "notes": [
-   "U5 selects D1 (USB-C) when usb_sel is low, which R48 guarantees at reset, so a fresh board enumerates on USB-C. Firmware sets GPIO27 high to switch to the USB-A host port.",
+ {"title": "usb: USB-C on the RP2350 USB PHY (device or host), USB-A host on PIO-USB (GPIO26/27)", "notes": [
+   "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB.",
    "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."], "parts": [
    ("J13", "Connector:USB_C_Receptacle_USB2.0_16P", "USB-C", "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal",
     {"A1": "GND", "B1": "GND", "A12": "GND", "B12": "GND", "A4": "AUX_5V", "B4": "AUX_5V", "A9": "AUX_5V", "B9": "AUX_5V",
@@ -144,22 +145,20 @@ BLOCKS = [
    ("U4", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6", {"1": "usbc_dm", "6": "usbc_dm", "3": "usbc_dp", "4": "usbc_dp", "2": "GND", "5": "AUX_5V"}, {"LCSC": "C7519"}),
    ("J4", "Connector:USB_A", "USB-A HOST", "rev7:USB_A_Molex_67643_Horizontal", {"1": "USBA_5V", "2": "usba_dm", "3": "usba_dp", "4": "GND", "SH": "GND"}, {"LCSC": "C564920", "MPN": "Molex 676432910", "Sourcing": "JLCPCB THT assembly"}),
    ("U2", "Power_Protection:USBLC6-2SC6", "USBLC6-2SC6", "Package_TO_SOT_SMD:SOT-23-6", {"1": "usba_dm", "6": "usba_dm", "3": "usba_dp", "4": "usba_dp", "2": "GND", "5": "USBA_5V"}, {"LCSC": "C7519"}),
-   ("U5", "Interface_USB:TS3USB30EDGSR", "TS3USB30EDGSR", "Package_SO:MSOP-10_3x3mm_P0.5mm",
-    {"1": "usb_sel", "2": "usbc_dp", "8": "usbc_dm", "3": "usba_dp", "7": "usba_dm", "4": "usb_dp_m", "6": "usb_dm_m", "5": "GND", "9": "GND", "10": "+3V3"}, {"LCSC": "C131998"}),
-   C("C15", "100nF", "+3V3", "GND"), R("R48", "100k", "usb_sel", "GND"),
+   R("R70", "27", "pio_dp", "usba_dp", Note="PIO-USB series termination, close to U1"), R("R71", "27", "pio_dm", "usba_dm"),
  ]},
  {"title": "mcu: RP2350A, 16 MB QSPI flash, 12 MHz crystal, BOOT / RESET, SWD", "notes": [
    "Per the RP2350 hardware design guide / Pico 2 W: VREG_VIN and VREG_AVDD on 3V3 (AVDD through 33R + 4.7uF), DVDD 4.7uF at pin 23 + 100nF at 6/39, 4.7uF CIN at VREG_VIN, 100nF per IOVDD pin, one 100nF shared by USB_OTP_VDD/QSPI_IOVDD.",
    "BOOT pulls QSPI_SS low at reset (USB bootloader on USB-C); RESET pulls RUN low."], "parts": [
    ("U1", "MCU_RaspberryPi:RP2350A", "RP2350A", "Package_DFN_QFN:QFN-60-1EP_7x7mm_P0.4mm_EP3.4x3.4mm", RP, {"LCSC": "C42411118"}),
    ("L1", "Device:L", "3.3uH", "Inductor_SMD:L_Murata_DFE201610P", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C42411119", "MPN": "AOTA-B201610S3R3-101-T", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; add a silk dot at pad 1 and check the reel orientation at JLCPCB"}),
-   C("C38", "4.7uF", "dvdd", "GND", C0805, Note="core regulator output cap at L1/VREG_FB"),
-   C("C20", "4.7uF", "dvdd", "GND", Note="0603 10V, fits the comb pitch"), C("C21", "100nF", "dvdd", "GND"), C("C22", "100nF", "dvdd", "GND"),
+   C("C38", "4.7uF", "dvdd", "GND", Note="COUT, 0603 between the VOUT and PGND rows right at the pins"),
+   C("C20", "4.7uF", "dvdd", "GND", C0402, Note="DVDD pin 23 (furthest from the regulator)"), C("C21", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 6"), C("C22", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 39"),
    C("C23", "100nF", "+3V3", "GND"), C("C24", "100nF", "+3V3", "GND"), C("C25", "100nF", "+3V3", "GND"), C("C26", "100nF", "+3V3", "GND"), C("C27", "100nF", "+3V3", "GND"), C("C28", "100nF", "+3V3", "GND"),
-   C("C29", "4.7uF", "+3V3", "GND"), C("C30", "100nF", "+3V3", "GND"),
+   C("C29", "4.7uF", "+3V3", "GND", Note="CIN, 0603 across the VIN and PGND rows"), C("C30", "100nF", "+3V3", "GND", C0402, Note="USB_OTP_VDD + QSPI_IOVDD pins 53/54"),
    R("R50", "33", "+3V3", "adc_avdd", Note="ADC_AVDD filter"), C("C31", "1uF", "adc_avdd", "GND"),
-   R("R59", "33", "+3V3", "vreg_avdd", Note="VREG_AVDD filter per the RP2350 minimal design"), C("C37", "4.7uF", "vreg_avdd", "GND", C0805),
-   R("R57", "27", "usb_dp", "usb_dp_m", Note="USB series termination, close to U1"), R("R58", "27", "usb_dm", "usb_dm_m"),
+   R("R59", "33", "+3V3", "vreg_avdd", Note="VREG_AVDD filter per the RP2350 minimal design"), C("C37", "4.7uF", "vreg_avdd", "GND", Note="CFILT, own ground via"),
+   R("R57", "27", "usb_dp", "usbc_dp", Note="USB series termination, close to U1"), R("R58", "27", "usb_dm", "usbc_dm"),
    ("U8", "Memory_Flash:W25Q128JVS", "W25Q128JVSIQ", "Package_SO:SOIC-8_5.3x5.3mm_P1.27mm",
     {"1": "qspi_ss", "2": "qspi_sd1", "3": "qspi_sd2", "4": "GND", "5": "qspi_sd0", "6": "qspi_sclk", "7": "qspi_sd3", "8": "+3V3"}, {"LCSC": "C97521"}),
    C("C32", "100nF", "+3V3", "GND"),
@@ -188,7 +187,14 @@ BLOCKS = [
    ("LED1", "LED:WS2812B-2020", "WS2812B-2020", "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm", {"4": "LED_VDD", "2": "GND", "3": "ws_din", "1": "NC"}, {"LCSC": "C52917434"}),
    ("Q1", "Transistor_FET:Q_NMOS_GSD", "2N7002", "Package_TO_SOT_SMD:SOT-23", {"1": "ws_drv", "2": "GND", "3": "ws_din"}, {"LCSC": "C8545", "Note": "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO26 output-invert"}),
    R("R49", "1k", "LED_VDD", "ws_din"),
-   ("J7", "Connector_Generic:Conn_01x04", "SPARE / UART", PIN % 4, {"1": "GND", "2": "+3V3", "3": "uart_rx", "4": "uart_tx"}, {"LCSC": "C2691448", "MPN": "PZ254V-11-04P"}),
+   ("U10", "Interface_Expansion:TCA9534", "TCA9534PWR", "Package_SO:TSSOP-16_4.4x5mm_P0.65mm",
+    {"1": "GND", "2": "GND", "3": "GND", "4": "enc_a", "5": "enc_b", "6": "enc_sw", "7": "enc_sp", "8": "GND", "9": "vbus_sense", "10": "NC", "11": "NC", "12": "NC",
+     "13": "exp_int", "14": "i2c_scl", "15": "i2c_sda", "16": "+3V3"},
+    {"LCSC": "C783615", "Note": "I2C I/O expander at 0x20: rotary encoder + spare on P0-P3 (internal 100k pull-ups, the TCA9535 has none), USB-C VBUS sense on P4, INT to GPIO3"}),
+   C("C39", "100nF", "+3V3", "GND", C0402),
+   R("R68", "100k", "AUX_5V", "vbus_sense", Note="VBUS sense divider: 2.5 V at the expander when a USB host or charger is attached"), R("R69", "100k", "vbus_sense", "GND"),
+   ("J7", "Connector_Generic:Conn_02x03_Odd_Even", "ENCODER", "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical", {"1": "enc_sw", "2": "enc_sp", "3": "enc_b", "4": "GND", "5": "enc_a", "6": "+3V3"},
+    {"LCSC": "C65114", "MPN": "BOOMELE 2.54-2*3P", "Note": "unpopulated by default: rotary encoder A/B/switch on the lid, one spare input"}),
  ]},
 ]
 

@@ -135,23 +135,23 @@ GPIO_PIN = {
     26: "40", 27: "41", 28: "42", 29: "43",
 }
 GPIO_NET = {
-    0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
+    0: "i2c_sda", 1: "i2c_scl", 2: "ws_drv", 3: "exp_int",
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
     7: "cont1_b3_lo", 8: "cont1_b2_lo", 9: "cont1_v_lo", 10: "cont1_b1_lo",
     11: "cont1_h_lo", 12: "cont1_vq_lo", 13: "cont1_hq_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
     16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
-    26: "ws_drv", 27: "usb_sel", 28: "amiga_sense", 29: "wl_clk",
+    26: "pio_dp", 27: "pio_dm", 28: "amiga_sense", 29: "wl_clk",
 }
 # the non-Amiga gpio nets: exact node sets (U1's own pin included)
 GPIO_OTHER_NODES = {
-    "uart_tx":     {("J7", "4")},
-    "uart_rx":     {("J7", "3")},
-    "i2c_sda":     {("J3", "4"), ("R41", "2")},
-    "i2c_scl":     {("J3", "3"), ("R42", "2")},
+    "exp_int":     {("U10", "13")},
+    "i2c_sda":     {("J3", "4"), ("R41", "2"), ("U10", "15")},
+    "i2c_scl":     {("J3", "3"), ("R42", "2"), ("U10", "14")},
     "ws_drv":      {("Q1", "1")},
-    "usb_sel":     {("U5", "1"), ("R48", "1")},
+    "pio_dp":      {("R70", "1")},
+    "pio_dm":      {("R71", "1")},
     "wl_on":       {("U9", "12"), ("U9", "13")},
     "wl_d":        {("U9", "5"), ("R55", "2"), ("R56", "2")},
     "wl_cs":       {("U9", "9")},
@@ -185,7 +185,7 @@ VALUE_FOOTPRINT = [
     (r"^RP2350A$",       r"^Package_DFN_QFN:QFN-60-"),
 ]
 # minimum population of each listed value (catches a part silently dropped)
-VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1BL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
+VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1BL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1, "TCA9534PWR": 1,
                "RM2": 1, "RP2350A": 1}
 
 # ---------------------------------------------------------------------------
@@ -652,21 +652,13 @@ def check_power(rep, nl):
 
 
 def check_usb(rep, nl):
-    rep.sec("E. USB mux, ESD, CC")
+    rep.sec("E. USB: native pair to USB-C, PIO-USB pair to USB-A, ESD, CC")
     pf = nl.pin_func
-    want = {"1": ("S", "usb_sel"), "2": ("D1+", "usbc_dp"), "8": ("D1-", "usbc_dm"),
-            "3": ("D2+", "usba_dp"), "7": ("D2-", "usba_dm"), "4": ("D+", "usb_dp_m"),
-            "6": ("D-", "usb_dm_m"), "5": ("GND", GND), "9": ("~{OE}", GND), "10": ("VCC", "+3V3")}
-    rep.eq("E.U5.value", nl.value("U5"), "TS3USB30EDGSR", "U5 value")
-    for p, (fn, net) in sorted(want.items(), key=lambda x: int(x[0])):
-        rep.eq("E.U5.%s" % p, (pf.get(("U5", p)), nl.net_of("U5", p)), (fn, net), "U5 pin %s" % p)
-    rep.eq("E.usb_sel.pulldown", nl.parts_between("usb_sel", GND, lib="Device:R", value=100e3), ["R48"],
-           "100k usb_sel -> GND")
-    # data pairs: connector + USBLC6 on both lines
-    pairs = [("usbc_dp", {("J13", "A6"), ("J13", "B6"), ("U4", "3"), ("U4", "4"), ("U5", "2")}),
-             ("usbc_dm", {("J13", "A7"), ("J13", "B7"), ("U4", "1"), ("U4", "6"), ("U5", "8")}),
-             ("usba_dp", {("J4", "3"), ("U2", "3"), ("U2", "4"), ("U5", "3")}),
-             ("usba_dm", {("J4", "2"), ("U2", "1"), ("U2", "6"), ("U5", "7")})]
+    # data pairs: connector + USBLC6 on both lines + the 27R series resistor
+    pairs = [("usbc_dp", {("J13", "A6"), ("J13", "B6"), ("U4", "3"), ("U4", "4"), ("R57", "2")}),
+             ("usbc_dm", {("J13", "A7"), ("J13", "B7"), ("U4", "1"), ("U4", "6"), ("R58", "2")}),
+             ("usba_dp", {("J4", "3"), ("U2", "3"), ("U2", "4"), ("R70", "2")}),
+             ("usba_dm", {("J4", "2"), ("U2", "1"), ("U2", "6"), ("R71", "2")})]
     for net, nodes in pairs:
         got = nl.nodes(net)
         rep.chk("E.%s.nodes" % net, got == nodes,
@@ -678,14 +670,14 @@ def check_usb(rep, nl):
         rep.eq("E.J13.%s" % pin_p, (pf.get(("J13", pin_p)), pf.get(("J13", pin_m))), (fn_p, fn_m),
                "J13 %s/%s functions" % (pin_p, pin_m))
     rep.eq("E.J4.data", (pf.get(("J4", "2")), pf.get(("J4", "3"))), ("D-", "D+"), "J4 data functions")
-    # mux -> 27R -> RP2350 USB pins
-    for mnet, rnet, upin, ufn in (("usb_dp_m", "usb_dp", "52", "USB_DP"), ("usb_dm_m", "usb_dm", "51", "USB_DM")):
-        rs = nl.parts_between(mnet, rnet, lib="Device:R", value=27)
-        rep.chk("E.%s.27R" % rnet, len(rs) == 1, "27R between %s and %s: %s" % (mnet, rnet, rs))
-        rep.eq("E.%s.nodes" % mnet, {n for n in nl.nodes(mnet) if n[0] != (rs[0] if rs else None)},
-               {("U5", "4" if mnet == "usb_dp_m" else "6")}, "%s other members" % mnet)
+    # 27R series: native PHY pins 51/52 -> USB-C pair; GPIO26/27 (PIO-USB, D+ on the lower GPIO) -> USB-A pair
+    for cnet, rnet, upin, ufn in (("usbc_dp", "usb_dp", "52", "USB_DP"), ("usbc_dm", "usb_dm", "51", "USB_DM"),
+                                  ("usba_dp", "pio_dp", "40", "GPIO26/ADC0"), ("usba_dm", "pio_dm", "41", "GPIO27/ADC1")):
+        rs = nl.parts_between(cnet, rnet, lib="Device:R", value=27)
+        rep.chk("E.%s.27R" % rnet, len(rs) == 1, "27R between %s and %s: %s" % (cnet, rnet, rs))
         rep.eq("E.%s.u1" % rnet, (pf.get(("U1", upin)), nl.net_of("U1", upin)), (ufn, rnet), "U1 pin %s" % upin)
         rep.eq("E.%s.nodes" % rnet, len(nl.nodes(rnet)), 2, "%s member count" % rnet)
+    rep.chk("E.no_mux", "U5" not in nl.comps, "the USB mux U5 was removed on 2026-10-15: both ports have their own pair")
     # CC pull-downs
     for pin, net in (("A5", "usb_cc1"), ("B5", "usb_cc2")):
         rep.eq("E.J13.%s" % pin, nl.net_of("J13", pin), net, "J13 %s" % pin)

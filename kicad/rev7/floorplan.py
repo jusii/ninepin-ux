@@ -59,7 +59,7 @@ CONNECTORS = [
     ("J1",  "A500 KBD OUT", "Connector_PinHeader_2.54mm", "PinHeader_1x08_P2.54mm_Vertical", 39.4, 5.0, 90, "north edge, between the mini-DINs"),
     ("J8",  "A500 KBD IN",  "Connector_PinHeader_2.54mm", "PinHeader_1x08_P2.54mm_Vertical", 38.0, 14.0, 90, ""),
     ("J2",  "SWD", "Connector_PinHeader_2.54mm", "PinHeader_1x03_P2.54mm_Vertical", 14.5, 5.0, 90, "SWCLK GND SWDIO"),
-    ("J7",  "SPARE / UART", "Connector_PinHeader_2.54mm", "PinHeader_1x04_P2.54mm_Vertical", 90.5, 3.4, 0, "GND 3V3 RX TX, north-east corner"),
+    ("J7",  "ENCODER", "Connector_PinHeader_2.54mm", "PinHeader_2x03_P2.54mm_Vertical", 90.3, 3.4, -90, "GND 3V3 / A B / SW SPARE, 2x3 along the north edge by the corner"),
     ("SW1", "BOOT",  "Button_Switch_THT", "SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", SW_X, SW_Y[0], -90, "right-angle, actuator through east wall"),
     ("SW2", "RESET", "Button_Switch_THT", "SW_Tactile_SPST_Angled_PTS645Vx58-2LFS", SW_X, SW_Y[1], -90, "right-angle, actuator through east wall"),
     ("LED1", "WS2812B-2020", "LED_SMD", "LED_WS2812B-2020_PLCC4_2.0x2.0mm", LED[0], LED[1], 0, "lid peek hole"),
