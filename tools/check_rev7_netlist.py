@@ -185,7 +185,7 @@ VALUE_FOOTPRINT = [
     (r"^RP2350A$",       r"^Package_DFN_QFN:QFN-60-"),
 ]
 # minimum population of each listed value (catches a part silently dropped)
-VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1UL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
+VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1BL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1,
                "RM2": 1, "RP2350A": 1}
 
 # ---------------------------------------------------------------------------
@@ -518,7 +518,7 @@ def check_amiga(rep, nl, D):
         cbtd = [r for r, _ in nodes if nl.value(r).startswith("SN74CBTD3861")]
         packs = [r for r, _ in nodes if (nl.lib_id(r) == "Device:R_Pack04" or nl.lib_id(r) == "Device:R")
                  and near(parse_value(nl.value(r).replace("4x", "")), 10e3)]
-        pesd = [r for r, _ in nodes if nl.value(r) in ("PESD5V0S1BA", "PESD5V0S1UL")]
+        pesd = [r for r, _ in nodes if nl.value(r) in ("PESD5V0S1BA", "PESD5V0S1BL")]
         rep.chk("C.%s.parts" % net, len(cbtd) == 1 and len(packs) == 1 and len(pesd) == 1,
                 "net %s: want one CBTD3861 / one 10k pull-up / one PESD5V0S1BA, got %s / %s / %s"
                 % (net, cbtd, packs, pesd))

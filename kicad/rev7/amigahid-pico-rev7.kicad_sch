@@ -19014,7 +19014,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 336.01 655.32 0)
 			(effects
 				(font
@@ -19031,7 +19031,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
@@ -19049,7 +19049,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
@@ -19058,7 +19058,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 334.01 654.05 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 334.01 654.05 0)
 			(hide yes)
 			(effects
@@ -19180,7 +19189,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 43.91 706.12 0)
 			(effects
 				(font
@@ -19197,7 +19206,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
@@ -19215,7 +19224,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
@@ -19224,7 +19233,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 41.91 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 41.91 704.85 0)
 			(hide yes)
 			(effects
@@ -19346,7 +19364,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 88.36 706.12 0)
 			(effects
 				(font
@@ -19363,7 +19381,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
@@ -19381,7 +19399,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
@@ -19390,7 +19408,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 86.36 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 86.36 704.85 0)
 			(hide yes)
 			(effects
@@ -19512,7 +19539,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 132.81 706.12 0)
 			(effects
 				(font
@@ -19529,7 +19556,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
@@ -19547,7 +19574,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
@@ -19556,7 +19583,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 130.81 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 130.81 704.85 0)
 			(hide yes)
 			(effects
@@ -19678,7 +19714,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 177.26 706.12 0)
 			(effects
 				(font
@@ -19695,7 +19731,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
@@ -19713,7 +19749,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
@@ -19722,7 +19758,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 175.26 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 175.26 704.85 0)
 			(hide yes)
 			(effects
@@ -19844,7 +19889,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 221.71 706.12 0)
 			(effects
 				(font
@@ -19861,7 +19906,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
@@ -19879,7 +19924,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
@@ -19888,7 +19933,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 219.71 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 219.71 704.85 0)
 			(hide yes)
 			(effects
@@ -20010,7 +20064,7 @@
 				)
 			)
 		)
-		(property "Value" "PESD5V0S1UL"
+		(property "Value" "PESD5V0S1BL"
 			(at 264.89 706.12 0)
 			(effects
 				(font
@@ -20027,7 +20081,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"
+		(property "Datasheet" "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf"
 			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
@@ -20045,7 +20099,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C85402"
+		(property "LCSC" "C84374"
 			(at 262.89 704.85 0)
 			(hide yes)
 			(effects
@@ -20054,7 +20108,16 @@
 				)
 			)
 		)
-		(property "MPN" "PESD5V0S1UL,315"
+		(property "MPN" "PESD5V0S1BL,315"
+			(at 262.89 704.85 0)
+			(hide yes)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Note" "bidirectional: a reversed placement cannot pin the line low"
 			(at 262.89 704.85 0)
 			(hide yes)
 			(effects

@@ -139,12 +139,12 @@ gnd_stub(pad("C33", 2), -0.9, 0.0)
 g = pad("U9", 15); track("GND", [g, (g[0] + 0.55, g[1]), (g[0] + 0.9, g[1] + 0.35)]); via("GND", g[0] + 0.9, g[1] + 0.35)   # the module ground beside the wl_vin run
 r2 = pad("R54", 2); yu = y1[4][1] + 1.05; c34 = pad("C34", 1); xw = c34[0]      # xout_r: under the crystal to pad 3 and C34
 track("/xout_r", [r2, (r2[0], r2[1] + 0.6), (r2[0] - (yu - r2[1] - 0.6), yu), (xw, yu), (xw, y1[3][1]), y1[3]])
-track("/xout_r", [(xw, yu), c34]); g = pad("C34", 2); track("GND", [g, (g[0] + 0.23, g[1] + 0.23), (19.3, g[1] + 0.23)]); via("GND", 19.3, g[1] + 0.23)
+track("/xout_r", [(xw, yu), c34]); gnd_stub(pad("C34", 2), 0, 0.93)                                                   # below the pad, clear of wl_irq
 g = y1[2]; track("GND", [g, (g[0], g[1] - 0.35), (g[0] - 0.5, g[1] - 0.85)]); via("GND", g[0] - 0.5, g[1] - 0.85); gnd_stub(y1[4], 1.2, 0.0)
 for num in ("24", "25", "18", "19"):                                             # swd and kbin go to B.Cu at the row ends
     e = W[num]; via(padnet("U1", num), e[0] - 0.4, e[1]); track(padnet("U1", num), [e, (e[0] - 0.4, e[1])])
 for num in ("27", "28", "29"): via(padnet("U1", num), *W[num])
-r2 = pad("R53", 2); via("/run_sw", r2[0] + 0.2, r2[1])
+r2 = pad("R53", 2); via("/run_sw", r2[0], r2[1] + 0.75); track("/run_sw", [r2, (r2[0], r2[1] + 0.75)])
 # ---- south ----
 e = S["44"]; r1 = pad("R50", 1); r2 = pad("R50", 2); c31 = pad("C31", 1)       # adc RC: column 44 -> R50 (vertical) pad 2 -> C31 pad 1
 track("/adc_avdd", [e, (e[0], r2[1] - (r2[0] - e[0])), r2])
@@ -199,7 +199,7 @@ U6B = {n: pad("U6", n) for n in range(13, 25)}                    # B row (north
 LANE = {13: 18.0, 14: 17.6, 15: 17.2, 16: 16.8, 17: 16.4, 18: 16.0, 19: 15.6, 20: 15.2, 21: 14.8, 22: 14.4}   # lanes nearer the row end further east
 def tvs(netname):
     for fp in b.GetFootprints():
-        if fp.GetValue() in ("PESD5V0S1BA", "PESD5V0S1UL") and padnet(fp.GetReference(), 1) == netname: return fp.GetReference()
+        if fp.GetValue().startswith("PESD5V0S1") and padnet(fp.GetReference(), 1) == netname: return fp.GetReference()
     raise SystemExit("no clamp on " + netname)
 # N columns 34..26 turn west at y 14.4..17.2 and drop into the B pads from above
 for u1, u6 in (("7", 22), ("8", 21), ("9", 20), ("10", 19), ("12", 18), ("13", 17), ("14", 16), ("15", 15)):
@@ -304,7 +304,7 @@ track("/wl_vin", [(XV, 29.1), (fb2[0] - 0.4, 29.1), fb2])
 track("/wl_vin", [fb2, (fb2[0] + 0.6, fb2[1]), (c35[0] - 0.55, fb2[1] + (c35[0] - 0.55 - fb2[0] - 0.6)), (c35[0] - 0.55, c35[1]), c35])
 track("/wl_vin", [fb2, (17.6, fb2[1]), (17.3, fb2[1] + 0.3), (17.3, u14[1]), u14])
 track("/wl_vin", [(17.3, 31.6), (u16[0] + 0.5, 31.6), (u16[0], 31.1), u16])                                  # south of pin 15
-via("/+3V3", 19.3, fb1[1] + 0.16); track("/+3V3", [fb1, (19.14, fb1[1]), (19.3, fb1[1] + 0.16)])
+via("/+3V3", 17.8, fb1[1]); track("/+3V3", [fb1, (17.8, fb1[1])])                    # west of the bead, between it and the wl_vin riser
 g = pad("C35", 2); track("GND", [g, (g[0], g[1] - 0.25), (g[0] + 0.4, g[1] - 0.65), (21.2, g[1] - 0.65)]); via("GND", 21.2, g[1] - 0.65)
 save("block 2")
 
@@ -354,13 +354,13 @@ via("/KBIN_5V", 84.2, 7.3); track("/KBIN_5V", [(84.2, 7.3), (84.2, f3["2"][1] + 
 XC = (c6[0] + c7[0]) / 2; track("/KBIN_5V", [(XC, 7.5), (XC, 9.36)], "B", w=0.3); via("/KBIN_5V", XC, 9.36)        # B.Cu tee up between the two caps
 track("/KBIN_5V", [c6, (XC - 0.09, c6[1]), (XC, 9.36), (XC + 0.08, c7[1]), c7], w=0.3)
 g6 = pad("C6", 2); g7 = pad("C7", 2); track("GND", [g6, (g6[0], 7.1), (g6[0] + 0.5, 6.6)]); track("GND", [g7, (g7[0], 7.1), (g7[0] - 0.5, 6.6)]); via("GND", (g6[0] + g7[0]) / 2, 6.6)
-track("/KBIN_5V", [(j12["4"][0], 7.5), (46.6, 7.5)], "B", w=0.3); via("/KBIN_5V", 46.6, 7.5)
+track("/KBIN_5V", [(j12["4"][0], 7.1), (j12["4"][0] - 0.4, 7.5), (46.6, 7.5)], "B", w=0.3); via("/KBIN_5V", 46.6, 7.5)
 track("/KBIN_5V", [(46.6, 7.5), (46.6, 13.02), j8["4"]], w=0.4)
 # AMIGA_5V: J10 pin 4 along the north edge to J1 pin 4, then down the J8 gap at x 49.43 and west at y 17.5 into F1 pad 1
 j10 = {k: pad("J10", k) for k in ("1", "3", "4", "5", "SH")}; j1 = {k: pad("J1", k) for k in ("4", "6", "7", "8")}; f1 = {k: pad("F1", k) for k in ("1", "2")}
 track("/AMIGA_5V", [j10["4"], (j10["4"][0], 4.5), (j10["4"][0] + 1.2, 3.3), (j1["4"][0] - 0.8, 3.3), (j1["4"][0], 4.1), j1["4"]], w=0.6)
 track("/AMIGA_5V", [j1["4"], (j1["4"][0], 6.62), (48.3, 7.9), (49.43, 7.9), (49.43, 12.6)], w=0.6)
-track("/AMIGA_5V", [(49.43, 12.6), (49.43, 15.4)], w=0.4)                                      # neck between J8 pins 5 and 6
+track("/AMIGA_5V", [(49.43, 12.6), (49.43, 15.4)], w=0.3)                                      # neck between J8 pins 5 and 6
 track("/AMIGA_5V", [(49.43, 15.4), (49.43, 17.1), (49.03, 17.5), (f1["1"][0] + 0.3, 17.5), f1["1"]], w=0.6)
 # AMIGA_5V_FUSED east: F1 pad 2 -> via -> B.Cu y 24.35 with taps up to R46, R60, D1 pad 2, and on to C14 / U7 VCC
 r46 = pad("R46", 1); r60 = pad("R60", 1); d1 = {k: pad("D1", k) for k in ("1", "2")}; c14 = pad("C14", 1); u7v = pad("U7", 24)
@@ -384,7 +384,7 @@ track("/SYS5V", [(u3["6"][0] - 0.1, YB5), (u3["6"][0] - 0.1, u3["6"][1])], w=0.4
 track("/SYS5V", [c2, (c2[0], YB5)], w=0.4); track("/SYS5V", [c8, (c8[0], YB5)], w=0.4)
 track("/SYS5V", [r45, (r45[0] - 0.4, r45[1] + 0.4), (XS, r45[1] + 0.4 + (r45[0] - 0.4 - XS)), (XS, 16.8)], w=0.4); track("/SYS5V", [(XS, 16.8), (XS, 18.9), (59.05, 18.9), (59.05, YB5)], w=0.5); track("/SYS5V", [(u3["4"][0] - 0.1, 18.9), (u3["4"][0] - 0.1, u3["4"][1])], w=0.4)   # x 59.05 joins the two U3 inputs west of the chip
 via("/SYS5V", XS, 16.8, 0.6, 0.3)
-track("/SYS5V", [(XS, 16.8), (79.4, 16.8), (79.8, 17.2)], "B", w=0.6); via("/SYS5V", 79.8, 17.2, 0.6, 0.3); track("/SYS5V", [(79.8, 17.2), d2], w=0.6)
+track("/SYS5V", [(XS, 16.8), (78.95, 16.8), (79.6, 16.15)], "B", w=0.6); via("/SYS5V", 79.6, 16.15, 0.6, 0.3); track("/SYS5V", [(79.6, 16.15), (79.6, d2[1])], w=0.6)   # via north of the pad
 track("/SYS5V", [(59.5, YB5), (60.0, YB5 + 0.5), (c1[0] - 0.75, YB5 + 0.5), (c1[0], YB5 + 1.25), c1], w=0.4)
 track("/SYS5V", [(d1["1"][0] - 1.25, 21.6), (c3[0] + 0.17, 22.05), (c3[0] + 0.17, c3[1] - 0.6), c3], w=0.4)
 gnd_stub(pad("C3", 2), 0, 1.2); gnd_stub(pad("C1", 2), 0, 1.7)
@@ -392,9 +392,11 @@ gnd_stub(c2 and pad("C2", 2), 0, -1.0); gnd_stub(pad("C8", 2), 0, -1.0)
 # LDO U3: output pin 1 -> C9 / C10 (shared 3V3 via between them); grounds
 c9 = pad("C9", 1); c10 = pad("C10", 1)
 track("/+3V3", [u3["1"], (c9[0] - 0.45, u3["1"][1]), c9, c10], w=0.4); via("/+3V3", (c9[0] + c10[0]) / 2, c9[1])
-gnd_stub(pad("C9", 2), 0, -1.0); gnd_stub(pad("C10", 2), 0, -1.0)
+via("/+3V3", c10[0] + 0.8, c10[1]); track("/+3V3", [c10, (c10[0] + 0.8, c10[1])], w=0.4)                      # three vias carry the LDO output into the plane
+via("/+3V3", u3["1"][0], u3["1"][1] + 0.9); track("/+3V3", [u3["1"], (u3["1"][0], u3["1"][1] + 0.9)], w=0.4)
+gnd_stub(pad("C9", 2), 0, -1.1); gnd_stub(pad("C10", 2), 0, -1.0)
 g = u3["3"]; track("GND", [g, (g[0] + 0.4, g[1] - 0.4), (g[0] + 0.7, g[1] - 0.4)]); via("GND", g[0] + 0.7, g[1] - 0.4)
-via("GND", *u3["7"])
+via("GND", u3["7"][0], u3["7"][1] - 0.4); via("GND", u3["7"][0], u3["7"][1] + 0.4)                     # two in the thermal pad
 # D2 anode on to the trunk and F3 (east corner block takes it from (92.4, 16.0))
 track("/SYS5V", [d2, (d2[0], 16.9), (d2[0] + 0.9, 16.0), (92.7, 16.0)], w=0.5); via("/SYS5V", 92.7, 16.0, 0.6, 0.3)
 track("/SYS5V", [(84.4, 16.0), (84.4, 11.1), (84.9, 10.6), (84.9, f3["1"][1] + 0.2)], w=0.5)
@@ -426,7 +428,7 @@ u7 = {n: pad("U7", n) for n in range(13, 25)}
 track("/kbin_clk_lo", [(22.4, 31.8), (22.4, 26.0), (22.8, 25.6), (u7[22][0], 25.6)], "B"); via("/kbin_clk_lo", u7[22][0], 25.6); track("/kbin_clk_lo", [(u7[22][0], 25.6), u7[22]])
 track("/kbin_dat_lo", [(22.4, 32.8), (21.8, 32.2), (21.8, 25.6), (22.4, 25.0), (u7[21][0], 25.0)], "B"); via("/kbin_dat_lo", u7[21][0], 25.0); track("/kbin_dat_lo", [(u7[21][0], 25.0), u7[21]])
 # the sense divider grounds share one F.Cu run with vias at both ends (the top pour cannot reach them)
-track("GND", [pad("R47", 2), pad("R60", 2)]); gnd_stub(pad("R47", 2), -0.6, 0); gnd_stub(pad("R60", 2), 1.0, 0)
+track("GND", [pad("R47", 2), pad("R60", 2)]); gnd_stub(pad("R47", 2), -0.65, 0); gnd_stub(pad("R60", 2), 1.0, 0)
 # north and south groups join on In2 from the W23 via to the south link's corner
 track("/dvdd", [(25.4, 36.8), (25.4, 37.2), (29.9, 41.7), (32.1, 41.7), (33.6, S["39"][1])], "I2")                 # ends on the S39 via
 save("block 3b-1")
@@ -485,7 +487,7 @@ p3 = U[3]; v3 = (p3[0], 43.1); track("/usba_dp", [p3, v3]); via("/usba_dp", *v3)
 track("/usba_dp", [v3, (p3[0] - 0.2, 42.9), (52.1, 42.9), (51.3, 42.1)], "B"); via("/usba_dp", 51.3, 42.1)
 track("/usba_dp", [(51.3, 42.1), (50.75, 42.65), (50.75, u2[4][1] - 0.3), u2[4]]); p = pad("J4", 3); track("/usba_dp", [u2[3], (u2[3][0], p[1] - (p[0] - u2[3][0])), p])
 p7 = U[7]; v7 = (p7[0] - 0.6, 43.8); track("/usba_dm", [p7, (p7[0], 44.4), v7]); via("/usba_dm", *v7)
-track("/usba_dm", [v7, (v7[0] - 0.7, 44.5), (49.5, 44.5), (49.0, 45.0)], "B"); via("/usba_dm", 49.0, 45.0)
+track("/usba_dm", [v7, (v7[0] - 0.7, 44.5), (49.5, 44.5), (49.0, 45.0)], "B"); via("/usba_dm", 49.0, 45.0)                 # in-pad until C38 moves with the regulator group
 track("/usba_dm", [(49.0, 45.0), u2[6]]); p = pad("J4", 2); track("/usba_dm", [u2[1], (u2[1][0], p[1] - (p[0] - u2[1][0])), p])
 gnd_stub(u2[2], 0, 1.3); track("/usba_dp", [u2[4], u2[3]]); track("/usba_dm", [u2[6], u2[1]])      # USBLC6 pass-throughs
 # usbc pair east to U4 on B.Cu lanes 42.1 (dp, pin 2) and 42.6 (dm, pin 8), north-east into vias under U4's south pins
@@ -508,11 +510,11 @@ track("/AUX_5V", [J["A4"], (xe, J["A4"][1]), (xe + 0.23, J["A4"][1] - 0.23), (95
 d2b = pad("D2", 2); track("/AUX_5V", [d2b, (91.6, d2b[1]), (92.2, d2b[1] + 0.6), (92.2, 28.0), (92.5, 28.3), (92.8, J["B4"][1])], w=0.5)
 track("/usbc_dp", [u4[3], (u4[3][0], 31.3), (u4[3][0] + 0.3, 31.0), (91.6, 31.0), (91.6 + (31.0 - J["B6"][1]), J["B6"][1]), J["B6"]])
 track("/usbc_dp", [J["B6"], (xe + 0.3, J["B6"][1]), (xe + 0.3, J["A6"][1]), J["A6"]])
-dv = (90.4, 31.7); track("/usbc_dm", [u4[1], (u4[1][0], 35.1)]); via("/usbc_dm", u4[1][0], 35.1)
-track("/usbc_dm", [(u4[1][0], 35.1), (u4[1][0] - 0.3, 34.8), (dv[0], 34.3), dv], "B"); via("/usbc_dm", *dv)
+dv = (90.4, 31.7); track("/usbc_dm", [u4[1], (u4[1][0], 34.85)]); via("/usbc_dm", u4[1][0], 34.85)
+track("/usbc_dm", [(u4[1][0], 34.85), (dv[0], 34.05), dv], "B"); via("/usbc_dm", *dv)
 track("/usbc_dm", [dv, (dv[0] + 0.05, J["B7"][1]), J["B7"]]); track("/usbc_dm", [(xw - 0.3, J["B7"][1]), (xw - 0.3, J["A7"][1]), J["A7"]])
 r43 = pad("R43", 1); r43g = pad("R43", 2); r44 = pad("R44", 1); r44g = pad("R44", 2)
-track("/usb_cc1", [r43, (r43[0], 32.55), (r43[0] + 0.3, J["A5"][1]), J["A5"]]); track("GND", [r43g, (r43g[0], 33.9), (r43g[0] - 0.3, 34.2)]); via("GND", r43g[0] - 0.3, 34.2)
+track("/usb_cc1", [r43, (r43[0], 32.55), (r43[0] + 0.3, J["A5"][1]), J["A5"]]); track("GND", [r43g, (r43g[0], 33.75)]); via("GND", r43g[0], 33.75)
 track("/usb_cc2", [r44, (r44[0] + 0.3, r44[1]), (r44[0] + 0.55, J["B5"][1]), J["B5"]]); track("GND", [r44g, (r44g[0], 30.4)]); via("GND", r44g[0], 30.4)
 for a, sh in (("A1", (94.22, 35.32)), ("A12", (94.22, 26.68))):          # B12 / B1 sit on the same spots
     p = J[a]; track("GND", [p, (p[0], p[1] + (0.4 if sh[1] > p[1] else -0.4)), sh])
@@ -542,9 +544,40 @@ via("/USBA_5V", u2[5][0], 46.6, 0.5); track("/USBA_5V", [(u2[5][0], 46.6), u2[5]
 track("GND", [c4g, (c4g[0], 45.3)]); via("GND", c4g[0], 45.3); track("GND", [c5g, (c5g[0], c5g[1] + 0.8)]); via("GND", c5g[0], c5g[1] + 0.8)
 # run_sw: R53's via -> In2 south-east under the band vias and the S staircase -> via east of the port-1 clamps -> B.Cu
 # south on x 32 -> along the south edge on y 59.0 -> north on x 93.3 (between the trunk and SW2's posts) -> SW2 pin 1
-rs = pad("R53", 2); v0 = (rs[0] + 0.2, rs[1]); sw2 = pad("SW2", 1)
+rs = pad("R53", 2); v0 = (rs[0], rs[1] + 0.75); sw2 = pad("SW2", 1)
 track("/run_sw", [v0, (v0[0], 43.2), (v0[0] + 0.4, 43.6), (27.2, 43.6), (31.2, 47.6), (32.0, 47.6)], "I2"); via("/run_sw", 32.0, 47.6)
 track("/run_sw", [(32.0, 47.6), (32.0, 58.6), (32.4, 59.0), (92.9, 59.0), (93.3, 58.6), (93.3, 46.6), (93.6, 46.3), (sw2[0] - 0.3, 46.3), sw2], "B")
 # pads the top pour cannot give two spokes keep their explicit copper and no pour connection
 for ref, num in (("C34", "2"), ("J13", "A1"), ("J13", "B12")): b.FindFootprintByReference(ref).FindPadByNumber(num).SetLocalZoneConnection(pcbnew.ZONE_CONNECTION_NONE)
 save("block 3b-3")
+
+# ================= block 3c: ground - RM2 ground pads, a stitching grid for the pours =================
+reload_pads()
+for n, dx, dy in ((4, 0, 1.35), (7, 1.0, 0), (11, 1.5, 0)): gnd_stub(pad("U9", n), dx, dy)   # pins 1 / 21 sit on the port-1 bus corridor: pour only
+via("GND", 7.2, 24.6)                                                               # pour tie north of the module
+import math
+def seg_dist(p, a, c):
+    ax, ay = a; cx, cy = c; px, py = p; dx, dy = cx - ax, cy - ay; l2 = dx * dx + dy * dy
+    t = 0 if l2 == 0 else max(0, min(1, ((px - ax) * dx + (py - ay) * dy) / l2))
+    return math.hypot(px - (ax + t * dx), py - (ay + t * dy))
+def stitch_ok(x, y):
+    if x < 6.5 and 18.0 < y < 56.0: return False                                  # RM2 keep-out and its margin
+    for t in b.GetTracks():
+        if isinstance(t, pcbnew.PCB_VIA):
+            if math.dist((x, y), (t.GetPosition().x / 1e6, t.GetPosition().y / 1e6)) < 1.2: return False
+        elif t.GetNetname() != "GND":
+            if seg_dist((x, y), (t.GetStart().x / 1e6, t.GetStart().y / 1e6), (t.GetEnd().x / 1e6, t.GetEnd().y / 1e6)) < 0.9: return False
+    for fp in b.GetFootprints():
+        for p in fp.Pads():
+            bb = p.GetBoundingBox()
+            if bb.GetLeft() / 1e6 - 0.7 < x < bb.GetRight() / 1e6 + 0.7 and bb.GetTop() / 1e6 - 0.7 < y < bb.GetBottom() / 1e6 + 0.7: return False
+        if fp.GetReference().startswith(("U1", "U9", "H")):                        # not under the MCU, the module or the holes
+            bb = fp.GetBoundingBox(False, False)
+            if bb.GetLeft() / 1e6 - 1.0 < x < bb.GetRight() / 1e6 + 1.0 and bb.GetTop() / 1e6 - 1.0 < y < bb.GetBottom() / 1e6 + 1.0: return False
+    return True
+n = 0
+for gx in range(4, 98, 8):
+    for gy in range(4, 60, 8):
+        if stitch_ok(gx, gy): via("GND", gx, gy); n += 1
+print("stitching vias:", n)
+save("block 3c")

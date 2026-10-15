@@ -24,8 +24,8 @@ def R(ref, val, a, b, **x): x.setdefault("LCSC", R_LCSC[val]); return (ref, "Dev
 def C(ref, val, a, b, fp=C0603, **x): x.setdefault("LCSC", C_LCSC[(val, fp)]); return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
 def TVS(ref, net):
     if net.startswith("cont1_"):   # port 1 clamps sit in two tight rows north of P1: the SOD-882 variant of the same part
-        return (ref, "Device:D_TVS", "PESD5V0S1UL", "Diode_SMD:D_SOD-882", {"1": net, "2": "GND"},
-                {"LCSC": "C85402", "MPN": "PESD5V0S1UL,315", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1UL.pdf"})
+        return (ref, "Device:D_TVS", "PESD5V0S1BL", "Diode_SMD:D_SOD-882", {"1": net, "2": "GND"},
+                {"LCSC": "C84374", "MPN": "PESD5V0S1BL,315", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BL.pdf", "Note": "bidirectional: a reversed placement cannot pin the line low"})
     return (ref, "Device:D_TVS", "PESD5V0S1BA", SOD323, {"1": net, "2": "GND"},
             {"LCSC": "C19224", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"})
  
