@@ -30,8 +30,10 @@ def RPACK(ref, nets, common):
 # Amiga-facing 5 V nets, in bus-switch order
 KBD_OUT = ["kbreset", "kbdata", "kbclock"]   # order = bus-switch pin order, chosen for planar fans on the board
 KBD_IN = ["kbin_dat", "kbin_clk"]
-PORT1 = ["cont1_hq", "cont1_vq", "cont1_h", "cont1_v", "cont1_b1", "cont1_b2", "cont1_b3"]
-PORT2 = ["cont2_hq", "cont2_vq", "cont2_h", "cont2_v", "cont2_b1", "cont2_b2", "cont2_b3"]
+# port orders = bus-switch pin orders: the Amiga side comes out west->east in DE9 pin x order (v b1 h vq hq b2 b3)
+# so the lines fan to the connectors without crossing; the GPIO numbers follow the same order on the MCU side
+PORT1 = ["cont1_hq", "cont1_vq", "cont1_h", "cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"]
+PORT2 = ["cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3"]
 AMIGA_NETS = KBD_IN + KBD_OUT + PORT1 + PORT2          # 19: U6 = kbin, kbd out, port 1 hq..b1; U7 = port 1 b2/b3, port 2
 U6_A = AMIGA_NETS[:10]
 U7_A = AMIGA_NETS[10:] + ["NC"]
@@ -46,12 +48,11 @@ def CBTD(ref, nets):
 
 # RP2350A GPIO map (firmware pin map lives here; rev6 numbers kept where possible)
 GPIO = {
-    0: "uart_tx", 1: "uart_rx", 2: "i2c_sda", 3: "i2c_scl",
+    0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
-    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_v_lo", 11: "cont1_b1_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
+    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_b1_lo", 11: "cont1_v_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
-    16: "cont2_h_lo", 17: "cont2_v_lo",
-    18: "cont2_b3_lo", 19: "cont2_b2_lo", 20: "cont2_b1_lo", 21: "cont2_hq_lo", 22: "cont2_vq_lo",
+    16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
     26: "ws_drv", 27: "usb_sel", 28: "amiga_sense", 29: "wl_clk",   # 26/27 are not 5 V tolerant: keep them off the Amiga lines
 }
@@ -78,7 +79,7 @@ BLOCKS = [
    ("D2", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AUX_5V"}, {"LCSC": "C8678"}),
    ("F2", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "USBA_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
    ("F3", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "KBIN_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
-   C("C1", "100uF", "SYS5V", "GND", CELEC, Note="10 V rated; kept modest for inrush through the Amiga polyswitch"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
+   C("C1", "22uF", "SYS5V", "GND", C0805, LCSC="C45783", Note="10 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
    C("C4", "150uF", "USBA_5V", "GND", CELEC, Note="10 V rated"), C("C5", "100nF", "USBA_5V", "GND"),
    C("C6", "10uF", "KBIN_5V", "GND", C0805), C("C7", "100nF", "KBIN_5V", "GND"),
    ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2865999", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX. LCSC code to verify before order"}),
@@ -116,7 +117,7 @@ BLOCKS = [
    RPACK("RN4", AMIGA_NETS[12:16], "AMIGA_5V_FUSED"), RPACK("RN5", AMIGA_NETS[16:19] + ["NC"], "AMIGA_5V_FUSED"),
  ] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
  {"title": "usb: USB-C (power + device for flashing), USB-A host, 2:1 mux on the RP2350 USB PHY", "notes": [
-   "U5 selects D1 (USB-C) when usb_sel is low, which R48 guarantees at reset, so a fresh board enumerates on USB-C. Firmware sets GPIO17 high to switch to the USB-A host port.",
+   "U5 selects D1 (USB-C) when usb_sel is low, which R48 guarantees at reset, so a fresh board enumerates on USB-C. Firmware sets GPIO27 high to switch to the USB-A host port.",
    "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."], "parts": [
    ("J13", "Connector:USB_C_Receptacle_USB2.0_16P", "USB-C", "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal",
     {"A1": "GND", "B1": "GND", "A12": "GND", "B12": "GND", "A4": "AUX_5V", "B4": "AUX_5V", "A9": "AUX_5V", "B9": "AUX_5V",

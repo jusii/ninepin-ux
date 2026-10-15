@@ -116,9 +116,9 @@
 #  define HAS_PORT1
 #  define HAS_PORT2
 
-#  define I2C_PORT      i2c1
-#  define I2C_PIN_SDA   2       // i2c_sda (4.7k to 3v3 on the board)
-#  define I2C_PIN_SCL   3       // i2c_scl
+#  define I2C_PORT      i2c0
+#  define I2C_PIN_SDA   0       // i2c_sda (4.7k to 3v3 on the board)
+#  define I2C_PIN_SCL   1       // i2c_scl
 
 #  define KBD_AMIGA_RST 4       // kbreset_lo
 #  define KBD_AMIGA_DAT 5       // kbdata_lo
@@ -127,8 +127,8 @@
 #  define QM1_AMIGA_HQ  7       // cont1_hq_lo
 #  define QM1_AMIGA_VQ  8       // cont1_vq_lo
 #  define QM1_AMIGA_H   9       // cont1_h_lo
-#  define QM1_AMIGA_V   10      // cont1_v_lo
-#  define QM1_AMIGA_B1  11      // cont1_b1_lo
+#  define QM1_AMIGA_V   11      // cont1_v_lo
+#  define QM1_AMIGA_B1  10      // cont1_b1_lo
 #  define QM1_AMIGA_B2  12      // cont1_b2_lo
 #  define QM1_AMIGA_B3  13      // cont1_b3_lo
 
@@ -140,13 +140,13 @@
 // controller port 2. nothing drives it yet (PORT2_ROLE=JOYSTICK is a no-op);
 // the pins are named so the pull-ups below cover them and a future driver has
 // nothing to look up. note the order differs from port 1.
-#  define QM2_AMIGA_B3  18      // cont2_b3_lo
-#  define QM2_AMIGA_B2  19      // cont2_b2_lo
-#  define QM2_AMIGA_B1  20      // cont2_b1_lo
-#  define QM2_AMIGA_HQ  21      // cont2_hq_lo
-#  define QM2_AMIGA_VQ  22      // cont2_vq_lo
-#  define QM2_AMIGA_H   16      // cont2_h_lo (moved off GPIO26: the ADC pins are not 5 V tolerant)
-#  define QM2_AMIGA_V   17      // cont2_v_lo
+#  define QM2_AMIGA_V   16      // cont2_v_lo (GPIO16-22: the ADC pins are not 5 V tolerant)
+#  define QM2_AMIGA_B1  17      // cont2_b1_lo
+#  define QM2_AMIGA_H   18      // cont2_h_lo
+#  define QM2_AMIGA_VQ  19      // cont2_vq_lo
+#  define QM2_AMIGA_HQ  20      // cont2_hq_lo
+#  define QM2_AMIGA_B2  21      // cont2_b2_lo
+#  define QM2_AMIGA_B3  22      // cont2_b3_lo
 
 // one ws2812b-2020 replaces rev6's two plain leds; status_led.c paints the
 // rev6 led 1 / led 2 states onto its green and blue channels

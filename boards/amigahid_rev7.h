@@ -38,15 +38,15 @@ pico_board_cmake_set(PICO_CYW43_SUPPORTED, 1)
 #define XOSC_HZ 12000000u
 #endif
 
-// --- UART ---
+// --- UART --- (uart0 on its aux pins; UART_FUNCSEL_NUM picks GPIO_FUNC_UART_AUX)
 #ifndef PICO_DEFAULT_UART
 #define PICO_DEFAULT_UART 0
 #endif
 #ifndef PICO_DEFAULT_UART_TX_PIN
-#define PICO_DEFAULT_UART_TX_PIN 0
+#define PICO_DEFAULT_UART_TX_PIN 2
 #endif
 #ifndef PICO_DEFAULT_UART_RX_PIN
-#define PICO_DEFAULT_UART_RX_PIN 1
+#define PICO_DEFAULT_UART_RX_PIN 3
 #endif
 
 // --- LED ---

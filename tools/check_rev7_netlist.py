@@ -81,8 +81,8 @@ NC = "__NC__"          # pin must be unconnected
 # Amiga-facing 5 V nets, in bus-switch order (design.py AMIGA_NETS)
 AMIGA_NETS = [
     "kbin_dat", "kbin_clk", "kbreset", "kbdata", "kbclock",
-    "cont1_hq", "cont1_vq", "cont1_h", "cont1_v", "cont1_b1", "cont1_b2", "cont1_b3",
-    "cont2_hq", "cont2_vq", "cont2_h", "cont2_v", "cont2_b1", "cont2_b2", "cont2_b3",
+    "cont1_hq", "cont1_vq", "cont1_h", "cont1_b1", "cont1_v", "cont1_b2", "cont1_b3",
+    "cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3",
 ]
 
 # every connector pin each Amiga net must reach -- and nothing else of connector kind
@@ -126,13 +126,12 @@ GPIO_PIN = {
     26: "40", 27: "41", 28: "42", 29: "43",
 }
 GPIO_NET = {
-    0: "uart_tx", 1: "uart_rx", 2: "i2c_sda", 3: "i2c_scl",
+    0: "i2c_sda", 1: "i2c_scl", 2: "uart_tx", 3: "uart_rx",   # i2c0 on 0/1; uart0 on its aux pins 2/3 (RP2350 funcsel 11)
     4: "kbreset_lo", 5: "kbdata_lo", 6: "kbclock_lo",
-    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_v_lo",
-    11: "cont1_b1_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
+    7: "cont1_hq_lo", 8: "cont1_vq_lo", 9: "cont1_h_lo", 10: "cont1_b1_lo",
+    11: "cont1_v_lo", 12: "cont1_b2_lo", 13: "cont1_b3_lo",
     14: "kbin_clk_lo", 15: "kbin_dat_lo",
-    16: "cont2_h_lo", 17: "cont2_v_lo",
-    18: "cont2_b3_lo", 19: "cont2_b2_lo", 20: "cont2_b1_lo", 21: "cont2_hq_lo", 22: "cont2_vq_lo",
+    16: "cont2_v_lo", 17: "cont2_b1_lo", 18: "cont2_h_lo", 19: "cont2_vq_lo", 20: "cont2_hq_lo", 21: "cont2_b2_lo", 22: "cont2_b3_lo",
     23: "wl_on", 24: "wl_d", 25: "wl_cs",
     26: "ws_drv", 27: "usb_sel", 28: "amiga_sense", 29: "wl_clk",
 }
@@ -628,10 +627,10 @@ def check_power(rep, nl):
         rep.eq("D.%s.pin7_nc" % p, nl.net_of(p, "7"), NC, "%s pin 7 (+5 V)" % p)
     rep.eq("D.J10.pin4", nl.net_of("J10", "4"), "AMIGA_5V", "J10 pin 4")
     # bulk caps on the rails
-    for net, cap in (("SYS5V", 47e-6), ("USBA_5V", 100e-6)):   # SYS5V bulk kept modest for Amiga-port inrush
-        bulk = [r for r in nl.parts_between(net, GND, lib="Device:C")
-                if (parse_value(nl.value(r)) or 0) >= cap]
-        rep.chk("D.%s.bulk" % net, bulk, "no >=%guF bulk cap on %s" % (cap * 1e6, net))
+    # SYS5V: >= 30 uF of ceramics (C1 + C2) kept modest for Amiga-port inrush; USBA_5V: the host-port bulk behind F2
+    for net, cap in (("SYS5V", 30e-6), ("USBA_5V", 100e-6)):
+        total = sum((parse_value(nl.value(r)) or 0) for r in nl.parts_between(net, GND, lib="Device:C"))
+        rep.chk("D.%s.bulk" % net, total >= cap, "only %.0fuF of bulk on %s, want >=%guF" % (total * 1e6, net, cap * 1e6))
 
 
 # ---------------------------------------------------------------------------
