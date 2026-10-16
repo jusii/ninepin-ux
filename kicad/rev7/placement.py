@@ -17,7 +17,7 @@ P = {
  "U8":  (CX + 14.0, CY - 6.5, 0),  "C32": (52.9, 26.9, 0),  "R52": (44.9, 26.3, 0),      # BOOT resistor at the flash, so the chip-select line has no stub
  "C30": (38.2, 36.6, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),   # USB_OTP/QSPI_IOVDD cap and the USB series Rs right off the E pins
  "C29": (38.3, 39.1, 270),  "C38": (39.85, 39.1, 270), "L1": (41.6, 39.35, 270),   # CIN, COUT straddling the VIN/PGND rows at the pins, L east of COUT (DS fig. 26)
- "R59": (46.75, 41.3, 180), "C37": (44.4, 42.1, 270),                            # AVDD filter on the AVDD row east of the group
+ "R59": (46.75, 41.5, 180), "C37": (44.4, 42.3, 270),                            # AVDD filter on the AVDD row east of the group
  # west comb: rows y = cy+k, comb end x = cx-9.0
  "R54": (CX - 8.1, CY - 1.0, 180), "C22": (34.3, 44.7, 0),  # DVDD 39: 0402 beside the S39 via
  "R53": (23.7, CY + 3.0, 180),

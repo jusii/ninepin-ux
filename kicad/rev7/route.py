@@ -120,21 +120,23 @@ c1 = pad("C32", 1); track("/+3V3", [c1, (c1[0], p8[1] - 0.4 - (c1[0] - p8[0] - 1
 # their own rows; CIN (0402 land with 1.1 mm pad pitch) straddles VIN and PGND with LX between its pads, COUT the same
 # across VOUT and PGND, the inductor stands east of COUT (VOUT on top, LX below). CIN and COUT each have their own ground
 # via and the F.Cu pour stays out of the group (make_board.py), so the regulator ground meets the plane only there.
-# AVDD dives south-east to the RC filter on the y 41.3 row. Pins 53/54 (3V3) take their plane feed from the VIN node
+# AVDD dives south-east to the RC filter on the y 41.5 row (0.55 mm below the LX pad). Pins 53/54 (3V3) take their plane feed from the VIN node
 # through a short link under the chip body, 0.25 mm inside the pad row.
 pe = {n: pad("U1", n) for n in ("46", "47", "48", "49", "50")}
 c29 = {k: pad("C29", k) for k in (1, 2)}; c38 = {k: pad("C38", k) for k in (1, 2)}; l1 = {k: pad("L1", k) for k in (1, 2)}
 c37 = {k: pad("C37", k) for k in (1, 2)}; r59 = {k: pad("R59", k) for k in (1, 2)}
 YFB, YVIN, YLX, YPG, YAV = (pe[n][1] for n in ("50", "49", "48", "47", "46"))
 track("/dvdd", [pe["50"], (l1[1][0], YFB)]); track("/dvdd", [(c38[1][0], YFB), c38[1]])            # FB along the top into L1 pad 1, sensed at COUT
+track("/dvdd", [c38[1], (l1[1][0] - 0.6, c38[1][1])], w=0.4)                                        # COUT -> inductor, the short way
 track("/+3V3", [pe["49"], (c29[1][0] - 0.4, YVIN), (c29[1][0] - 0.25, c29[1][1]), c29[1], (39.1, c29[1][1])]); via("/+3V3", 39.1, c29[1][1])   # VIN: CIN, then the plane
 track("/vreg_lx", [pe["48"], (37.5, YLX), (37.8, 39.1), (41.0, 39.1), (41.6, 39.7), l1[2]])     # between the cap pads into L1 pad 2
 track("GND", [pe["47"], (37.0, YPG), (37.45, c29[2][1]), c29[2], (39.1, c29[2][1]), c38[2], (40.3, c38[2][1] + 0.45), (40.3, 40.5)])
 via("GND", 39.1, c29[2][1]); via("GND", 40.3, 40.5)                                              # CIN's and COUT's own ground vias
-track("/dvdd", [l1[1], (42.95, l1[1][1]), (43.1, l1[1][1] + 0.15)]); via("/dvdd", 43.1, l1[1][1] + 0.15); track("/dvdd", [(43.1, l1[1][1] + 0.15), (43.1, 41.9)], "B")   # VOUT to the web, via clear of the jogged band
+track("/dvdd", [l1[1], (43.15, l1[1][1]), (43.3, l1[1][1] + 0.15)]); via("/dvdd", 43.3, l1[1][1] + 0.15); track("/dvdd", [(43.3, l1[1][1] + 0.15), (43.3, 41.9)], "B")   # VOUT to the web, via clear of the jogged band and the silk dot
 yav = r59[2][1]
 track("/vreg_avdd", [pe["46"], (36.9, YAV), (36.9 + (yav - YAV), yav), (c37[1][0], yav), r59[2]])
-gnd_stub(c37[2], 0, 43.85 - c37[2][1]); track("/+3V3", [r59[1], (48.2, r59[1][1]), (48.4, r59[1][1] + 0.2)]); via("/+3V3", 48.4, r59[1][1] + 0.2)
+track("GND", [c37[2], (45.075, c37[2][1]), (45.3, c37[2][1] + 0.225)]); via("GND", 45.3, c37[2][1] + 0.225)   # CFILT ground beside the pad (the pio_dm lane runs below)
+track("/+3V3", [r59[1], (48.2, r59[1][1]), (48.4, r59[1][1] + 0.2)]); via("/+3V3", 48.4, r59[1][1] + 0.2)   # RFILT from the plane
 # USB pair straight east off pins 52 / 51 to the series resistors (the H7 post forces the dip past x 59)
 for num, r, xt in (("52", "R57", 60.2), ("51", "R58", 59.4)):
     px, py = pad("U1", num); q1 = pad(r, 1); track(padnet("U1", num), [(px, py), (xt, py), (xt + (q1[1] - py), q1[1]), q1])
@@ -438,10 +440,10 @@ save("block 3a")
 reload_pads()
 # dvdd: W23 via -> north beside the 3V3 via -> y 29.4 (joins C20's stub) -> pin-6 via; S39 via -> y 41.4 / 42.6 -> C38 via
 track("/dvdd", [(26.4, 36.8), (26.4, 30.0), (27.0, 29.4), (33.9, 29.4), (35.0, 28.3)], "B")
-track("/dvdd", [S["39"], (33.6, 42.2), (33.9, 41.9), (43.1, 41.9)], "B")           # S39 via -> the VOUT via, just south of the band
+track("/dvdd", [S["39"], (33.6, 42.2), (33.9, 41.9), (43.3, 41.9)], "B")           # S39 via -> the VOUT via, just south of the band
 c22 = pad("C22", 1); track("/dvdd", [S["39"], (S["39"][0], c22[1] - (c22[0] - S["39"][0])), c22]); gnd_stub(pad("C22", 2), 0, 0.8)   # DVDD 39: 0402 beside its via
 # amiga_sense: S42 via -> In2 north-east past the qspi vias -> via north of U8 -> F.Cu up to the divider (R46 pad 2, R47, C11)
-track("/amiga_sense", [(35.4, 43.9), (35.4, 42.3), (36.0, 41.7), (36.0, 37.9), (36.8, 37.1), (40.6, 37.1), (40.6, 29.5), (42.6, 27.5), (43.3, 27.5)], "I2"); via("/amiga_sense", 43.3, 27.5)
+track("/amiga_sense", [(35.4, 43.9), (35.4, 42.3), (36.0, 41.7), (36.0, 35.5), (36.8, 34.7), (40.6, 34.7), (40.6, 29.5), (42.6, 27.5), (43.3, 27.5)], "I2"); via("/amiga_sense", 43.3, 27.5)
 r46b = pad("R46", 2); r47 = pad("R47", 1); c11 = pad("C11", 1)
 track("/amiga_sense", [(43.3, 27.5), (43.3, 22.7), (43.1, 22.5), r47])
 track("/amiga_sense", [r46b, (r46b[0], 22.2), (r46b[0] + 0.3, 22.5), (c11[0] - 0.3, 22.5), (c11[0], 22.2), c11])

@@ -2,7 +2,7 @@
 	(version 20260206)
 	(generator "kicad-footprint-generator")
 	(layer "F.Cu")
-	(descr "Capacitor SMD 0402 (1005 Metric) for the RP2350 regulator group: pads 0.50 x 0.62 at 1.10 mm pitch so a 0.2 mm VREG_LX track passes between them at 0.2 mm clearance (DS 6.3.8 Fig. 26); terminals 0.25-0.50 from centre, toe 0.30")
+	(descr "Capacitor SMD 0402 (1005 Metric) for the RP2350 regulator group: pads 0.55 x 0.62 at 1.10 mm pitch so a 0.2 mm VREG_LX track passes between them at 0.175 mm clearance (DS 6.3.8 Fig. 26); terminals 0.25-0.50 from centre, toe 0.30")
 	(tags "capacitor 0402 regulator")
 	(property "Reference" "REF**"
 		(at 0 -1.16 0)
@@ -87,13 +87,13 @@
 	)
 	(pad "1" smd roundrect
 		(at -0.55 0)
-		(size 0.5 0.62)
+		(size 0.55 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
 	)
 	(pad "2" smd roundrect
 		(at 0.55 0)
-		(size 0.5 0.62)
+		(size 0.55 0.62)
 		(layers "F.Cu" "F.Mask" "F.Paste")
 		(roundrect_rratio 0.25)
 	)
