@@ -30,6 +30,7 @@ def TVS(ref, net):
     return (ref, "Device:D_TVS", "PESD5V0S1BA", SOD323, {"1": net, "2": "GND"},
             {"LCSC": "C19224", "Datasheet": "https://assets.nexperia.com/documents/data-sheet/PESD5V0S1BA_SER.pdf"})
  
+RPACK_COMMON = {"RN4": "KBIN_5V"}                       # kbin pull-ups live on the keyboard-in supply; every other array on the Amiga I/O rail
 def RPACK(ref, nets, common, fp="Resistor_SMD:R_Array_Convex_4x0603", lcsc="C29718"):
     m = {}
     for i, n in enumerate(nets):   # pins 1-4 = R1.1..R4.1, pins 8..5 = R1.2..R4.2
@@ -48,18 +49,19 @@ KBD_IN = ["kbin_dat", "kbin_clk"]
 PORT1 = ["cont1_b3", "cont1_b2", "cont1_v", "cont1_b1", "cont1_h", "cont1_vq", "cont1_hq"]
 PORT2 = ["cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3"]
 U6_A = KBD_OUT + PORT1
-U7_A = ["kbin_clk", "kbin_dat"] + PORT2 + ["NC"]
-AMIGA_NETS = U6_A + U7_A[:9]                           # 19, in switch order; TVS D10.. follow this order
+U7_A = ["NC", "NC"] + PORT2 + ["NC"]                    # A1/A2 were kbin: now on the BSS138 shifters Q2/Q3 (2026-10-16)
+AMIGA_NETS = U6_A + ["kbin_clk", "kbin_dat"] + PORT2  # 19, in the old switch order; TVS D10.. follow this order
 # 10k pull-up arrays, placed where the lines pass: RN1-3 north of P1, RN4 by J1, RN5 by J12/J8, RN6/7 under P2
 # RN1/RN2 are 0402 arrays on U6's A pads (0.5 mm pitch suits the 0.635 pin pitch); the rest are 0603 arrays
 RPACKS = {"RN1": ["cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"], "RN2": ["NC", "cont1_hq", "cont1_vq", "cont1_h"],
           "RN3": ["kbreset", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
 # port 2 pull-ups are discrete 0402 10k on the lines north of P2 (no room for arrays between the clamp rows)
 PULLUPS = {"cont2_v": "R61", "cont2_b1": "R62", "cont2_h": "R63", "cont2_vq": "R64", "cont2_hq": "R65", "cont2_b2": "R66", "cont2_b3": "R67"}
-RPACK_FP = {"RN1": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725"), "RN2": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725")}
+RPACK_FP = {"RN1": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725"), "RN2": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725"),
+            "RN4": ("Resistor_SMD:R_Array_Convex_4x0402", "C25725")}   # RN4 stands in the 2.4 mm slot between J8 and the H5 post
 
 def CBTD(ref, nets):
-    m = {"1": "NC", "12": "GND", "23": "GND", "24": "AMIGA_5V_FUSED"}
+    m = {"1": "NC", "12": "GND", "23": "GND", "24": "AMIGA_IO5V"}
     for i, n in enumerate(nets):
         m[str(2 + i)] = n                                    # A1..A10 = pins 2..11
         m[str(22 - i)] = (n + "_lo") if n != "NC" else "NC"  # B1..B10 = pins 22..13
@@ -92,9 +94,12 @@ RP.update({"1": "+3V3", "11": "+3V3", "20": "+3V3", "30": "+3V3", "38": "+3V3", 
 BLOCKS = [
  {"title": "power tree", "notes": [
    "AMIGA_5V (keyboard connector / A500 header) -> F1 -> AMIGA_5V_FUSED -> D1 -> SYS5V; USB-C -> D2 -> SYS5V. Either source alone runs the board.",
-   "AMIGA_5V_FUSED feeds the bus switches and the Amiga-side pull-ups only, so a USB-C-powered board never back-feeds an Amiga that is off.",
+   "AMIGA_IO5V (2026-10-16) is the bus-switch / pull-up / Amiga-sense rail: OR-ed through D4 from AMIGA_5V_FUSED and through D5 / D6 from DE9 pin 7 of each port, so the ports work with only the DE9 cables (A600/A1200, or an Amiga keeping its own keyboard) and a USB-C-powered board still never back-feeds an Amiga that is off. The DE9 5 V never reaches SYS5V (the diodes block it), so a joystick port is never asked to run the board.",
    "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, expander). R60 bleeds D1 leakage off the fused rail."], "parts": [
-   ("F1", "Device:Polyfuse", "750mA", "Fuse:Fuse_1812_4532Metric", {"1": "AMIGA_5V", "2": "AMIGA_5V_FUSED"}, {"MPN": "MF-MSMF075-2", "LCSC": "C84140", "Note": "fitted at assembly: AMIGA_5V_FUSED is the bus-switch supply, an empty F1 would mute the Amiga side. LCSC code to verify before order"}),
+   ("F1", "Device:Polyfuse", "750mA", "Fuse:Fuse_1812_4532Metric", {"1": "AMIGA_5V", "2": "AMIGA_5V_FUSED"}, {"MPN": "MF-MSMF075-2", "LCSC": "C84140", "Note": "fitted at assembly: the keyboard-connector 5 V feeds SYS5V through D1 and the I/O rail through D4; an empty F1 would leave the board USB-C-only"}),
+   ("D4", "Device:D_Schottky", "B5819W", "Diode_SMD:D_SOD-123", {"1": "AMIGA_IO5V", "2": "AMIGA_5V_FUSED"}, {"LCSC": "C8598", "Note": "I/O rail OR: keyboard-connector 5 V"}),
+   ("D5", "Device:D_Schottky", "B5819W", "Diode_SMD:D_SOD-123", {"1": "AMIGA_IO5V", "2": "cont1_5v"}, {"LCSC": "C8598", "Note": "I/O rail OR: port 1 DE9 pin 7"}),
+   ("D6", "Device:D_Schottky", "B5819W", "Diode_SMD:D_SOD-123", {"1": "AMIGA_IO5V", "2": "cont2_5v"}, {"LCSC": "C8598", "Note": "I/O rail OR: port 2 DE9 pin 7"}),
    ("D1", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AMIGA_5V_FUSED"}, {"LCSC": "C8678"}),
    ("D2", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AUX_5V"}, {"LCSC": "C8678"}),
    ("F2", "Device:Polyfuse", "500mA", "Fuse:Fuse_1812_4532Metric", {"1": "SYS5V", "2": "USBA_5V"}, {"LCSC": "C17313", "MPN": "MF-MSMF050-2"}),
@@ -102,11 +107,11 @@ BLOCKS = [
    C("C1", "22uF", "SYS5V", "GND", C0805, LCSC="C45783", Note="25 V X5R 0805; with C2 the SYS5V bulk, the host-port bulk is C4 behind F2"), C("C2", "10uF", "SYS5V", "GND", C0805), C("C3", "100nF", "SYS5V", "GND"),
    C("C4", "150uF", "USBA_5V", "GND", CELEC, MPN="EEEFKC151XAP", Note="16 V 105 C, SMD 6.3x7.7"), C("C5", "100nF", "USBA_5V", "GND"),
    C("C6", "10uF", "KBIN_5V", "GND", C0805), C("C7", "100nF", "KBIN_5V", "GND"),
-   ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2868428", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX. LCSC code to verify before order"}),
+   ("U3", "Regulator_Linear:TLV75733PDRV", "TLV75733PDRVR", "Package_SON:WSON-6-1EP_2x2mm_P0.65mm_EP1x1.6mm", {"1": "+3V3", "2": "NC", "3": "GND", "4": "SYS5V", "5": "NC", "6": "SYS5V", "7": "GND"}, {"LCSC": "C2868428", "Note": "WSON-6 with thermal pad instead of SOT-23-5: up to 0.45 W during Wi-Fi TX"}),
    C("C8", "1uF", "SYS5V", "GND"), C("C9", "1uF", "+3V3", "GND"), C("C10", "10uF", "+3V3", "GND", C0805),
-   R("R46", "100k", "AMIGA_5V_FUSED", "amiga_sense", Note="Amiga-on sense divider to ADC2; firmware threshold ~2.5 V"), R("R47", "100k", "amiga_sense", "GND"), C("C11", "100nF", "amiga_sense", "GND"),
+   R("R46", "100k", "AMIGA_IO5V", "amiga_sense", Note="Amiga-on sense divider to ADC2 from the I/O rail (any Amiga 5 V source): rail >= 4.3 V gives >= 2.15 V at the ADC, threshold ~1.5 V"), R("R47", "100k", "amiga_sense", "GND"), C("C11", "100nF", "amiga_sense", "GND"),
    R("R60", "1k", "AMIGA_5V_FUSED", "GND", Note="bleeder: keeps D1 reverse leakage from lifting the fused rail when the board runs on USB-C"),
-   ("D3", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "LED_VDD", "2": "SYS5V"}, {"LCSC": "C8678", "Note": "drops the WS2812 supply so a 3.3 V data drive meets VIH"}),
+   ("D3", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "LED_VDD", "2": "SYS5V"}, {"LCSC": "C8678", "Note": "lowers LED_VDD by one Schottky drop; kept from the 3.3 V-drive design, harmless now that Q1 swings ws_din to the full LED_VDD"}),
    C("C12", "100nF", "LED_VDD", "GND"),
  ]},
  {"title": "to amiga (keyboard out) / from real keyboard (keyboard in) / A500 headers", "notes": [
@@ -114,27 +119,29 @@ BLOCKS = [
    "JP1 is for standalone use only (no Amiga on J1): bridges the A500 keyboard power LED through R45."], "parts": [
    ("J10", "rev7:MiniDIN6_PS2_Socket", "KBD OUT (to Amiga)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbdata", "2": "NC", "3": "GND", "4": "AMIGA_5V", "5": "kbclock", "6": "NC", "SH": "GND"}, {"LCSC": "C6089346", "MPN": "CUI MD-60S", "Sourcing": "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"}),
    ("J12", "rev7:MiniDIN6_PS2_Socket", "KBD IN (from keyboard)", "rev7:MiniDIN6_PS2_Socket_CUI_MD-60S", {"1": "kbin_dat", "2": "NC", "3": "GND", "4": "KBIN_5V", "5": "kbin_clk", "6": "NC", "SH": "GND"}, {"LCSC": "C6089346", "MPN": "CUI MD-60S", "Sourcing": "JLCPCB THT assembly; land is the post-03/2022 6.8 mm revision, ask for the date code"}),
-   ("J1", "Connector_Generic:Conn_01x08", "A500 KBD OUT", PIN % 8, {"1": "kbclock", "2": "kbdata", "3": "kbreset", "4": "AMIGA_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
-   ("J8", "Connector_Generic:Conn_01x08", "A500 KBD IN", PIN % 8, {"1": "kbin_clk", "2": "kbin_dat", "3": "kbreset", "4": "KBIN_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407"}),
+   ("J1", "Connector_Generic:Conn_01x08", "A500 KBD OUT", PIN % 8, {"1": "kbclock", "2": "kbdata", "3": "kbreset", "4": "AMIGA_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407", "Note": "pin 5 is the A500 plug's key position: pull pin 5 before plugging a keyed cable (JLC fits all 8)"}),
+   ("J8", "Connector_Generic:Conn_01x08", "A500 KBD IN", PIN % 8, {"1": "kbin_clk", "2": "kbin_dat", "3": "kbreset", "4": "KBIN_5V", "5": "NC", "6": "GND", "7": "kb_pwrled", "8": "kb_drvled"}, {"LCSC": "C492407", "Note": "pin 5 is the key position: pull pin 5 before plugging a keyed cable"}),
    ("JP1", "Jumper:SolderJumper_2_Open", "KBIN PWRLED", "Jumper:SolderJumper-2_P1.3mm_Open_RoundedPad1.0x1.5mm", {"1": "kb_pwrled", "2": "kb_pwrled_bal"}, {"in_bom": "no"}),
    R("R45", "470", "kb_pwrled_bal", "SYS5V"),
    TVS("D29", "kb_pwrled"), TVS("D30", "kb_drvled"),
  ]},
  {"title": "controller ports (DE9 male, straight-through F-F cables)", "notes": ["Pin 7 (+5 V) is not connected: the ports never power the board."], "parts": [
    ("P1", "Connector:DE9_Pins_MountingHoles", "DE9 PORT 1", "rev7:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm",
-    {"1": "cont1_v", "2": "cont1_h", "3": "cont1_vq", "4": "cont1_hq", "5": "cont1_b3", "6": "cont1_b1", "7": "NC", "8": "GND", "9": "cont1_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"}),
+    {"1": "cont1_v", "2": "cont1_h", "3": "cont1_vq", "4": "cont1_hq", "5": "cont1_b3", "6": "cont1_b1", "7": "cont1_5v", "8": "GND", "9": "cont1_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly if their stock allows (8 on 2026-10-16), otherwise deselect at order time and hand-solder Kycon K22X-E9P-N / NorComp 182-009-113R531 (same land, 4-40 flush inserts)"}),
    ("P2", "Connector:DE9_Pins_MountingHoles", "DE9 PORT 2", "rev7:DSUB-9_Pins_Horizontal_P2.77x2.84mm_EdgePinOffset7.70mm_Housed_MountingHolesOffset9.12mm",
-    {"1": "cont2_v", "2": "cont2_h", "3": "cont2_vq", "4": "cont2_hq", "5": "cont2_b3", "6": "cont2_b1", "7": "NC", "8": "GND", "9": "cont2_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly; 8 in stock 2026-10-15 (4 boards) - consign TE 5747840-4 / NorComp 182-009-113R531 beyond that; 4-40 flush insert"}),
+    {"1": "cont2_v", "2": "cont2_h", "3": "cont2_vq", "4": "cont2_hq", "5": "cont2_b3", "6": "cont2_b1", "7": "cont2_5v", "8": "GND", "9": "cont2_b2", "SH": "GND"}, {"LCSC": "C305939", "MPN": "TE 5747840-4", "Sourcing": "JLCPCB THT assembly if their stock allows (8 on 2026-10-16), otherwise deselect at order time and hand-solder Kycon K22X-E9P-N / NorComp 182-009-113R531 (same land, 4-40 flush inserts)"}),
  ]},
  {"title": "level shifting: 2x SN74CBTD3861 bus switches, Amiga side on A, RP2350 side on B", "notes": [
-   "VCC = AMIGA_5V_FUSED: the diode-dropped gate limits the B side to ~2.6-3.0 V typ (TI fig. 2) and the RP2350 internal pull-up completes the rise to 3.3 V. OE tied low (always on). Keep VCC >= 4.5 V.",
-   "F1 is fitted: this rail is the switch supply. Cabling only the DE9 ports to a running Amiga leaves the rail dead and the port pull-ups drag the lines low - connect the keyboard cable or USB-C first (as rev6).",
+   "VCC = AMIGA_IO5V (keyboard-connector 5 V or either DE9 pin 7, through D4-D6): the diode-dropped gate limits the B side to ~2.6-3.0 V typ (TI fig. 2) and the RP2350 internal pull-up completes the rise to 3.3 V. OE tied low (always on). Keep VCC >= 4.5 V (one Schottky drop below the Amiga's 5 V).",
+   "Keyboard-in (kbin_clk / kbin_dat) is not on U7 any more: Q2 / Q3 BSS138 shifters with RN4 on KBIN_5V, so a real Amiga keyboard reads on USB-C power alone (device mode for a C64 Ultimate); U7 A1/A2 and B1/B2 are left open.",
    "With the Amiga off the switches are open and the B side floats: firmware enables the RP2350 internal pull-ups on every _lo input.",
    "Amiga-side pull-ups: 19 x 10k to AMIGA_5V_FUSED in seven 4-element arrays placed where the lines pass (9 elements spare). ESD clamps D10-D28 on every Amiga-facing line."], "parts": [
    CBTD("U6", U6_A), CBTD("U7", U7_A),
-   C("C13", "100nF", "AMIGA_5V_FUSED", "GND"), C("C14", "100nF", "AMIGA_5V_FUSED", "GND"),
-   ] + [RPACK(r, n, "AMIGA_5V_FUSED", *RPACK_FP.get(r, ("Resistor_SMD:R_Array_Convex_4x0603", "C29718"))) for r, n in RPACKS.items()]
-     + [(r, "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", {"1": n, "2": "AMIGA_5V_FUSED"}, {"LCSC": "C25744"}) for n, r in PULLUPS.items()] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
+   C("C13", "100nF", "AMIGA_IO5V", "GND"), C("C14", "100nF", "AMIGA_IO5V", "GND"),
+   ("Q2", "Transistor_FET:Q_NMOS_GSD", "BSS138", "Package_TO_SOT_SMD:SOT-23", {"1": "+3V3", "2": "kbin_dat_lo", "3": "kbin_dat"}, {"LCSC": "C82045", "Note": "keyboard-in level shifter (rev6 topology): source = GPIO15 with the RP2350 internal pull-up, drain = KDAT with RN4 to KBIN_5V; KDAT is bidirectional (the computer pulls it low to acknowledge), which the BSS138 passes both ways"}),
+   ("Q3", "Transistor_FET:Q_NMOS_GSD", "BSS138", "Package_TO_SOT_SMD:SOT-23", {"1": "+3V3", "2": "kbin_clk_lo", "3": "kbin_clk"}, {"LCSC": "C82045", "Note": "keyboard-in level shifter: source = GPIO14, drain = KCLK"}),
+   ] + [RPACK(r, n, RPACK_COMMON.get(r, "AMIGA_IO5V"), *RPACK_FP.get(r, ("Resistor_SMD:R_Array_Convex_4x0603", "C29718"))) for r, n in RPACKS.items()]
+     + [(r, "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", {"1": n, "2": "AMIGA_IO5V"}, {"LCSC": "C25744"}) for n, r in PULLUPS.items()] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
  {"title": "usb: USB-C on the RP2350 USB PHY (device, power, flashing), USB-A host on PIO-USB (GPIO26/27)", "notes": [
    "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB. USB-C is device-only: CC carries Rd and VBUS only flows in through D2 (review 2026-10-15).",
    "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."], "parts": [
@@ -151,7 +158,7 @@ BLOCKS = [
    "Per the RP2350 hardware design guide / Pico 2 W: VREG_VIN and VREG_AVDD on 3V3 (AVDD through 33R + 4.7uF), DVDD 4.7uF at pin 23 + 100nF at 6/39, 4.7uF CIN at VREG_VIN, 100nF per IOVDD pin, one 100nF shared by USB_OTP_VDD/QSPI_IOVDD.",
    "BOOT pulls QSPI_SS low at reset (USB bootloader on USB-C); RESET pulls RUN low."], "parts": [
    ("U1", "MCU_RaspberryPi:RP2350A", "RP2350A", "Package_DFN_QFN:QFN-60-1EP_7x7mm_P0.4mm_EP3.4x3.4mm", RP, {"LCSC": "C42411118"}),
-   ("L1", "Device:L", "3.3uH", "rev7:L_2016_AOTA", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C42411119", "MPN": "AOTA-B201610S3R3-101-T", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; the footprint carries the silk dot at pad 1 (Abracon land, 1.0x1.6 pads on 2.0 mm); check the reel orientation at JLCPCB"}),
+   ("L1", "Device:L", "3.3uH", "rev7:L_2016_AOTA", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C17701150", "MPN": "MTQH201612S3R3MBT", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded 2016, 135 mR, 2.4 A sat (the Pico 2 part AOTA-B201610S3R3-101-T C42411119 is unbuyable at JLCPCB: 4 in stock, min 32). Pad 1 (silk dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; the MTQH winding-start mark is unverified - orient a marked reel dot-side to pad 1, otherwise accept (EMI margin only)"}),
    C("C38", "4.7uF", "dvdd", "GND", "rev7:C_0402_1005Metric_vreg", LCSC="C23733", Note="COUT, 0402 straddling VOUT and PGND right at the pins, LX between its pads (DS fig. 26)"),
    C("C20", "4.7uF", "dvdd", "GND", C0402, Note="DVDD pin 23 (furthest from the regulator)"), C("C21", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 6"), C("C22", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 39"),
    C("C23", "100nF", "+3V3", "GND"), C("C24", "100nF", "+3V3", "GND"), C("C25", "100nF", "+3V3", "GND", C0402), C("C26", "100nF", "+3V3", "GND"), C("C27", "100nF", "+3V3", "GND"), C("C28", "100nF", "+3V3", "GND"),
@@ -192,10 +199,10 @@ BLOCKS = [
      "13": "exp_int", "14": "i2c_scl", "15": "i2c_sda", "16": "+3V3"},
     {"LCSC": "C477924", "Note": "I2C I/O expander at 0x20 (A0-A2 low): rotary encoder + spare on P0-P3, USB-C VBUS sense on P4, INT (open drain, GPIO3 internal pull-up) to GPIO3. TCA9554 = TCA9534 plus ~100k internal pull-ups on every P port (review 2026-10-15: the TCA9534 has none), so the encoder lines and unused P5-P7 never float; stronger pull-ups can go on the encoder cable from J7 pin 6"}),
    C("C39", "100nF", "+3V3", "GND", C0402),
-   R("R68", "6.8k", "AUX_5V", "vbus_sense", Note="VBUS sense divider 6.8k/10k: 2.6-3.3 V at P4 over VBUS 4.4-5.5 V (TCA9554 VIH 2.31 V), ~300 uA, and stiff enough that D2 reverse leakage cannot lift it to a false high"), R("R69", "10k", "vbus_sense", "GND"),
+   R("R68", "4.7k", "AUX_5V", "vbus_sense", Note="VBUS sense divider 4.7k/10k: 3.0-3.7 V at P4 over VBUS 4.4-5.5 V (TCA9554 P-port VIH = 0.8 VCC = 2.64 V at 3.3 V, inputs tolerate 5.5 V), ~350 uA, stiff enough that D2 reverse leakage cannot lift it to a false high"), R("R69", "10k", "vbus_sense", "GND"),
    ("J7", "Connector_Generic:Conn_02x03_Odd_Even", "ENCODER", "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical", {"1": "enc_sw", "2": "enc_sp", "3": "enc_b", "4": "GND", "5": "enc_a", "6": "+3V3"},
     {"LCSC": "C65114", "MPN": "BOOMELE 2.54-2*3P", "Note": "fitted: rotary encoder A/B/switch on the lid, one spare input; GND and 3V3 for the encoder cable"}),
  ]},
 ]
 
-POWER_FLAG_NETS = ["AMIGA_5V", "AUX_5V", "SYS5V", "AMIGA_5V_FUSED", "USBA_5V", "KBIN_5V", "LED_VDD", "wl_vin", "dvdd", "adc_avdd", "vreg_avdd"]
+POWER_FLAG_NETS = ["AMIGA_5V", "AUX_5V", "SYS5V", "AMIGA_5V_FUSED", "AMIGA_IO5V", "USBA_5V", "KBIN_5V", "LED_VDD", "wl_vin", "dvdd", "adc_avdd", "vreg_avdd"]

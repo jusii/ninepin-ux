@@ -12,7 +12,7 @@ P = {
  # neighbouring tracks by 0.45) but never in adjacent columns at the same height.
  "U1": MCU,
  # north comb: columns x = cx+k, comb top y = cy-9.2; caps at the top of their column
- "C23": (30.0, 27.1, 90), "C21": (35.5, 27.45, 0), "C24": (40.5, 27.45, 0),   # 0402 caps at the N-side column vias: IOVDD 11, DVDD 6, IOVDD 1
+ "C23": (30.0, 26.6, 90), "C21": (35.5, 27.45, 0), "C24": (40.5, 27.45, 0),   # 0402 caps at the N-side column vias: IOVDD 11, DVDD 6, IOVDD 1
  # east comb: rows y = cy+1.2k, comb end x = cx+10.5; flash pads 1-3 on rows -7..-5
  "U8":  (CX + 14.0, CY - 6.5, 0),  "C32": (52.9, 26.9, 0),  "R52": (44.9, 26.3, 0),      # BOOT resistor at the flash, so the chip-select line has no stub
  "C30": (38.2, 36.6, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),   # USB_OTP/QSPI_IOVDD cap and the USB series Rs right off the E pins
@@ -32,7 +32,7 @@ P = {
  "R55": (20.9, 43.0, 0),  "R56": (20.9, 41.4, 0),
  # --- parked decoupling (plane caps) north of the lanes ---
  # --- north-centre power row (y 20.8): sense divider, F1, D1, LDO, caps ---
- "R46": (41.5, 20.8, 270), "R47": (43.1, 20.8, 90), "C11": (44.7, 20.8, 90), "R60": (46.3, 20.8, 90),
+ "R46": (41.7, 20.8, 270), "R47": (43.3, 20.8, 90), "C11": (44.9, 20.8, 90), "R60": (46.5, 20.8, 270),   # sense row 0.3 east of the I/O riser; R60 fused pad north on the D1 lane
  "F1":  (38.3, 20.5, 270), "D1":  (51.1, 21.1, 0),  "C8":  (58.1, 20.8, 90),  "U3":  (60.6, 20.8, 180),
  "C9":  (62.7, 20.8, 90), "C10": (64.5, 20.8, 90), "C2":  (56.3, 20.8, 90), "C3":  (48.0, 25.4, 0),
  "C1":  (63.5, 24.5, 0),
@@ -42,8 +42,10 @@ P = {
  # --- bus switches: U6 MCU row south (lanes), U7 MCU row north (vias); arrays east ---
  "U6":  (13.0, 22.0, 90), "U7":  (80.65, 25.0, 90),
  "C13": (7.1, 22.0, 270),  "C14": (75.4, 18.8, 90),
+ "D4":  (35.0, 20.0, 270), "D5":  (11.4, 47.8, 0),  "D6":  (86.2, 45.2, 270),   # I/O rail OR diodes: D4 west of F1, D5 west of P1, D6 beside the port-2 pull-up feed
+ "Q2":  (72.4, 22.8, 0),   "Q3":  (72.4, 27.5, 180),                            # kbin BSS138 shifters west of U7, either side of the I/O bus
  "RN1": (12.7975, 27.5, 270), "RN2": (15.4725, 27.5, 270),   # pad 4 / pad 3 exactly under U6 pins 5 / 10                            # port 1: 0402 arrays under U6's A pads
- "RN3": (31.9, 12.1, 270), "RN4": (42.4, 17.5, 270),                             # keyboard out under J1, keyboard in under J8
+ "RN3": (31.9, 12.1, 270), "RN4": (58.6, 13.4, 0),                               # keyboard out under J1; keyboard in on the kbin B.Cu lanes west of the H5 post (KBIN_5V from the y 7.5 lane)
  "R61": (70.55, 48.5, 180), "R62": (71.93, 46.8, 180), "R63": (74.34, 46.8, 0), "R64": (76.09, 48.5, 180), "R65": (78.86, 46.8, 180), "R66": (80.24, 48.5, 180), "R67": (82.65, 46.8, 0),                                # port 2, east of the clamp rows, fed by B.Cu stubs from the P2 pins
  "R41": (77.3, 16.5, 90), "R42": (72.7, 16.5, 90),   # i2c pull-ups by the OLED socket
  # --- usb ---

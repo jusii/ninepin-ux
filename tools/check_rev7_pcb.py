@@ -113,7 +113,7 @@ DE9_REFS = ["P1", "P2"]
 OLED_LOW_OK = [
     r"^R_0603_", r"^C_0603_", r"^L_0603_", r"^R_0805_", r"^C_0805_",
     r"^D_SOD-323$", r"^SSOP-24_", r"^R_Array_Convex_", r"^MSOP-10_",
-    r"^SOT-23-6$", r"^D_SMA$", r"^MountingHole_2\.2mm_M2$", r"^WSON-6-",
+    r"^SOT-23-6$", r"^SOT-23$", r"^D_SMA$", r"^MountingHole_2\.2mm_M2$", r"^WSON-6-",
 ]
 OLED_LOW_OK_REFS = {"J3": r"^PinSocket_1x04_P2\.54mm_Vertical$"}   # the socket the module plugs into
 
@@ -124,6 +124,7 @@ PKG_HEIGHTS = [
     (r"^R_0805_|^C_0805_", 1.35),
     (r"^R_Array_Convex_4x0603", 0.6),
     (r"^D_SOD-323$", 1.1),
+    (r"^D_SOD-123$", 1.35),
     (r"^D_SOD-882$", 0.5),
     (r"^R_0402_", 0.4),
     (r"^C_0402_", 0.5),
@@ -161,7 +162,7 @@ OLED_PCB_BOTTOM = F.OLED_Z_TOP - F.BOARD_T - 1.0 - 1.7
 # K: netclasses (as rev6)
 POWER_NETCLASS = "Power"
 POWER_NETCLASS_PATTERNS = [
-    "/AMIGA_5V", "/AMIGA_5V_FUSED", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V",
+    "/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V",
 ]
 POWER_NETCLASS_MIN_WIDTH = 0.6        # re-targeted to rev7's M2 copper floor (rev6: 1.0)
 POWER_NETCLASS_MIN_CLEARANCE = 0.2  # rev7 routes the 5 V rails at 0.2 (rev6: 0.25)
@@ -1222,7 +1223,7 @@ def check_k(rep: Report, proj_path: str, model: Model) -> None:
                 bad.append("%s is not a net on the board" % pattern)
             elif got != POWER_NETCLASS:
                 bad.append("kicad resolves %s to %r, not %r" % (pattern, got, POWER_NETCLASS))
-    rep.add("K2", "kicad resolves the six 5 V rails to netclass %r" % POWER_NETCLASS, not bad, bad)
+    rep.add("K2", "kicad resolves the seven 5 V rails to netclass %r" % POWER_NETCLASS, not bad, bad)
 
     bad = []
     seen = [n for n in V33_NETS if n in model.netclass]

@@ -188,6 +188,23 @@ text("hid-pico Amiga UX rev7", W / 2, H + o + 2.5, D, 1.2)
 t = pcbnew.PCB_TEXT(b); t.SetText("amigahid-pico-UX rev7"); t.SetPosition(P(50, 30)); t.SetLayer(pcbnew.B_SilkS)
 t.SetTextSize(VECTOR2I(mm(1.5), mm(1.5))); t.SetTextThickness(mm(0.25)); t.SetMirrored(True); b.Add(t)
 
+# top silk: connector and button labels (1.0 mm / 0.16 mm, JLCPCB minimums), and the JLCPCB order-number anchor on the back
+def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
+    t = pcbnew.PCB_TEXT(b); t.SetText(txt); t.SetPosition(P(x, y)); t.SetLayer(layer)
+    t.SetTextSize(VECTOR2I(mm(h), mm(h))); t.SetTextThickness(mm(w)); t.SetTextAngleDegrees(rot)
+    if layer == pcbnew.B_SilkS: t.SetMirrored(True)
+    b.Add(t)
+for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.0, 16.6, 0), ("A500 OUT", 52.0, 11.0, 0), ("A500 IN", 48.0, 16.6, 0),
+                       ("SWD", 17.0, 8.0, 0), ("ENC", 86.8, 9.2, 0), ("BOOT", 90.6, 17.0, 90), ("RESET", 96.0, 55.2, 0),
+                       ("PORT 1", 33.5, 47.6, 0), ("PORT 2", 89.0, 48.5, 0)):
+    silk(txt, x, y, rot)
+silk("JLCJLCJLCJLC", 50, 40, 0, pcbnew.B_SilkS)
+# footprint silk below JLCPCB's 0.15 mm minimum line width (library 0.12 mm outlines) is thickened
+for fp in b.Footprints():
+    for it in fp.GraphicalItems():
+        if it.GetLayer() in (pcbnew.F_SilkS, pcbnew.B_SilkS) and it.GetClass() == "PCB_SHAPE" and it.GetWidth() < mm(0.15):
+            it.SetWidth(mm(0.15))
+
 # 3D bodies: rev6's STEP models for the mini-DIN sockets and the OLED-on-posts, simple VRML bodies for the RM2, the 1812
 # fuses and the WS2812 (kicad 10 ships none), and the QFN-56 7x7 body standing in for the QFN-60 (same package outline)
 D3 = "${KIPRJMOD}/rev7.3dshapes/"
@@ -214,8 +231,10 @@ default = [c for c in ns["classes"] if c["name"] == "Default"][0]
 default.update({"clearance": 0.15, "track_width": 0.2, "via_diameter": 0.6, "via_drill": 0.3, "diff_pair_width": 0.2, "diff_pair_gap": 0.15})
 power = dict(default); power.update({"name": "Power", "clearance": 0.2, "track_width": 0.6, "via_diameter": 0.8, "via_drill": 0.4})
 ns["classes"] = [default, power]
-ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V")]
+ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V")]
 if ns.get("meta", {}).get("version", 0) < 3: ns["meta"] = {"version": 3}
+if not j.get("schematic", {}).get("top_level_sheets"):              # kicad-cli sch export empties this; put the root sheet back
+    j.setdefault("schematic", {})["top_level_sheets"] = [{"filename": "amigahid-pico-rev7.kicad_sch", "name": "amigahid-pico-rev7", "uuid": "00000000-0000-0000-0000-000000000000"}]
 r = j["board"]["design_settings"]["rules"]
 r.update({"min_clearance": 0.15, "min_track_width": 0.15, "min_via_diameter": 0.5, "min_through_hole_diameter": 0.3, "min_hole_to_hole": 0.5,
           "min_hole_clearance": 0.15, "min_copper_edge_clearance": 0.3, "min_silk_clearance": 0.15, "min_via_annular_width": 0.1})

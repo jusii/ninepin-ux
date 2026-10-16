@@ -343,6 +343,10 @@
       },
       {
         "netclass": "Power",
+        "pattern": "/AMIGA_IO5V"
+      },
+      {
+        "netclass": "Power",
         "pattern": "/SYS5V"
       },
       {
