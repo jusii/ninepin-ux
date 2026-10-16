@@ -360,6 +360,14 @@
       {
         "netclass": "Power",
         "pattern": "/KBIN_5V"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/cont1_5v"
+      },
+      {
+        "netclass": "Power",
+        "pattern": "/cont2_5v"
       }
     ]
   },

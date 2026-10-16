@@ -194,9 +194,9 @@ def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
     t.SetTextSize(VECTOR2I(mm(h), mm(h))); t.SetTextThickness(mm(w)); t.SetTextAngleDegrees(rot)
     if layer == pcbnew.B_SilkS: t.SetMirrored(True)
     b.Add(t)
-for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.0, 16.6, 0), ("A500 OUT", 52.0, 11.0, 0), ("A500 IN", 48.0, 16.6, 0),
-                       ("SWD", 17.0, 8.0, 0), ("ENC", 86.8, 9.2, 0), ("BOOT", 90.6, 17.0, 90), ("RESET", 96.0, 55.2, 0),
-                       ("PORT 1", 33.5, 47.6, 0), ("PORT 2", 89.0, 48.5, 0)):
+for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90), ("A500 OUT", 48.2, 2.0, 0), ("A500 IN", 48.0, 16.6, 0),
+                       ("SWD", 17.0, 8.0, 0), ("ENC", 86.8, 9.2, 0), ("BOOT", 90.6, 17.0, 90), ("RESET", 96.5, 53.65, 0),
+                       ("PORT 1", 33.5, 47.6, 0), ("PORT 2", 89.6, 48.6, 0)):
     silk(txt, x, y, rot)
 silk("JLCJLCJLCJLC", 50, 40, 0, pcbnew.B_SilkS)
 # footprint silk below JLCPCB's 0.15 mm minimum line width (library 0.12 mm outlines) is thickened
@@ -231,7 +231,7 @@ default = [c for c in ns["classes"] if c["name"] == "Default"][0]
 default.update({"clearance": 0.15, "track_width": 0.2, "via_diameter": 0.6, "via_drill": 0.3, "diff_pair_width": 0.2, "diff_pair_gap": 0.15})
 power = dict(default); power.update({"name": "Power", "clearance": 0.2, "track_width": 0.6, "via_diameter": 0.8, "via_drill": 0.4})
 ns["classes"] = [default, power]
-ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V")]
+ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V", "/cont1_5v", "/cont2_5v")]
 if ns.get("meta", {}).get("version", 0) < 3: ns["meta"] = {"version": 3}
 if not j.get("schematic", {}).get("top_level_sheets"):              # kicad-cli sch export empties this; put the root sheet back
     j.setdefault("schematic", {})["top_level_sheets"] = [{"filename": "amigahid-pico-rev7.kicad_sch", "name": "amigahid-pico-rev7", "uuid": "00000000-0000-0000-0000-000000000000"}]

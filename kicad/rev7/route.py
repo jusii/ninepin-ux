@@ -30,7 +30,7 @@ def track(netname, pts, layer="F", w=0.2):
     for a, c in zip(pts, pts[1:]):
         if abs(a[0] - c[0]) < 1e-6 and abs(a[1] - c[1]) < 1e-6: continue
         t = pcbnew.PCB_TRACK(b); t.SetStart(P(*a)); t.SetEnd(P(*c)); t.SetWidth(mm(w)); t.SetLayer(L[layer]); t.SetNet(n); b.Add(t)
-POWER = {"/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V"}
+POWER = {"/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V", "/cont1_5v", "/cont2_5v"}
 def via(netname, x, y, size=None, drill=0.3):
     if size is None: size = 0.6 if netname in POWER else 0.5                   # Power-net vias 0.6/0.3, signals 0.5/0.3
     v = pcbnew.PCB_VIA(b); v.SetPosition(P(x, y)); v.SetWidth(mm(size)); v.SetDrill(mm(drill)); v.SetViaType(pcbnew.VIATYPE_THROUGH)
@@ -356,7 +356,7 @@ for r in ("R41", "R42"):
 # y 15.3 / 15.75 west into J8 pins 1/2; clamps D20/D21 and the array RN4 hang off those
 j12 = {k: pad("J12", k) for k in ("1", "3", "4", "5", "SH")}; j8 = {k: pad("J8", k) for k in ("1", "2", "3", "4", "6", "7", "8")}
 q2 = {k: pad("Q2", k) for k in (1, 2, 3)}; q3 = {k: pad("Q3", k) for k in (1, 2, 3)}; d20 = pad("D20", 1); d21 = pad("D21", 1)
-track("/kbin_clk", [j12["5"], (68.6, 28.4), (69.0, 28.8), (q3[3][0], 28.8), q3[3]])                      # into Q3's drain
+track("/kbin_clk", [j12["5"], (68.6, q3[3][1] - 0.4), (69.0, q3[3][1]), q3[3]])                       # into Q3's drain
 track("/kbin_clk", [(68.6, d20[1]), d20]); gnd_stub(pad("D20", 2), -1.2, 0)
 track("/kbin_dat", [j12["1"], (j12["1"][0], 9.8), (69.2, 11.3), (69.2, 22.4), (69.6, 22.8), q2[3]])                        # down past D21 into Q2's drain
 # sources to the GPIO lanes (B.Cu 25.0 / 25.6, which end here), gates to the 3V3 plane
@@ -373,7 +373,7 @@ rn4 = {padnet("RN4", k): pad("RN4", k) for k in (3, 4)}
 e = rn4["/kbin_dat"]; via("/kbin_dat", e[0] - 0.7, 15.3); track("/kbin_dat", [(e[0] - 0.7, 15.3), (e[0] - 0.7, e[1]), e])   # pin 3 from the west
 e = rn4["/kbin_clk"]; via("/kbin_clk", e[0], 16.0); track("/kbin_clk", [(e[0], 16.0), e])                            # pin 4 from below
 q = pad("RN4", 8); track("/KBIN_5V", [pad("RN4", 5), q], w=0.3); via("/KBIN_5V", 59.0, 7.5, 0.6, 0.3)
-track("/KBIN_5V", [(59.0, 7.5), (59.0, q[1] - 0.5), q], w=0.3)                                                     # down the free column between D30 and R45
+track("/KBIN_5V", [(59.0, 7.5), (59.0, q[1])], w=0.3)                                                     # down the free column between D30 and R45
 # kbreset into J8 pin 3 from the F.Cu lane; KBIN_5V: J12 pin 4 -> B.Cu y 7.5 west -> via -> F.Cu into J8 pin 4; F3 / C6 / C7 on the east
 track("/kbreset", [(j8["3"][0], 12.3), j8["3"]])
 f3 = {k: pad("F3", k) for k in ("1", "2")}; c6 = pad("C6", 1); c7 = pad("C7", 1)
@@ -402,7 +402,7 @@ track("/AMIGA_IO5V", [(35.2, 20.3), (35.2, 24.4), (69.5, 24.4)], "B", w=0.6); tr
 track("/AMIGA_IO5V", [(73.5, 24.4), (75.9, 24.4)], "B", w=0.6); via("/AMIGA_IO5V", 75.9, 24.4, 0.6, 0.3)
 via("/AMIGA_IO5V", 40.65, 24.4, 0.6, 0.3); track("/AMIGA_IO5V", [(40.65, 24.4), (40.65, r46[1] + 1.05), r46], w=0.5)   # R46 (sense) from the bus
 track("/AMIGA_5V_FUSED", [(39.9, f1["2"][1]), (39.9, 23.55)], w=0.6); via("/AMIGA_5V_FUSED", 39.9, 23.55, 0.6, 0.3)   # F1 pad 2 -> via just below the pad -> B.Cu riser -> the D1 lane
-track("/AMIGA_5V_FUSED", [(39.9, 23.55), (39.9, 19.65), (40.6, 18.95)], "B", w=0.6); via("/AMIGA_5V_FUSED", 40.6, 18.95, 0.6, 0.3)
+track("/AMIGA_5V_FUSED", [(39.9, 23.55), (39.9, 19.65), (40.6, 18.95), (41.5, 18.95)], "B", w=0.6); via("/AMIGA_5V_FUSED", 40.6, 18.95, 0.6, 0.3); via("/AMIGA_5V_FUSED", 41.5, 18.95, 0.6, 0.3)   # two vias in parallel on the main supply
 YA = 18.95                                                                      # D1 anode lane north of the sense row
 track("/AMIGA_5V_FUSED", [(40.6, YA), (d1["2"][0] - 1.1, YA), (d1["2"][0], YA + 1.1), d1["2"]], w=0.6)
 track("/AMIGA_5V_FUSED", [(r60[0], YA), r60], w=0.3)
@@ -457,14 +457,14 @@ c22 = pad("C22", 1); track("/dvdd", [S["39"], (S["39"][0], c22[1] - (c22[0] - S[
 # amiga_sense: S42 via -> In2 north-east past the qspi vias -> via north of U8 -> F.Cu up to the divider (R46 pad 2, R47, C11)
 track("/amiga_sense", [(35.4, 43.9), (35.4, 42.3), (36.0, 41.7), (36.0, 35.5), (36.8, 34.7), (40.6, 34.7), (40.6, 29.5), (42.6, 27.5), (43.3, 27.5)], "I2"); via("/amiga_sense", 43.3, 27.5)
 r46b = pad("R46", 2); r47 = pad("R47", 1); c11 = pad("C11", 1)
-track("/amiga_sense", [(43.3, 27.5), (43.3, 22.7), (43.4, 22.6), r47])
+track("/amiga_sense", [(43.3, 27.5), r47])
 track("/amiga_sense", [r46b, (r46b[0], 22.2), (r46b[0] + 0.3, 22.5), (c11[0] - 0.3, 22.5), (c11[0], 22.2), c11])
 # kbin_lo: W18 / W19 vias north on x 22.4 / 22.0, east on y 25.6 / 25.0 under the FUSED lane, vias under U7's body, stubs to pins 22 / 21
 u7 = {n: pad("U7", n) for n in range(13, 25)}
 track("/kbin_clk_lo", [(22.4, 31.8), (22.4, 26.0), (22.8, 25.6), (69.8, 25.6), (70.0, 25.8), (pad("Q3", 2)[0] - 0.2, 25.8), (pad("Q3", 2)[0], 25.6)], "B")   # jogs south past Q2's via, ends at Q3's source via
 track("/kbin_dat_lo", [(22.4, 32.8), (21.8, 32.2), (21.8, 25.6), (22.4, 25.0), (pad("Q2", 2)[0], 25.0), (pad("Q2", 2)[0], 25.1)], "B")   # ends at Q2's source via
 # the sense divider grounds share one F.Cu run with vias at both ends (the top pour cannot reach them)
-track("GND", [pad("R47", 2), pad("C11", 2)]); gnd_stub(pad("R47", 2), -0.65, 0); gnd_stub(pad("R60", 2), 0, 0.88)   # R60's ground pad is south now (fused pad on the D1 lane); via below it, clear of the SYS5V feed
+track("GND", [pad("R47", 2), (pad("C11", 2)[0], pad("R47", 2)[1])]); gnd_stub(pad("R47", 2), -0.65, 0); gnd_stub(pad("R60", 2), 0, 0.88)   # R60's ground pad is south now (fused pad on the D1 lane); via below it, clear of the SYS5V feed
 # north and south groups join on In2 from the W23 via to the south link's corner
 track("/dvdd", [(26.4, 36.8), (26.4, 38.4), (29.9, 41.9), (33.6, 41.9), (33.6, S["39"][1])], "I2")                 # ends on the S39 via
 save("block 3b-1")
@@ -635,7 +635,7 @@ track("/vbus_sense", [(93.35, 9.6), (93.35, 9.35), (92.32, u10[9][1]), u10[9]])
 gnd_stub(r69[2], -0.7, 0)
 # ---- I/O rail OR diodes at the DE9s (2026-10-16): DE9 pin 7 -> B.Cu between the pin rows -> diode -> the rail
 d5 = {k: pad("D5", k) for k in (1, 2)}; d6 = {k: pad("D6", k) for k in (1, 2)}; p1_7 = pad("P1", 7); p2_7 = pad("P2", 7)
-track("/cont1_5v", [p1_7, (p1_7[0], 55.2), (21.9, 55.9), (17.0, 55.9), (16.3, 55.2), (16.3, 50.5), (15.8, 50.0), (13.6, 50.0), (d5[2][0], 50.0 - (13.6 - d5[2][0])), d5[2]], w=0.4)   # F.Cu round the south of P1's back row, up its west end, along the north edge into D5
+track("/cont1_5v", [p1_7, (p1_7[0], 55.2), (p1_7[0] - 0.7, 55.9), (17.0, 55.9), (16.3, 55.2), (16.3, 50.5), (15.8, 50.0), (13.6, 50.0), (d5[2][0], 50.0 - (13.6 - d5[2][0])), d5[2]], w=0.4)   # F.Cu round the south of P1's back row, up its west end, along the north edge into D5
 track("/AMIGA_IO5V", [d5[1], (11.3, d5[1][1])], w=0.4); via("/AMIGA_IO5V", 11.3, d5[1][1], 0.6, 0.3)
 track("/AMIGA_IO5V", [(11.3, d5[1][1]), (11.3, 32.1), (11.7, 31.7), (16.2, 31.7), (16.6, 31.3), (16.6, YF)], "B", w=0.4)   # north under the RM2, east below its north pads, up to the pull-up bus
 via("/AMIGA_IO5V", 16.6, YF, 0.6, 0.3); track("/AMIGA_IO5V", [(max(pad("RN2", k)[0] for k in range(5, 9)), YF), (16.6, YF)], w=0.4)

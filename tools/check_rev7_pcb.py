@@ -162,7 +162,7 @@ OLED_PCB_BOTTOM = F.OLED_Z_TOP - F.BOARD_T - 1.0 - 1.7
 # K: netclasses (as rev6)
 POWER_NETCLASS = "Power"
 POWER_NETCLASS_PATTERNS = [
-    "/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V",
+    "/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V", "/cont1_5v", "/cont2_5v",
 ]
 POWER_NETCLASS_MIN_WIDTH = 0.6        # re-targeted to rev7's M2 copper floor (rev6: 1.0)
 POWER_NETCLASS_MIN_CLEARANCE = 0.2  # rev7 routes the 5 V rails at 0.2 (rev6: 0.25)
@@ -1223,7 +1223,7 @@ def check_k(rep: Report, proj_path: str, model: Model) -> None:
                 bad.append("%s is not a net on the board" % pattern)
             elif got != POWER_NETCLASS:
                 bad.append("kicad resolves %s to %r, not %r" % (pattern, got, POWER_NETCLASS))
-    rep.add("K2", "kicad resolves the seven 5 V rails to netclass %r" % POWER_NETCLASS, not bad, bad)
+    rep.add("K2", "kicad resolves the nine 5 V rails to netclass %r" % POWER_NETCLASS, not bad, bad)
 
     bad = []
     seen = [n for n in V33_NETS if n in model.netclass]
