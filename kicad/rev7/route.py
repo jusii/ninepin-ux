@@ -95,7 +95,7 @@ via("/+3V3", *S["38"]); via("/dvdd", *S["39"])
 for x in (CX - 0.8, CX + 0.8):
     for y in (CY - 1.1, CY - 0.1): via("GND", x, y)
 
-# ---- north: IOVDD 1 / DVDD 6 / IOVDD 11 to the planes on their columns; uart/i2c (2..5) and the DVDD
+# ---- north: IOVDD 1 / DVDD 6 / IOVDD 11 to the planes on their columns; ws_drv/exp_int/i2c (2..5) and the DVDD
 # column hop through the lane wall on In2 (the F.Cu lanes to U6 and the B.Cu lanes to U7 both run here)
 for num in ("1", "6", "11"):
     x, ye = N[num]; via(padnet("U1", num), x, ye)
@@ -272,7 +272,7 @@ track("/AMIGA_5V_FUSED", [c13, (c13[0], 20.6), (c13[0] + 1.2, 19.4), v24], w=0.4
 track("/AMIGA_5V_FUSED", [c13, (c13[0] - 0.9, c13[1] + 0.9), (c13[0] - 0.9, YF - 0.9), (c13[0], YF), (8.1, YF)], w=0.4)
 g = pad("C13", 2); track("GND", [g, (12.1, g[1])]); via("GND", 12.1, g[1])
 # keyboard trio: in-pad vias on A8..A10, B.Cu north under U6, east on lanes 11.3 / 11.8 / 12.3 to J10, RN3, then
-# through the uart/i2c wall on F.Cu (lanes 10.8 / 11.8 / 12.3) to J1 and the clamps
+# through the ws_drv/exp_int/i2c wall on F.Cu (lanes 10.8 / 11.8 / 12.3) to J1 and the clamps
 # kbclock: B.Cu lane 11.3 to a via at J10 pin 5, then F.Cu: up into pin 5, and east at y 10.3 past RN3 pin 3 to J1.
 # kbdata: B.Cu lane 11.8 to J1's wall via; B.Cu stub up into J10 pin 1 (THT); RN3 tap from pin 1 on F.Cu.
 # kbreset: B.Cu lane 12.3; RN3 tap via beside the array; F.Cu through the wall at 12.3.
@@ -321,9 +321,9 @@ via("/+3V3", 17.8, fb1[1]); track("/+3V3", [fb1, (17.8, fb1[1])])               
 g = pad("C35", 2); track("GND", [g, (g[0], g[1] - 0.25), (g[0] + 0.4, g[1] - 0.65), (21.2, g[1] - 0.65)]); via("GND", 21.2, g[1] - 0.65)
 save("block 2")
 
-# ================= block 3a: north-east - uart/i2c, keyboard in, J1/J8/J10/J12, the 5 V rails, LDO, parked caps =================
+# ================= block 3a: north-east - ws_drv/exp_int/i2c, keyboard in, J1/J8/J10/J12, the 5 V rails, LDO, parked caps =================
 reload_pads()
-# uart / i2c: the In2 hops end at y 19.5 between F1's pads; B.Cu jogs north-west onto four verticals that climb
+# ws_drv / exp_int / i2c: the In2 hops end at y 19.5 between F1's pads; B.Cu jogs north-west onto four verticals that climb
 # west of J8 and turn east onto lanes y 10.1 / 10.6 / 11.1 / 11.6 (rx, tx, scl, sda) to J7 and the OLED socket
 WALL = {"5": (35.5, 10.1), "4": (35.97, 10.6), "3": (36.43, 11.1), "2": (36.9, 11.6)}
 for num, (xv, yl) in WALL.items():
@@ -476,7 +476,7 @@ track(FU, [(pad("R61", 2)[0], YB), (87.6, YB)], "B", w=0.4); via(FU, 87.6, YB, 0
 track(FU, [(87.6, YB), (87.6, 21.3), (87.2, 20.9), (75.9, 20.9)], w=0.4)
 save("block 3b-2")
 
-# ================= block 3b-3: USB - mux, usb_sel / ws_drv lanes, USB-A and USB-C pairs, east corner, SYS5V trunk, LED, USB-A power =================
+# ================= block 3b-3: USB - ws_drv lane, USB-A and USB-C pairs, east corner, SYS5V trunk, LED, USB-A power =================
 reload_pads()
 # PIO-USB pair: GPIO26 (S40) / GPIO27 (S41) on B.Cu lanes 47.7 (dp, round the south of the regulator group) and 44.4 (dm) to the 27R at U2
 u2 = {n: pad("U2", n) for n in range(1, 7)}; r70 = {k: pad("R70", k) for k in (1, 2)}; r71 = {k: pad("R71", k) for k in (1, 2)}

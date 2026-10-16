@@ -185,7 +185,7 @@ VALUE_FOOTPRINT = [
     (r"^RP2350A$",       r"^Package_DFN_QFN:QFN-60-"),
 ]
 # minimum population of each listed value (catches a part silently dropped)
-VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1BL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1, "TCA9534PWR": 1,
+VALUE_COUNT = {"SS34": 2, "PESD5V0S1BA": 14, "PESD5V0S1BL": 7, "SN74CBTD3861DBQR": 2, "TLV75733PDRVR": 1, "TCA9554PWR": 1,
                "RM2": 1, "RP2350A": 1}
 
 # ---------------------------------------------------------------------------
@@ -687,6 +687,23 @@ def check_usb(rep, nl):
     for p in ("A1", "B1", "A12", "B12", "SH"):
         rep.eq("E.J13.gnd.%s" % p, nl.net_of("J13", p), GND, "J13 %s" % p)
     rep.eq("E.J4.gnd", (nl.net_of("J4", "4"), nl.net_of("J4", "SH")), (GND, GND), "J4 GND/shield")
+    # I2C expander U10 (TCA9554: internal pull-ups, review 2026-10-15), the encoder header and the VBUS sense divider
+    rep.eq("E.U10.value", (nl.value("U10"), nl.lib_id("U10")), ("TCA9554PWR", "Interface_Expansion:TCA9554PW"), "U10")
+    u10 = {"1": GND, "2": GND, "3": GND, "4": "enc_a", "5": "enc_b", "6": "enc_sw", "7": "enc_sp", "8": GND, "9": "vbus_sense",
+           "13": "exp_int", "14": "i2c_scl", "15": "i2c_sda", "16": "+3V3"}
+    for pin, net in u10.items():
+        rep.eq("E.U10.%s" % pin, nl.net_of("U10", pin), net, "U10 pin %s" % pin)
+    for pin in ("10", "11", "12"):
+        rep.chk("E.U10.%s.nc" % pin, nl.net_of("U10", pin) == NC, "U10 pin %s must be left open" % pin)
+    j7 = {"1": "enc_sw", "2": "enc_sp", "3": "enc_b", "4": GND, "5": "enc_a", "6": "+3V3"}
+    for pin, net in j7.items():
+        rep.eq("E.J7.%s" % pin, nl.net_of("J7", pin), net, "J7 pin %s" % pin)
+    for net in ("enc_a", "enc_b", "enc_sw", "enc_sp"):
+        rep.eq("E.%s.nodes" % net, len(nl.nodes(net)), 2, "%s: U10 pin and J7 pin only" % net)
+    rs = nl.parts_between("AUX_5V", "vbus_sense", lib="Device:R", value=6.8e3)
+    rep.chk("E.vbus.top", len(rs) == 1, "6.8k from AUX_5V to vbus_sense: %s" % rs)
+    rs = nl.parts_between("vbus_sense", GND, lib="Device:R", value=10e3)
+    rep.chk("E.vbus.bottom", len(rs) == 1 and len(nl.nodes("vbus_sense")) == 3, "10k from vbus_sense to GND %s, members {%s}" % (rs, fmt(nl.nodes("vbus_sense"))))
 
 
 # ---------------------------------------------------------------------------

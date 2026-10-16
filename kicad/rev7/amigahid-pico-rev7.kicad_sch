@@ -4907,14 +4907,14 @@
 				)
 			)
 			(embedded_fonts no)
-		)(symbol "Interface_Expansion:TCA9534"
+		)(symbol "Interface_Expansion:TCA9554PW"
 			(exclude_from_sim no)
 			(in_bom yes)
 			(on_board yes)
 			(in_pos_files yes)
 			(duplicate_pin_numbers_are_jumpers no)
 			(property "Reference" "U"
-				(at -7.112 14.732 0)
+				(at -7.62 11.43 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -4924,8 +4924,8 @@
 					(justify left)
 				)
 			)
-			(property "Value" "TCA9534"
-				(at 3.302 14.732 0)
+			(property "Value" "TCA9554PW"
+				(at 2.54 11.43 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(effects
@@ -4935,8 +4935,8 @@
 					(justify left)
 				)
 			)
-			(property "Footprint" ""
-				(at 0 -16.764 0)
+			(property "Footprint" "Package_SO:TSSOP-16_4.4x5mm_P0.65mm"
+				(at 24.13 -13.97 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -4946,8 +4946,8 @@
 					)
 				)
 			)
-			(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9534.pdf"
-				(at 0 -12.7 0)
+			(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9554.pdf"
+				(at 2.54 -2.54 0)
 				(show_name no)
 				(do_not_autoplace no)
 				(hide yes)
@@ -4957,18 +4957,7 @@
 					)
 				)
 			)
-			(property "Description" "8-bit I/O Expander, I2C / SMBus interface, interrupt output, fixed address bits 0b0100xxx, TSSOP-16 / SOIC-16"
-				(at 0 -14.732 0)
-				(show_name no)
-				(do_not_autoplace no)
-				(hide yes)
-				(effects
-					(font
-						(size 1.27 1.27)
-					)
-				)
-			)
-			(property "ki_keywords" "Texas-Instruments Port-Expander TCA9534DWR TCA9534DWT TCA9534PWR"
+			(property "Description" "8 Bit Port/Expander, I2C SMBUS, Interrupt output, TSSOP-16"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4979,7 +4968,7 @@
 					)
 				)
 			)
-			(property "ki_fp_filters" "TSSOP*4.4x5mm?P0.65mm* *SOIC*7.5x10.3mm?P1.27mm*"
+			(property "ki_keywords" "SMBUS I2C Expander"
 				(at 0 0 0)
 				(show_name no)
 				(do_not_autoplace no)
@@ -4990,10 +4979,21 @@
 					)
 				)
 			)
-			(symbol "TCA9534_0_1"
+			(property "ki_fp_filters" "TSSOP*4.4x5mm*P0.65mm*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "TCA9554PW_0_1"
 				(rectangle
-					(start -7.62 12.7)
-					(end 7.62 -10.16)
+					(start -7.62 -12.7)
+					(end 7.62 10.16)
 					(stroke
 						(width 0.254)
 						(type default)
@@ -5003,9 +5003,9 @@
 					)
 				)
 			)
-			(symbol "TCA9534_1_1"
+			(symbol "TCA9554PW_1_1"
 				(pin input line
-					(at -10.16 -2.54 0)
+					(at -10.16 -5.08 0)
 					(length 2.54)
 					(name "A0"
 						(effects
@@ -5023,7 +5023,7 @@
 					)
 				)
 				(pin input line
-					(at -10.16 -5.08 0)
+					(at -10.16 -7.62 0)
 					(length 2.54)
 					(name "A1"
 						(effects
@@ -5041,7 +5041,7 @@
 					)
 				)
 				(pin input line
-					(at -10.16 -7.62 0)
+					(at -10.16 -10.16 0)
 					(length 2.54)
 					(name "A2"
 						(effects
@@ -5059,7 +5059,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 10.16 180)
+					(at 10.16 7.62 180)
 					(length 2.54)
 					(name "P0"
 						(effects
@@ -5077,7 +5077,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 7.62 180)
+					(at 10.16 5.08 180)
 					(length 2.54)
 					(name "P1"
 						(effects
@@ -5095,7 +5095,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 5.08 180)
+					(at 10.16 2.54 180)
 					(length 2.54)
 					(name "P2"
 						(effects
@@ -5113,7 +5113,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 2.54 180)
+					(at 10.16 0 180)
 					(length 2.54)
 					(name "P3"
 						(effects
@@ -5131,7 +5131,7 @@
 					)
 				)
 				(pin power_in line
-					(at 0 -12.7 90)
+					(at 0 -15.24 90)
 					(length 2.54)
 					(name "GND"
 						(effects
@@ -5149,7 +5149,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 0 180)
+					(at 10.16 -2.54 180)
 					(length 2.54)
 					(name "P4"
 						(effects
@@ -5167,7 +5167,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 -2.54 180)
+					(at 10.16 -5.08 180)
 					(length 2.54)
 					(name "P5"
 						(effects
@@ -5185,7 +5185,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 -5.08 180)
+					(at 10.16 -7.62 180)
 					(length 2.54)
 					(name "P6"
 						(effects
@@ -5203,7 +5203,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at 10.16 -7.62 180)
+					(at 10.16 -10.16 180)
 					(length 2.54)
 					(name "P7"
 						(effects
@@ -5239,7 +5239,7 @@
 					)
 				)
 				(pin input line
-					(at -10.16 10.16 0)
+					(at -10.16 7.62 0)
 					(length 2.54)
 					(name "SCL"
 						(effects
@@ -5257,7 +5257,7 @@
 					)
 				)
 				(pin bidirectional line
-					(at -10.16 7.62 0)
+					(at -10.16 5.08 0)
 					(length 2.54)
 					(name "SDA"
 						(effects
@@ -5275,7 +5275,7 @@
 					)
 				)
 				(pin power_in line
-					(at 0 15.24 270)
+					(at 0 12.7 270)
 					(length 2.54)
 					(name "VDD"
 						(effects
@@ -9565,7 +9565,7 @@
 		)
 		(uuid "22935eaf-ea46-560e-8314-3f97a9b3389f")
 	)
-	(text "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, mux). R60 bleeds D1 leakage off the fused rail."
+	(text "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, expander). R60 bleeds D1 leakage off the fused rail."
 		(exclude_from_sim no)
 		(at 20 38.5 0)
 		(effects
@@ -22020,7 +22020,7 @@
 			(uuid "dd24194d-6bba-5b18-b0fb-4602d75b380f")
 		)
 	)
-	(text "usb: USB-C on the RP2350 USB PHY (device or host), USB-A host on PIO-USB (GPIO26/27)"
+	(text "usb: USB-C on the RP2350 USB PHY (device, power, flashing), USB-A host on PIO-USB (GPIO26/27)"
 		(exclude_from_sim no)
 		(at 410 24 0)
 		(effects
@@ -22030,9 +22030,9 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "0dfd15d5-7541-5eeb-91e2-0dab0168eda9")
+		(uuid "7140aaa0-830f-5b19-88ca-b4d077b5c428")
 	)
-	(text "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB."
+	(text "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB. USB-C is device-only: CC carries Rd and VBUS only flows in through D2 (review 2026-10-15)."
 		(exclude_from_sim no)
 		(at 410 31.5 0)
 		(effects
@@ -22041,7 +22041,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "39338bd7-6690-5dff-b848-40a3cd841c39")
+		(uuid "d1e2ad7a-0c9a-5fb3-9643-4a9c1d13a4c5")
 	)
 	(text "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."
 		(exclude_from_sim no)
@@ -22052,7 +22052,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "65fe26de-41c3-536b-b5d9-42829ae3d720")
+		(uuid "5aa42acd-ece1-55a9-9b65-1c96eaef7d48")
 	)
 	(symbol
 		(lib_id "Connector:USB_C_Receptacle_USB2.0_16P")
@@ -31122,7 +31122,7 @@
 		)
 		(uuid "17d96ebb-e59e-52f5-b849-e0faad18e926")
 	)
-	(text "J3 pin order is the common 0.96in SSD1306 module: GND VCC SCL SDA. LED1 is the only indicator: GPIO26 (output inverted in firmware) -> Q1 -> ws_din swings the full LED_VDD so the WS2812 VIH is met."
+	(text "J3 pin order is the common 0.96in SSD1306 module: GND VCC SCL SDA. LED1 is the only indicator: GPIO2 (output inverted in firmware) -> Q1 -> ws_din swings the full LED_VDD so the WS2812 VIH is met."
 		(exclude_from_sim no)
 		(at 410 655.2 0)
 		(effects
@@ -31816,7 +31816,7 @@
 				)
 			)
 		)
-		(property "Note" "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO26 output-invert"
+		(property "Note" "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO2 output-invert"
 			(at 675.64 688.34 0)
 			(hide yes)
 			(effects
@@ -32056,8 +32056,8 @@
 		(uuid "c561e17d-a81d-5be5-a0fb-df4ef840644e")
 	)
 	(symbol
-		(lib_id "Interface_Expansion:TCA9534")
-		(at 453.39 756.92 0)
+		(lib_id "Interface_Expansion:TCA9554PW")
+		(at 453.39 754.38 0)
 		(unit 1)
 		(exclude_from_sim no)
 		(in_bom yes)
@@ -32072,7 +32072,7 @@
 				)
 			)
 		)
-		(property "Value" "TCA9534PWR"
+		(property "Value" "TCA9554PWR"
 			(at 442.23 739.95 0)
 			(effects
 				(font
@@ -32081,7 +32081,7 @@
 			)
 		)
 		(property "Footprint" "Package_SO:TSSOP-16_4.4x5mm_P0.65mm"
-			(at 453.39 756.92 0)
+			(at 453.39 754.38 0)
 			(hide yes)
 			(effects
 				(font
@@ -32089,8 +32089,8 @@
 				)
 			)
 		)
-		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9534.pdf"
-			(at 453.39 756.92 0)
+		(property "Datasheet" "http://www.ti.com/lit/ds/symlink/tca9554.pdf"
+			(at 453.39 754.38 0)
 			(hide yes)
 			(effects
 				(font
@@ -32098,8 +32098,8 @@
 				)
 			)
 		)
-		(property "Description" "8-bit I/O Expander, I2C / SMBus interface, interrupt output, fixed address bits 0b0100xxx, TSSOP-16 / SOIC-16"
-			(at 453.39 756.92 0)
+		(property "Description" "8 Bit Port/Expander, I2C SMBUS, Interrupt output, TSSOP-16"
+			(at 453.39 754.38 0)
 			(hide yes)
 			(effects
 				(font
@@ -32107,8 +32107,8 @@
 				)
 			)
 		)
-		(property "LCSC" "C783615"
-			(at 453.39 756.92 0)
+		(property "LCSC" "C477924"
+			(at 453.39 754.38 0)
 			(hide yes)
 			(effects
 				(font
@@ -32116,8 +32116,8 @@
 				)
 			)
 		)
-		(property "Note" "I2C I/O expander at 0x20: rotary encoder + spare on P0-P3 (internal 100k pull-ups, the TCA9535 has none), USB-C VBUS sense on P4, INT to GPIO3"
-			(at 453.39 756.92 0)
+		(property "Note" "I2C I/O expander at 0x20 (A0-A2 low): rotary encoder + spare on P0-P3, USB-C VBUS sense on P4, INT (open drain, GPIO3 internal pull-up) to GPIO3. TCA9554 = TCA9534 plus ~100k internal pull-ups on every P port (review 2026-10-15: the TCA9534 has none), so the encoder lines and unused P5-P7 never float; stronger pull-ups can go on the encoder cable from J7 pin 6"
+			(at 453.39 754.38 0)
 			(hide yes)
 			(effects
 				(font
@@ -32565,8 +32565,8 @@
 	)
 	(wire
 		(pts
-			(xy 443.23 754.38)
-			(xy 438.15 754.38)
+			(xy 443.23 751.84)
+			(xy 438.15 751.84)
 		)
 		(stroke
 			(width 0)
@@ -32575,7 +32575,7 @@
 		(uuid "040402f9-eda3-5be0-b626-3cca10f417e6")
 	)
 	(label "exp_int"
-		(at 438.15 754.38 180)
+		(at 438.15 751.84 180)
 		(effects
 			(font
 				(size 1.27 1.27)
@@ -32821,7 +32821,7 @@
 				)
 			)
 		)
-		(property "Value" "100k"
+		(property "Value" "6.8k"
 			(at 558.26 746.76 0)
 			(effects
 				(font
@@ -32856,7 +32856,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25803"
+		(property "LCSC" "C23212"
 			(at 556.26 745.49 0)
 			(hide yes)
 			(effects
@@ -32865,7 +32865,7 @@
 				)
 			)
 		)
-		(property "Note" "VBUS sense divider: 2.5 V at the expander when a USB host or charger is attached"
+		(property "Note" "VBUS sense divider 6.8k/10k: 2.6-3.3 V at P4 over VBUS 4.4-5.5 V (TCA9554 VIH 2.31 V), ~300 uA, and stiff enough that D2 reverse leakage cannot lift it to a false high"
 			(at 556.26 745.49 0)
 			(hide yes)
 			(effects
@@ -32940,7 +32940,7 @@
 				)
 			)
 		)
-		(property "Value" "100k"
+		(property "Value" "10k"
 			(at 597.63 746.76 0)
 			(effects
 				(font
@@ -32975,7 +32975,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C25803"
+		(property "LCSC" "C25804"
 			(at 595.63 745.49 0)
 			(hide yes)
 			(effects
@@ -33150,7 +33150,7 @@
 				)
 			)
 		)
-		(property "Note" "unpopulated by default: rotary encoder A/B/switch on the lid, one spare input"
+		(property "Note" "fitted: rotary encoder A/B/switch on the lid, one spare input; GND and 3V3 for the encoder cable"
 			(at 654.05 744.22 0)
 			(hide yes)
 			(effects

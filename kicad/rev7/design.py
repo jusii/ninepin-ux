@@ -18,7 +18,7 @@ SOD323 = "Diode_SMD:D_SOD-323"
 PIN = "Connector_PinHeader_2.54mm:PinHeader_1x0%d_P2.54mm_Vertical"
 
 # LCSC basic parts for the generic passives (JLCPCB API 2026-10-15); 27R is extended-preferred, no basic 27R exists
-R_LCSC = {"100k": "C25803", "1k": "C21190", "470": "C23179", "5.1k": "C23186", "33": "C23140", "27": "C25190", "10k": "C25804", "4.7k": "C23162"}
+R_LCSC = {"100k": "C25803", "1k": "C21190", "470": "C23179", "5.1k": "C23186", "33": "C23140", "27": "C25190", "10k": "C25804", "4.7k": "C23162", "6.8k": "C23212"}
 C_LCSC = {("100nF", C0402): "C1525", ("4.7uF", C0402): "C23733", ("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666",
           ("10uF", C0805): "C15850", ("4.7uF", C0805): "C1779", ("22uF", C0805): "C45783", ("150uF", CELEC): "C413656"}
 def R(ref, val, a, b, **x): x.setdefault("LCSC", R_LCSC[val]); return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
@@ -93,7 +93,7 @@ BLOCKS = [
  {"title": "power tree", "notes": [
    "AMIGA_5V (keyboard connector / A500 header) -> F1 -> AMIGA_5V_FUSED -> D1 -> SYS5V; USB-C -> D2 -> SYS5V. Either source alone runs the board.",
    "AMIGA_5V_FUSED feeds the bus switches and the Amiga-side pull-ups only, so a USB-C-powered board never back-feeds an Amiga that is off.",
-   "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, mux). R60 bleeds D1 leakage off the fused rail."], "parts": [
+   "F1 750 mA fitted (rev6 bring-up measured the stack well under that). SYS5V -> U3 -> +3V3 (RP2350, RM2, flash, OLED, expander). R60 bleeds D1 leakage off the fused rail."], "parts": [
    ("F1", "Device:Polyfuse", "750mA", "Fuse:Fuse_1812_4532Metric", {"1": "AMIGA_5V", "2": "AMIGA_5V_FUSED"}, {"MPN": "MF-MSMF075-2", "LCSC": "C84140", "Note": "fitted at assembly: AMIGA_5V_FUSED is the bus-switch supply, an empty F1 would mute the Amiga side. LCSC code to verify before order"}),
    ("D1", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AMIGA_5V_FUSED"}, {"LCSC": "C8678"}),
    ("D2", "Device:D_Schottky", "SS34", "Diode_SMD:D_SMA", {"1": "SYS5V", "2": "AUX_5V"}, {"LCSC": "C8678"}),
@@ -135,8 +135,8 @@ BLOCKS = [
    C("C13", "100nF", "AMIGA_5V_FUSED", "GND"), C("C14", "100nF", "AMIGA_5V_FUSED", "GND"),
    ] + [RPACK(r, n, "AMIGA_5V_FUSED", *RPACK_FP.get(r, ("Resistor_SMD:R_Array_Convex_4x0603", "C29718"))) for r, n in RPACKS.items()]
      + [(r, "Device:R", "10k", "Resistor_SMD:R_0402_1005Metric", {"1": n, "2": "AMIGA_5V_FUSED"}, {"LCSC": "C25744"}) for n, r in PULLUPS.items()] + [TVS("D%d" % (10 + i), n) for i, n in enumerate(AMIGA_NETS)]},
- {"title": "usb: USB-C on the RP2350 USB PHY (device or host), USB-A host on PIO-USB (GPIO26/27)", "notes": [
-   "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB.",
+ {"title": "usb: USB-C on the RP2350 USB PHY (device, power, flashing), USB-A host on PIO-USB (GPIO26/27)", "notes": [
+   "No mux (decided 2026-10-15): the native PHY serves USB-C, so the board can be a HID device for a USB host (Commodore 64 Ultimate) while USB-A stays a host on PIO-USB. USB-C is device-only: CC carries Rd and VBUS only flows in through D2 (review 2026-10-15).",
    "USB-C is a UFP: 5.1k on each CC. VBUS -> AUX_5V -> D2 -> SYS5V. USB-A VBUS is SYS5V through F2."], "parts": [
    ("J13", "Connector:USB_C_Receptacle_USB2.0_16P", "USB-C", "Connector_USB:USB_C_Receptacle_GCT_USB4105-xx-A_16P_TopMnt_Horizontal",
     {"A1": "GND", "B1": "GND", "A12": "GND", "B12": "GND", "A4": "AUX_5V", "B4": "AUX_5V", "A9": "AUX_5V", "B9": "AUX_5V",
@@ -181,20 +181,20 @@ BLOCKS = [
    C("C35", "4.7uF", "wl_vin", "GND", C0805), C("C36", "100nF", "wl_vin", "GND"),
    R("R55", "470", "wl_dout", "wl_d"), R("R56", "10k", "wl_irq", "wl_d"),
  ]},
- {"title": "display / status / spare", "notes": ["J3 pin order is the common 0.96in SSD1306 module: GND VCC SCL SDA. LED1 is the only indicator: GPIO26 (output inverted in firmware) -> Q1 -> ws_din swings the full LED_VDD so the WS2812 VIH is met."], "parts": [
+ {"title": "display / status / spare", "notes": ["J3 pin order is the common 0.96in SSD1306 module: GND VCC SCL SDA. LED1 is the only indicator: GPIO2 (output inverted in firmware) -> Q1 -> ws_din swings the full LED_VDD so the WS2812 VIH is met."], "parts": [
    ("J3", "Connector_Generic:Conn_01x04", "OLED", "Connector_PinSocket_2.54mm:PinSocket_1x04_P2.54mm_Vertical", {"1": "GND", "2": "+3V3", "3": "i2c_scl", "4": "i2c_sda"}, {"LCSC": "C2897367", "MPN": "PM254-1-04-Z-8.5"}),
    R("R41", "4.7k", "+3V3", "i2c_sda"), R("R42", "4.7k", "+3V3", "i2c_scl"),
    ("LED1", "LED:WS2812B-2020", "WS2812B-2020", "LED_SMD:LED_WS2812B-2020_PLCC4_2.0x2.0mm", {"4": "LED_VDD", "2": "GND", "3": "ws_din", "1": "NC"}, {"LCSC": "C52917434"}),
-   ("Q1", "Transistor_FET:Q_NMOS_GSD", "2N7002", "Package_TO_SOT_SMD:SOT-23", {"1": "ws_drv", "2": "GND", "3": "ws_din"}, {"LCSC": "C8545", "Note": "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO26 output-invert"}),
+   ("Q1", "Transistor_FET:Q_NMOS_GSD", "2N7002", "Package_TO_SOT_SMD:SOT-23", {"1": "ws_drv", "2": "GND", "3": "ws_din"}, {"LCSC": "C8545", "Note": "open-drain inverter: full LED_VDD swing on ws_din; firmware sets GPIO2 output-invert"}),
    R("R49", "1k", "LED_VDD", "ws_din"),
-   ("U10", "Interface_Expansion:TCA9534", "TCA9534PWR", "Package_SO:TSSOP-16_4.4x5mm_P0.65mm",
+   ("U10", "Interface_Expansion:TCA9554PW", "TCA9554PWR", "Package_SO:TSSOP-16_4.4x5mm_P0.65mm",
     {"1": "GND", "2": "GND", "3": "GND", "4": "enc_a", "5": "enc_b", "6": "enc_sw", "7": "enc_sp", "8": "GND", "9": "vbus_sense", "10": "NC", "11": "NC", "12": "NC",
      "13": "exp_int", "14": "i2c_scl", "15": "i2c_sda", "16": "+3V3"},
-    {"LCSC": "C783615", "Note": "I2C I/O expander at 0x20: rotary encoder + spare on P0-P3 (internal 100k pull-ups, the TCA9535 has none), USB-C VBUS sense on P4, INT to GPIO3"}),
+    {"LCSC": "C477924", "Note": "I2C I/O expander at 0x20 (A0-A2 low): rotary encoder + spare on P0-P3, USB-C VBUS sense on P4, INT (open drain, GPIO3 internal pull-up) to GPIO3. TCA9554 = TCA9534 plus ~100k internal pull-ups on every P port (review 2026-10-15: the TCA9534 has none), so the encoder lines and unused P5-P7 never float; stronger pull-ups can go on the encoder cable from J7 pin 6"}),
    C("C39", "100nF", "+3V3", "GND", C0402),
-   R("R68", "100k", "AUX_5V", "vbus_sense", Note="VBUS sense divider: 2.5 V at the expander when a USB host or charger is attached"), R("R69", "100k", "vbus_sense", "GND"),
+   R("R68", "6.8k", "AUX_5V", "vbus_sense", Note="VBUS sense divider 6.8k/10k: 2.6-3.3 V at P4 over VBUS 4.4-5.5 V (TCA9554 VIH 2.31 V), ~300 uA, and stiff enough that D2 reverse leakage cannot lift it to a false high"), R("R69", "10k", "vbus_sense", "GND"),
    ("J7", "Connector_Generic:Conn_02x03_Odd_Even", "ENCODER", "Connector_PinHeader_2.54mm:PinHeader_2x03_P2.54mm_Vertical", {"1": "enc_sw", "2": "enc_sp", "3": "enc_b", "4": "GND", "5": "enc_a", "6": "+3V3"},
-    {"LCSC": "C65114", "MPN": "BOOMELE 2.54-2*3P", "Note": "unpopulated by default: rotary encoder A/B/switch on the lid, one spare input"}),
+    {"LCSC": "C65114", "MPN": "BOOMELE 2.54-2*3P", "Note": "fitted: rotary encoder A/B/switch on the lid, one spare input; GND and 3V3 for the encoder cable"}),
  ]},
 ]
 
