@@ -161,6 +161,14 @@ z.SetLayerSet(ls); ol = z.Outline(); ol.NewOutline()
 for (x, y) in ((max(kx0, 0), ky0), (kx1, ky0), (kx1, ky1), (max(kx0, 0), ky1)): ol.Append(mm(x), mm(y))
 b.Add(z)
 
+# regulator group: no F.Cu pour over CIN / L1 / COUT and their rows, so the regulator ground reaches the plane only
+# through its own vias (RP2350 DS 6.3.8) and there is no copper under the inductor
+z = pcbnew.ZONE(b); z.SetIsRuleArea(True)
+z.SetDoNotAllowTracks(False); z.SetDoNotAllowVias(False); z.SetDoNotAllowPads(False); z.SetDoNotAllowZoneFills(True); z.SetDoNotAllowFootprints(False)
+z.SetZoneName("vreg_no_pour"); ls = pcbnew.LSET(); ls.addLayer(pcbnew.F_Cu); z.SetLayerSet(ls); ol = z.Outline(); ol.NewOutline()
+for (x, y) in ((36.95, 37.8), (43.8, 37.8), (43.8, 41.5), (36.95, 41.5)): ol.Append(mm(x), mm(y))
+b.Add(z)
+
 # guides
 C, D = pcbnew.Cmts_User, pcbnew.Dwgs_User
 ox, oy = F.OLED_X0, F.OLED_Y0

@@ -25342,7 +25342,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Inductor_SMD:L_Murata_DFE201610P"
+		(property "Footprint" "rev7:L_2016_AOTA"
 			(at 547.37 240.03 0)
 			(hide yes)
 			(effects
@@ -25387,7 +25387,7 @@
 				)
 			)
 		)
-		(property "Note" "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; add a silk dot at pad 1 and check the reel orientation at JLCPCB"
+		(property "Note" "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; the footprint carries the silk dot at pad 1 (Abracon land, 1.0x1.6 pads on 2.0 mm); check the reel orientation at JLCPCB"
 			(at 547.37 240.03 0)
 			(hide yes)
 			(effects
@@ -25470,7 +25470,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "rev7:C_0402_1005Metric_vreg"
 			(at 586.74 240.03 0)
 			(hide yes)
 			(effects
@@ -25497,7 +25497,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C19666"
+		(property "LCSC" "C23733"
 			(at 586.74 240.03 0)
 			(hide yes)
 			(effects
@@ -25506,7 +25506,7 @@
 				)
 			)
 		)
-		(property "Note" "COUT, 0603 between the VOUT and PGND rows right at the pins"
+		(property "Note" "COUT, 0402 straddling VOUT and PGND right at the pins, LX between its pads (DS fig. 26)"
 			(at 586.74 240.03 0)
 			(hide yes)
 			(effects
@@ -26448,7 +26448,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "Capacitor_SMD:C_0402_1005Metric"
 			(at 469.9 374.65 0)
 			(hide yes)
 			(effects
@@ -26475,7 +26475,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C14663"
+		(property "LCSC" "C1525"
 			(at 469.9 374.65 0)
 			(hide yes)
 			(effects
@@ -27076,7 +27076,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Capacitor_SMD:C_0603_1608Metric"
+		(property "Footprint" "rev7:C_0402_1005Metric_vreg"
 			(at 628.65 374.65 0)
 			(hide yes)
 			(effects
@@ -27103,7 +27103,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C19666"
+		(property "LCSC" "C23733"
 			(at 628.65 374.65 0)
 			(hide yes)
 			(effects
@@ -27112,7 +27112,7 @@
 				)
 			)
 		)
-		(property "Note" "CIN, 0603 across the VIN and PGND rows"
+		(property "Note" "CIN, 0402 straddling VIN and PGND at the pins, LX between its pads, own ground via (DS fig. 26)"
 			(at 628.65 374.65 0)
 			(hide yes)
 			(effects

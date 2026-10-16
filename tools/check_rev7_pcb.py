@@ -142,6 +142,7 @@ PKG_HEIGHTS = [
     (r"^SSOP-24_", 1.75),
     (r"^Crystal_SMD_3225-", 0.9),
     (r"^L_Murata_DFE201610P$", 1.0),
+    (r"^L_2016_AOTA$", 1.0),
     (r"^LED_WS2812B-2020_", 0.84),
     (r"^SolderJumper-", 0.05),
     (r"^MountingHole_", 0.0),

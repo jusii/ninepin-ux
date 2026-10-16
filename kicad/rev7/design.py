@@ -19,7 +19,7 @@ PIN = "Connector_PinHeader_2.54mm:PinHeader_1x0%d_P2.54mm_Vertical"
 
 # LCSC basic parts for the generic passives (JLCPCB API 2026-10-15); 27R is extended-preferred, no basic 27R exists
 R_LCSC = {"100k": "C25803", "1k": "C21190", "470": "C23179", "5.1k": "C23186", "33": "C23140", "27": "C25190", "10k": "C25804", "4.7k": "C23162", "6.8k": "C23212"}
-C_LCSC = {("100nF", C0402): "C1525", ("4.7uF", C0402): "C23733", ("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666",
+C_LCSC = {("100nF", C0402): "C1525", ("4.7uF", C0402): "C23733", ("100nF", C0603): "C14663", ("1uF", C0603): "C15849", ("15pF", C0603): "C1644", ("4.7uF", C0603): "C19666", ("4.7uF", "rev7:C_0402_1005Metric_vreg"): "C23733",
           ("10uF", C0805): "C15850", ("4.7uF", C0805): "C1779", ("22uF", C0805): "C45783", ("150uF", CELEC): "C413656"}
 def R(ref, val, a, b, **x): x.setdefault("LCSC", R_LCSC[val]); return (ref, "Device:R", val, R0603, {"1": a, "2": b}, x)
 def C(ref, val, a, b, fp=C0603, **x): x.setdefault("LCSC", C_LCSC[(val, fp)]); return (ref, "Device:C", val, fp, {"1": a, "2": b}, x)
@@ -151,11 +151,11 @@ BLOCKS = [
    "Per the RP2350 hardware design guide / Pico 2 W: VREG_VIN and VREG_AVDD on 3V3 (AVDD through 33R + 4.7uF), DVDD 4.7uF at pin 23 + 100nF at 6/39, 4.7uF CIN at VREG_VIN, 100nF per IOVDD pin, one 100nF shared by USB_OTP_VDD/QSPI_IOVDD.",
    "BOOT pulls QSPI_SS low at reset (USB bootloader on USB-C); RESET pulls RUN low."], "parts": [
    ("U1", "MCU_RaspberryPi:RP2350A", "RP2350A", "Package_DFN_QFN:QFN-60-1EP_7x7mm_P0.4mm_EP3.4x3.4mm", RP, {"LCSC": "C42411118"}),
-   ("L1", "Device:L", "3.3uH", "Inductor_SMD:L_Murata_DFE201610P", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C42411119", "MPN": "AOTA-B201610S3R3-101-T", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; add a silk dot at pad 1 and check the reel orientation at JLCPCB"}),
-   C("C38", "4.7uF", "dvdd", "GND", Note="COUT, 0603 between the VOUT and PGND rows right at the pins"),
+   ("L1", "Device:L", "3.3uH", "rev7:L_2016_AOTA", {"1": "dvdd", "2": "vreg_lx"}, {"LCSC": "C42411119", "MPN": "AOTA-B201610S3R3-101-T", "Note": "RP2350 core regulator: 3.3uH +-20%, shielded, DCR <=250mR, Isat >=1.5A. POLARISED: pad 1 (dot) on +1V1/dvdd, pad 2 on VREG_LX per the design guide fig. 4; the footprint carries the silk dot at pad 1 (Abracon land, 1.0x1.6 pads on 2.0 mm); check the reel orientation at JLCPCB"}),
+   C("C38", "4.7uF", "dvdd", "GND", "rev7:C_0402_1005Metric_vreg", LCSC="C23733", Note="COUT, 0402 straddling VOUT and PGND right at the pins, LX between its pads (DS fig. 26)"),
    C("C20", "4.7uF", "dvdd", "GND", C0402, Note="DVDD pin 23 (furthest from the regulator)"), C("C21", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 6"), C("C22", "100nF", "dvdd", "GND", C0402, Note="DVDD pin 39"),
-   C("C23", "100nF", "+3V3", "GND"), C("C24", "100nF", "+3V3", "GND"), C("C25", "100nF", "+3V3", "GND"), C("C26", "100nF", "+3V3", "GND"), C("C27", "100nF", "+3V3", "GND"), C("C28", "100nF", "+3V3", "GND"),
-   C("C29", "4.7uF", "+3V3", "GND", Note="CIN, 0603 across the VIN and PGND rows"), C("C30", "100nF", "+3V3", "GND", C0402, Note="USB_OTP_VDD + QSPI_IOVDD pins 53/54"),
+   C("C23", "100nF", "+3V3", "GND"), C("C24", "100nF", "+3V3", "GND"), C("C25", "100nF", "+3V3", "GND", C0402), C("C26", "100nF", "+3V3", "GND"), C("C27", "100nF", "+3V3", "GND"), C("C28", "100nF", "+3V3", "GND"),
+   C("C29", "4.7uF", "+3V3", "GND", "rev7:C_0402_1005Metric_vreg", LCSC="C23733", Note="CIN, 0402 straddling VIN and PGND at the pins, LX between its pads, own ground via (DS fig. 26)"), C("C30", "100nF", "+3V3", "GND", C0402, Note="USB_OTP_VDD + QSPI_IOVDD pins 53/54"),
    R("R50", "33", "+3V3", "adc_avdd", Note="ADC_AVDD filter"), C("C31", "1uF", "adc_avdd", "GND"),
    R("R59", "33", "+3V3", "vreg_avdd", Note="VREG_AVDD filter per the RP2350 minimal design"), C("C37", "4.7uF", "vreg_avdd", "GND", Note="CFILT, own ground via"),
    R("R57", "27", "usb_dp", "usbc_dp", Note="USB series termination, close to U1"), R("R58", "27", "usb_dm", "usbc_dm"),

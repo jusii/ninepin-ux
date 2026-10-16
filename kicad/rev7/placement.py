@@ -15,17 +15,17 @@ P = {
  "C23": (30.0, 27.1, 90), "C21": (35.5, 27.45, 0), "C24": (40.5, 27.45, 0),   # 0402 caps at the N-side column vias: IOVDD 11, DVDD 6, IOVDD 1
  # east comb: rows y = cy+1.2k, comb end x = cx+10.5; flash pads 1-3 on rows -7..-5
  "U8":  (CX + 14.0, CY - 6.5, 0),  "C32": (52.9, 26.9, 0),  "R52": (44.9, 26.3, 0),      # BOOT resistor at the flash, so the chip-select line has no stub
- "C30": (41.6, 36.0, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),   # USB_OTP/QSPI_IOVDD cap and the USB series Rs right off the E pins
- "C29": (41.4, 42.2, 270),  "L1":  (43.6, 42.2, 180), "C38": (45.8, 42.2, 270),   # CIN | L | COUT across the VIN..PGND rows (RP2350 DS fig. 26)
- "R59": (43.6, 47.0, 180), "C37": (43.6, 45.5, 0),                             # AVDD filter below the group
+ "C30": (38.2, 36.6, 0),  "R57": (64.5, 40.15, 0), "R58": (64.5, 41.65, 0),   # USB_OTP/QSPI_IOVDD cap and the USB series Rs right off the E pins
+ "C29": (38.3, 39.1, 270),  "C38": (39.85, 39.1, 270), "L1": (41.6, 39.35, 270),   # CIN, COUT straddling the VIN/PGND rows at the pins, L east of COUT (DS fig. 26)
+ "R59": (46.75, 41.3, 180), "C37": (44.4, 42.1, 270),                            # AVDD filter on the AVDD row east of the group
  # west comb: rows y = cy+k, comb end x = cx-9.0
- "R54": (CX - 8.1, CY - 1.0, 180), "C22": (47.6, 41.2, 0),  # DVDD 39: 0402 at the S39 via
+ "R54": (CX - 8.1, CY - 1.0, 180), "C22": (34.3, 44.7, 0),  # DVDD 39: 0402 beside the S39 via
  "R53": (23.7, CY + 3.0, 180),
  "Y1":  (CX - 12.4, CY - 1.5, 180), "C33": (19.6, 32.65, 180), "C34": (CX - 14.1, CY + 1.8, 270),
  # south comb: columns x = cx+k, comb bottom y = cy+9.0
  "C27": (67.0, 20.0, 0), "C20": (25.3, 37.1, 180),   # C20: DVDD 23 on its own column; C27 stays as plane bulk under the OLED
  "R50": (37.3, 47.5, 90),  "C31": (39.7, 47.8, 0), "C28": (39.1, 45.0, 270),
- "C25": (24.4, 34.0, 180), "C26": (25.2, 44.3, 0),                             # IOVDD 20 / 30 at the W-side vias
+ "C25": (24.6, 34.0, 180), "C26": (25.2, 44.3, 0),                             # IOVDD 20 / 30 at the W-side vias
 
  # --- RM2 ---
  "FB1": (18.8, 30.35, 90), "C35": (20.6, 30.1, 90), "C36": (19.3, 22.5, 90),
