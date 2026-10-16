@@ -194,7 +194,7 @@ def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
     t.SetTextSize(VECTOR2I(mm(h), mm(h))); t.SetTextThickness(mm(w)); t.SetTextAngleDegrees(rot)
     if layer == pcbnew.B_SilkS: t.SetMirrored(True)
     b.Add(t)
-for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90), ("A500 OUT", 48.2, 2.0, 0), ("A500 IN", 48.0, 16.6, 0),
+for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90), ("A500 OUT", 44.5, 2.0, 0), ("KEY", 50.3, 2.0, 0), ("A500 IN", 43.8, 16.6, 0), ("KEY", 48.6, 16.6, 0),
                        ("SWD", 17.0, 8.0, 0), ("ENC", 86.8, 9.2, 0), ("BOOT", 90.6, 17.0, 90), ("RESET", 96.5, 53.65, 0),
                        ("PORT 1", 33.5, 47.6, 0), ("PORT 2", 89.6, 48.6, 0)):
     silk(txt, x, y, rot)

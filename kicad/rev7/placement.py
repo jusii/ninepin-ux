@@ -42,14 +42,14 @@ P = {
  # --- bus switches: U6 MCU row south (lanes), U7 MCU row north (vias); arrays east ---
  "U6":  (13.0, 22.0, 90), "U7":  (80.65, 25.0, 90),
  "C13": (7.1, 22.0, 270),  "C14": (75.4, 18.8, 90),
- "D4":  (35.0, 20.0, 270), "D5":  (11.4, 47.8, 0),  "D6":  (86.2, 45.2, 270),   # I/O rail OR diodes: D4 west of F1, D5 west of P1, D6 beside the port-2 pull-up feed
+ "D4":  (35.0, 20.0, 90),  "D5":  (11.4, 47.8, 0),  "D6":  (86.2, 45.2, 270),   # I/O rail OR diodes: D4 west of F1, D5 west of P1, D6 beside the port-2 pull-up feed
  "Q2":  (72.4, 22.8, 0),   "Q3":  (72.4, 27.5, 180),                            # kbin BSS138 shifters west of U7, either side of the I/O bus
  "RN1": (12.7975, 27.5, 270), "RN2": (15.4725, 27.5, 270),   # pad 4 / pad 3 exactly under U6 pins 5 / 10                            # port 1: 0402 arrays under U6's A pads
  "RN3": (31.9, 12.1, 270), "RN4": (58.6, 13.4, 0),                               # keyboard out under J1; keyboard in on the kbin B.Cu lanes west of the H5 post (KBIN_5V from the y 7.5 lane)
  "R61": (70.55, 48.5, 180), "R62": (71.93, 46.8, 180), "R63": (74.34, 46.8, 0), "R64": (76.09, 48.5, 180), "R65": (78.86, 46.8, 180), "R66": (80.24, 48.5, 180), "R67": (82.65, 46.8, 0),                                # port 2, east of the clamp rows, fed by B.Cu stubs from the P2 pins
  "R41": (77.3, 16.5, 90), "R42": (72.7, 16.5, 90),   # i2c pull-ups by the OLED socket
  # --- usb ---
- "R70": (53.3, 47.85, 180), "R71": (48.1, 43.8, 0),     # PIO-USB 27R at U2 (the mux is gone)
+ "R70": (53.3, 47.85, 180), "R71": (48.1, 43.8, 0), "R72": (56.6, 47.85, 0), "R73": (46.5, 45.3, 180),   # 15k host pull-downs beside the 27R     # PIO-USB 27R at U2 (the mux is gone)
  "U10": (92.5, 10.6, 180), "C39": (90.0, 14.4, 0), "R68": (94.3, 24.0, 0), "R69": (97.4, 24.0, 0),   # I/O expander east of the OLED post, VBUS sense divider under the AUX lane
  "F2":  (62.4, 46.0, 90), "C4":  (55.5, 43.4, 180),  "C5":  (65.35, 44.0, 270), "U2":  (50.0, 46.6, 90),
  "U4":  (90.25, 37.0, 270),

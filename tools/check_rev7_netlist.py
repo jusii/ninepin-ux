@@ -84,7 +84,8 @@ AMIGA_NETS = [
     "kbin_clk", "kbin_dat", "cont2_v", "cont2_b1", "cont2_h", "cont2_vq", "cont2_hq", "cont2_b2", "cont2_b3",
 ]
 RPACKS = {"RN1": ["cont1_b1", "cont1_v", "cont1_b2", "cont1_b3"], "RN2": ["NC", "cont1_hq", "cont1_vq", "cont1_h"],
-          "RN3": ["kbreset", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
+          "RN3": ["NC", "kbdata", "kbclock", "NC"], "RN4": ["NC", "NC", "kbin_dat", "kbin_clk"]}
+NO_PULLUP = {"kbreset"}                            # the A500 pulls KBRESET up itself; a board pull-up would let a USB-C-powered keyboard lift the I/O rail
 PULLUPS = {"cont2_v": "R61", "cont2_b1": "R62", "cont2_h": "R63", "cont2_vq": "R64", "cont2_hq": "R65", "cont2_b2": "R66", "cont2_b3": "R67"}
 RPACK_COMMON = {"RN4": "KBIN_5V"}                  # the kbin pull-ups follow the keyboard-in supply; every other array is on AMIGA_IO5V
 
@@ -122,6 +123,8 @@ def b_pin(k):
 # pull-up array slot: net index i -> RN(1 + i//4) element i%4, pin i%4+1, common pin 8-i%4
 def rpack_slot(i):
     net = AMIGA_NETS[i]
+    if net in NO_PULLUP:
+        return None, None, None
     if net in PULLUPS:
         return PULLUPS[net], "1", "2"
     for rn, nets in RPACKS.items():
@@ -154,8 +157,8 @@ GPIO_OTHER_NODES = {
     "i2c_sda":     {("J3", "4"), ("R41", "2"), ("U10", "15")},
     "i2c_scl":     {("J3", "3"), ("R42", "2"), ("U10", "14")},
     "ws_drv":      {("Q1", "1")},
-    "pio_dp":      {("R70", "1")},
-    "pio_dm":      {("R71", "1")},
+    "pio_dp":      {("R70", "1"), ("R72", "1")},
+    "pio_dm":      {("R71", "1"), ("R73", "1")},
     "wl_on":       {("U9", "12"), ("U9", "13")},
     "wl_d":        {("U9", "5"), ("R55", "2"), ("R56", "2")},
     "wl_cs":       {("U9", "9")},
@@ -521,7 +524,7 @@ def check_amiga(rep, nl, D):
             sw = KBIN_SW[net]; a, bp, afn, bfn = "3", "2", "D", "S"
         else:
             a, bp, afn, bfn = a_pin(k), b_pin(k), "A%d" % (k + 1), "B%d" % (k + 1)
-        want = set(AMIGA_CONN[net]) | {(sw, a), (rn, rn_pin), (tvs, "1")}
+        want = set(AMIGA_CONN[net]) | {(sw, a), (tvs, "1")} | ({(rn, rn_pin)} if rn else set())
         rep.chk("C.%s.nodes" % net, nodes == want,
                 "net %s: expected exactly {%s}, got {%s}" % (net, fmt(want), fmt(nodes)))
         # the parts on it are what they should be
@@ -533,7 +536,7 @@ def check_amiga(rep, nl, D):
         packs = [r for r, _ in nodes if (nl.lib_id(r) == "Device:R_Pack04" or nl.lib_id(r) == "Device:R")
                  and near(parse_value(nl.value(r).replace("4x", "")), 10e3)]
         pesd = [r for r, _ in nodes if nl.value(r) in ("PESD5V0S1BA", "PESD5V0S1BL")]
-        rep.chk("C.%s.parts" % net, len(cbtd) == 1 and len(packs) == 1 and len(pesd) == 1,
+        rep.chk("C.%s.parts" % net, len(cbtd) == 1 and len(packs) == (0 if net in NO_PULLUP else 1) and len(pesd) == 1,
                 "net %s: want one switch / one 10k pull-up / one PESD5V0S1BA, got %s / %s / %s"
                 % (net, cbtd, packs, pesd))
         rep.eq("C.%s.pin_func" % net, nl.pin_func.get((sw, a)), afn, "%s pin %s function" % (sw, a))
@@ -585,7 +588,7 @@ def check_power(rep, nl):
     pf = nl.pin_func
     # F1: AMIGA_5V -> AMIGA_5V_FUSED
     rep.eq("D.F1", (nl.net_of("F1", "1"), nl.net_of("F1", "2")), ("AMIGA_5V", "AMIGA_5V_FUSED"), "F1 pins 1/2")
-    rep.eq("D.AMIGA_5V.nodes", nl.nodes("AMIGA_5V"), {("F1", "1"), ("J1", "4"), ("J10", "4")},
+    rep.eq("D.AMIGA_5V.nodes", nl.nodes("AMIGA_5V"), {("F1", "1"), ("J1", "4"), ("J10", "4"), ("D4", "2")},
            "AMIGA_5V members")
     # D1 / D2 orientation by pin function
     for d, anode_net in (("D1", "AMIGA_5V_FUSED"), ("D2", "AUX_5V")):
@@ -594,7 +597,7 @@ def check_power(rep, nl):
         rep.eq("D.%s.cathode" % d, nl.net_of(d, "1"), "SYS5V", "%s cathode" % d)
     rep.eq("D.D1.value", (nl.value("D1"), nl.value("D2")), ("SS34", "SS34"), "D1/D2 values")
     # AMIGA_5V_FUSED: exactly the fuse, D1, the bleeder and the I/O-rail diode D4
-    fused = {("F1", "2"), ("D1", "2"), ("R60", "1"), ("D4", "2")}
+    fused = {("F1", "2"), ("D1", "2"), ("R60", "1")}
     got = nl.nodes("AMIGA_5V_FUSED")
     rep.chk("D.AMIGA_5V_FUSED.nodes", got == fused,
             "AMIGA_5V_FUSED: expected exactly {%s}, got {%s}" % (fmt(fused), fmt(got)))
@@ -608,11 +611,12 @@ def check_power(rep, nl):
         io.add((r, "2"))
     got = nl.nodes("AMIGA_IO5V")
     rep.chk("D.AMIGA_IO5V.nodes", got == io, "AMIGA_IO5V: expected exactly {%s}, got {%s}" % (fmt(io), fmt(got)))
-    for d, anode in (("D4", "AMIGA_5V_FUSED"), ("D5", "cont1_5v"), ("D6", "cont2_5v")):
+    for d, anode in (("D4", "AMIGA_5V"), ("D5", "cont1_5v"), ("D6", "cont2_5v")):
         rep.eq("D.%s" % d, (nl.value(d), pf.get((d, "1")), pf.get((d, "2")), nl.net_of(d, "1"), nl.net_of(d, "2")), ("B5819W", "K", "A", "AMIGA_IO5V", anode), "%s value / orientation" % d)
     rep.eq("D.cont1_5v.nodes", nl.nodes("cont1_5v"), {("P1", "7"), ("D5", "2")}, "port 1 pin 7 feeds only D5")
     rep.eq("D.cont2_5v.nodes", nl.nodes("cont2_5v"), {("P2", "7"), ("D6", "2")}, "port 2 pin 7 feeds only D6")
-    rep.eq("D.io_fused_bridge", nl.parts_between("AMIGA_IO5V", "AMIGA_5V_FUSED"), ["D4"], "parts between AMIGA_IO5V and AMIGA_5V_FUSED")
+    rep.eq("D.io_amiga_bridge", nl.parts_between("AMIGA_IO5V", "AMIGA_5V"), ["D4"], "parts between AMIGA_IO5V and AMIGA_5V")
+    rep.eq("D.io_fused_bridge", nl.parts_between("AMIGA_IO5V", "AMIGA_5V_FUSED"), [], "nothing bridges AMIGA_IO5V to AMIGA_5V_FUSED")
     rep.eq("D.io_sys_bridge", nl.parts_between("AMIGA_IO5V", "SYS5V"), [], "nothing bridges AMIGA_IO5V to SYS5V")
     rn4 = {("RN4", p) for p in ("5", "6", "7", "8")}
     rep.chk("D.RN4.kbin5v", rn4 <= nl.nodes("KBIN_5V"), "RN4 commons on KBIN_5V: {%s}" % fmt(nl.nodes("KBIN_5V")))
@@ -683,6 +687,9 @@ def check_usb(rep, nl):
              ("usbc_dm", {("J13", "A7"), ("J13", "B7"), ("U4", "1"), ("U4", "6"), ("R58", "2")}),
              ("usba_dp", {("J4", "3"), ("U2", "3"), ("U2", "4"), ("R70", "2")}),
              ("usba_dm", {("J4", "2"), ("U2", "1"), ("U2", "6"), ("R71", "2")})]
+    for net, r in (("pio_dp", "R72"), ("pio_dm", "R73")):                       # 15k host pull-downs on the MCU side of the 27R
+        rs = nl.parts_between(net, GND, lib="Device:R", value=15e3)
+        rep.chk("E.%s.15k" % net, rs == [r], "15k pull-down on %s: %s" % (net, rs))
     for net, nodes in pairs:
         got = nl.nodes(net)
         rep.chk("E.%s.nodes" % net, got == nodes,
@@ -700,7 +707,7 @@ def check_usb(rep, nl):
         rs = nl.parts_between(cnet, rnet, lib="Device:R", value=27)
         rep.chk("E.%s.27R" % rnet, len(rs) == 1, "27R between %s and %s: %s" % (cnet, rnet, rs))
         rep.eq("E.%s.u1" % rnet, (pf.get(("U1", upin)), nl.net_of("U1", upin)), (ufn, rnet), "U1 pin %s" % upin)
-        rep.eq("E.%s.nodes" % rnet, len(nl.nodes(rnet)), 2, "%s member count" % rnet)
+        rep.eq("E.%s.nodes" % rnet, len(nl.nodes(rnet)), 3 if rnet.startswith("pio") else 2, "%s member count" % rnet)
     rep.chk("E.no_mux", "U5" not in nl.comps, "the USB mux U5 was removed on 2026-10-15: both ports have their own pair")
     # CC pull-downs
     for pin, net in (("A5", "usb_cc1"), ("B5", "usb_cc2")):
