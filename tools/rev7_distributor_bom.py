@@ -5,7 +5,9 @@ Reads kicad/rev7/fab/amigahid-pico-rev7-bom.csv (one line per LCSC part, written
 manufacturer part numbers (the JLC part first, then standard-brand equivalents for the China-only parts), picks the
 first candidate the distributor has in stock, falls back to an in-stock keyword search for the passives, and writes
 to kicad/rev7/bom/:
-  rev7-<dist>-bom-<N>.csv      distributor BOM-import file for N boards (part number, quantity, reference)
+  rev7-<dist>-bom-1.csv        distributor BOM-import file for ONE board, exact per-board counts (multiply in the
+                               distributor's BOM tool to order several)
+  rev7-<dist>-bom-<N>.csv      the same for N boards, with each line raised to the cheaper price break
   rev7-distributor-bom.md      per-line table and totals at every board count, the substitutes, the unavailable lines
 
 Needs ~/Devel/Omat/bom-tools (MOUSER_API_KEY, DIGIKEY_KEY/SECRET in ~/.config/bom-tools/distributors.env);
@@ -134,11 +136,11 @@ def main():
                 md.append("- %s (%s, JLC %s): tried %s%s" % (ln["Designator"], ln["Comment"], ln["LCSC Part #"], ", ".join(cands) or "nothing",
                           "; buy at " + ELSEWHERE[ln["LCSC Part #"]] if ln["LCSC Part #"] in ELSEWHERE else "; stock 0 / on order" if hit else ""))
             md.append("")
-        for n in boards:
+        for n in [1] + boards:
             with open(os.path.join(OUT, "rev7-%s-bom-%d.csv" % (dname, n)), "w", newline="") as f:
                 w = csv.writer(f); w.writerow(["%s Part Number" % dname.title(), "Manufacturer Part Number", "Quantity", "Customer Reference", "Description"])
                 for ln, per, hit, how, q in rows:
-                    if q: w.writerow([hit[pnkey], hit["mpn"], q[n][0], ln["Designator"], hit["description"]])
+                    if q: w.writerow([hit[pnkey], hit["mpn"], per if n == 1 else q[n][0], ln["Designator"], hit["description"]])
         print("%s: %d lines priced, %d unavailable; %s" % (dname, len(rows) - len(missing), len(missing), ", ".join("x%d %.2f" % (n, totals[n]) for n in boards)))
     open(os.path.join(OUT, "rev7-distributor-bom.md"), "w").write("\n".join(md))
 
