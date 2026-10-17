@@ -12,7 +12,7 @@ Mouser Part Number,Manufacturer Part Number,Quantity,Customer Reference,Descript
 241-SX34_R1_00001,SX34_R1_00001,30,"D1,D2,D3","Schottky Diodes & Rectifiers 40V,Schottky,SMA,3A"
 621-1N5819HW-F,1N5819HW-7-F,30,"D4,D5,D6",Schottky Diodes & Rectifiers Vr/40V Io/1A T/R
 771-PESD5V0S1BAF,PESD5V0S1BAF,140,"D10,D11,D12,D20,D21,D22,D23,D24,D25,D26,D27,D28,D29,D30",ESD Protection Diodes / TVS Diodes PESD5V0S1BA/SOD323/SOD2
-771-PESD5V0S1BL-QYL,PESD5V0S1BL-QYL,70,"D13,D14,D15,D16,D17,D18,D19",ESD Protection Diodes / TVS Diodes PESD5V0S1BL-Q/SOD882/DFN1006-2
+771-PESD5V0S1BL-QYL,PESD5V0S1BL-QYL,100,"D13,D14,D15,D16,D17,D18,D19",ESD Protection Diodes / TVS Diodes PESD5V0S1BL-Q/SOD882/DFN1006-2
 652-MF-MSMF075-2,MF-MSMF075-2,10,F1,Resettable Fuses - PPTC 13V    750MA-HD  100A  MAX
 652-MF-MSMF050-2,MF-MSMF050-2,20,"F2,F3",Resettable Fuses - PPTC 15V    500MA-HD  100A  MAX
 810-MMZ1608Y601CTAH0,MMZ1608Y601CTAH0,10,FB1,Ferrite Beads 0603 600ohms 500mA HiSpd Signal Line
@@ -35,7 +35,7 @@ Mouser Part Number,Manufacturer Part Number,Quantity,Customer Reference,Descript
 603-RC0603FR-0733RL,RC0603FR-0733RL,20,"R50,R59","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 33Ohms, 1%, 1/10W"
 603-RC0603FR-0710KL,RC0603FR-0710KL,20,"R56,R69","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 10kOhms, 1%, 1/10W"
 603-RC0603FR-0727RL,RC0603FR-0727RL,20,"R57,R58","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
-603-RC0402FR-0710KL,RC0402FR-0710KL,70,"R61,R62,R63,R64,R65,R66,R67","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 10kOhms, 1%, 1/16W"
+603-RC0402FR-0710KL,RC0402FR-0710KL,100,"R61,R62,R63,R64,R65,R66,R67","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 10kOhms, 1%, 1/16W"
 603-RC0603FR-0727RL,RC0603FR-0727RL,20,"R70,R71","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
 603-RC0402FR-0715KL,RC0402FR-0715KL,20,"R72,R73","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 15kOhms, 1%, 1/16W"
 652-CAY10-103J4LF,CAY10-103J4LF,30,"RN1,RN2,RN4",Resistor Networks & Arrays 10K 5% Convex 4resistors

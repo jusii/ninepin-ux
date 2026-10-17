@@ -13,7 +13,7 @@ a distributor without credentials is skipped. usage: python3 tools/rev7_distribu
 """
 import csv, datetime, importlib, os, sys
 sys.path.insert(0, os.path.expanduser("~/Devel/Omat/bom-tools"))
-from bomprice import Cache, order_qty, price_at, resolve
+from bomprice import Cache, best_qty, resolve
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOM = os.path.join(REPO, "kicad/rev7/fab/amigahid-pico-rev7-bom.csv"); OUT = os.path.join(REPO, "kicad/rev7/bom")
@@ -96,7 +96,8 @@ def main():
     md = ["# rev7 distributor BOM (%s)" % datetime.date.today(), "",
           "Source `%s`; mapping in `tools/rev7_distributor_bom.py`. Parts are picked per line: the JLC part when the distributor stocks it, "
           "otherwise a standard-brand equivalent (marked *sub*), otherwise the cheapest in-stock keyword hit (*kw*). Order quantities are rounded "
-          "to the seller's minimum/multiple%s; unit prices are the break reached by that quantity. Totals exclude shipping and VAT." % (
+          "to the seller's minimum/multiple%s and raised to the next price break whenever that lowers the line total (10 resistors at the "
+          "10-piece price are cheaper than 6 at the 1-piece price); the quantity shown is what to order. Totals exclude shipping and VAT." % (
               os.path.relpath(BOM, REPO), " plus %d spare per line" % spare if spare else ""), ""]
     os.makedirs(OUT, exist_ok=True)
     for dname in ("mouser", "digikey"):
@@ -112,7 +113,7 @@ def main():
                 missing.append((ln, hit, cands)); rows.append((ln, per, hit, how, {})); continue
             q = {}
             for n in boards:
-                oq = order_qty(per * n + spare, hit); up = price_at(hit["prices"], oq); q[n] = (oq, up, oq * up); totals[n] += oq * up
+                q[n] = best_qty(per * n + spare, hit); totals[n] += q[n][2]
             rows.append((ln, per, hit, how, q))
         cur = next((r[2]["prices"][0][2] for r in rows if r[2] and r[2]["prices"]), "EUR")
         md += ["## %s (%s)" % (dname.title(), cur), "",
