@@ -48,7 +48,7 @@ def main():
         for f in files: z.write(os.path.join(tmp, f), f)
 
     # BOM + CPL from the board itself
-    b = pcbnew.LoadBoard(PCB); bb = b.GetBoardEdgesBoundingBox(); y0 = bb.GetBottom() / 1e6
+    b = pcbnew.LoadBoard(PCB); bb = b.GetBoardEdgesBoundingBox()
     bom, cpl, dnp, nolcsc = {}, [], [], []
     for fp in sorted(b.Footprints(), key=lambda f: (re.sub(r"\d+", "", f.GetReference()), int(re.sub(r"\D", "", f.GetReference()) or 0))):
         ref = fp.GetReference(); fields = {f.GetName(): f.GetText() for f in fp.GetFields()}
@@ -57,7 +57,7 @@ def main():
         if not lcsc: nolcsc.append(ref)
         key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
         pos = fp.GetPosition(); layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
-        cpl.append((ref, round(pos.x / 1e6, 4), round((y0 - pos.y / 1e6), 4), layer, round(fp.GetOrientationDegrees(), 2)))
+        cpl.append((ref, round(pos.x / 1e6, 4), round(-pos.y / 1e6, 4), layer, round(fp.GetOrientationDegrees(), 2)))   # gerber frame: KiCad y negated (board spans Y -62..0), as kicad-cli pos does
     with open(os.path.join(HERE, NAME + "-bom.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
         for key, (val, fpname, refs) in bom.items(): w.writerow([val, ",".join(refs), fpname, key if isinstance(key, str) else ""])
@@ -89,7 +89,7 @@ def main():
               "- not placed / not in the BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
               "- hand-solder candidates if JLC stock is short: %s" % ", ".join(sorted(HAND)),
-              "- CPL Y is measured upward from the south board edge (KiCad origin flipped); rotations are KiCad's - check JLC's placement preview for the polarised parts (D1-D6, C4, U1-U3, U6-U10, Q1-Q3, L1, LED1)", ""]
+              "- CPL coordinates are in the gerber frame (KiCad X, Y negated: the board spans Y -62..0, matching the gerbers); rotations are KiCad's - check JLC's placement preview for the polarised parts (D1-D6, C4, U1-U3, U6-U10, Q1-Q3, L1, LED1)", ""]
     open(os.path.join(HERE, "fab-manifest.md"), "w").write("\n".join(lines))
     shutil.rmtree(tmp)
     print("\n".join(lines[:4] + lines[-6:]))
