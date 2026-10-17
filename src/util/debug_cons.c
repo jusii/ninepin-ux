@@ -11,6 +11,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "config.h"
 #include "debug_cons.h"
 #include "display/disp_ssd.h"
 #include "output.h"
@@ -25,7 +26,9 @@ struct
 
 #ifdef ENABLE_BLUETOOTH_HID
 static bool bt_passkey_active;
+#endif
 
+#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
 static void dbgcons_write_padded_line(uint8_t line, char const *message)
 {
     char linebuf[DBGCONS_OLED_COLS + 1] = "";
@@ -33,6 +36,27 @@ static void dbgcons_write_padded_line(uint8_t line, char const *message)
     snprintf(linebuf, sizeof(linebuf), "%-*.*s", DBGCONS_OLED_COLS, DBGCONS_OLED_COLS,
         message != NULL ? message : "");
     disp_write(0, line, linebuf);
+}
+#endif
+
+#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+// the board status line: output mode and amiga power. it shares oled line 2
+// with the DEBUG_HID_STATUS readout, which wins until the next status change
+#define DBGCONS_STATUS_LINE 2
+
+static char const *status_mode = "amiga";
+static bool status_amiga_on = true;
+
+static void dbgcons_status_line(void)
+{
+    char linebuf[DBGCONS_OLED_COLS + 1] = "";
+
+#ifdef HAS_AMIGA_SENSE
+    snprintf(linebuf, sizeof(linebuf), "out:%s amiga:%s", status_mode, status_amiga_on ? "on" : "off");
+#else
+    snprintf(linebuf, sizeof(linebuf), "out:%s", status_mode);
+#endif
+    dbgcons_write_padded_line(DBGCONS_STATUS_LINE, linebuf);
 }
 #endif
 
@@ -302,6 +326,26 @@ void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t respo
     (void)queued;
     (void)requests;
     (void)responses;
+#endif
+}
+
+void dbgcons_mode(char const *mode)
+{
+#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+    status_mode = (mode != NULL) ? mode : "?";
+    dbgcons_status_line();
+#else
+    (void)mode;
+#endif
+}
+
+void dbgcons_amiga_power(bool on)
+{
+#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+    status_amiga_on = on;
+    dbgcons_status_line();
+#else
+    (void)on;
 #endif
 }
 

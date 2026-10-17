@@ -13,10 +13,16 @@
 #include <stdbool.h>
 #include <string.h>
 
+#include "config.h"
 #include "platform/amiga/keyboard_serial_io.h"
 #include "platform/amiga/quad_mouse.h"
 #include "util/debug_cons.h"
+#include "util/run_mode.h"
 #include "util/status_led.h"
+
+#ifdef HAS_USB_DEVICE
+#include "usb_device.h"
+#endif
 
 typedef struct
 {
@@ -97,17 +103,36 @@ void input_bridge_reset(uint8_t slot)
     memset(&bridge_state[slot], 0, sizeof(bridge_state[slot]));
 }
 
-void input_bridge_disconnect(uint8_t slot)
+/**
+ * release everything a slot holds down on the amiga and forget its state.
+ */
+static void _ib_release_amiga(uint8_t slot)
 {
     static const hid_keyboard_report_t empty_keyboard = { 0, 0, {0} };
-
-    if (slot >= INPUT_BRIDGE_MAX_SLOTS)
-        return;
 
     _ib_sync_keyboard_keys(&bridge_state[slot].keyboard, &empty_keyboard);
     _ib_sync_keyboard_modifiers(&bridge_state[slot].keyboard, &empty_keyboard);
     _ib_release_mouse_buttons(&bridge_state[slot].mouse);
     memset(&bridge_state[slot], 0, sizeof(bridge_state[slot]));
+}
+
+void input_bridge_disconnect(uint8_t slot)
+{
+    if (slot >= INPUT_BRIDGE_MAX_SLOTS)
+        return;
+
+    // in passthrough the amiga-side state is already empty (run_mode_set()
+    // released it), so this is a no-op there; the device side lets go itself
+    _ib_release_amiga(slot);
+#ifdef HAS_USB_DEVICE
+    usb_device_release_slot(slot);
+#endif
+}
+
+void input_bridge_release_all(void)
+{
+    for (uint8_t slot = 0; slot < INPUT_BRIDGE_MAX_SLOTS; slot++)
+        _ib_release_amiga(slot);
 }
 
 void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *report,
@@ -117,6 +142,16 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
 
     if ((slot >= INPUT_BRIDGE_MAX_SLOTS) || (report == NULL))
         return;
+
+#ifdef HAS_USB_DEVICE
+    // passthrough hands the report on untouched; the amiga-side state stays
+    // empty, so switching back starts from nothing held
+    if (run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH) {
+        usb_device_keyboard(slot, report);
+        status_led_activity();
+        return;
+    }
+#endif
 
     state = &bridge_state[slot];
 
@@ -141,6 +176,14 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
 
     if ((slot >= INPUT_BRIDGE_MAX_SLOTS) || (report == NULL))
         return;
+
+#ifdef HAS_USB_DEVICE
+    if (run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH) {
+        usb_device_mouse(slot, report);
+        status_led_activity();
+        return;
+    }
+#endif
 
     state = &bridge_state[slot];
 

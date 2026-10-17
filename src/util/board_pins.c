@@ -44,9 +44,10 @@ void board_pins_init(void)
 #endif
 
 #ifdef HAS_AMIGA_SENSE
-    // what adc_gpio_init() does, without pulling in hardware_adc before there
-    // is a reader: no function, no pulls (the reset pull-down would load the
-    // 100k divider), digital input off
+    // park the pad as adc_gpio_init() would, from the first moment: no
+    // function, no pulls (the reset pull-down would load the 100k divider),
+    // digital input off. util/amiga_sense.c claims it properly with
+    // hardware_adc once main() starts the reader.
     gpio_set_function(AMIGA_SENSE_PIN, GPIO_FUNC_NULL);
     gpio_disable_pulls(AMIGA_SENSE_PIN);
     gpio_set_input_enabled(AMIGA_SENSE_PIN, false);

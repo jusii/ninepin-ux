@@ -7,9 +7,30 @@
 #ifndef _DISPLAY_DISP_SSD_H
 #define _DISPLAY_DISP_SSD_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 void disp_ssd_init(void);
+
+/**
+ * @brief Borrow the display's i2c controller for a blocking transfer to another
+ *        device on the same bus (the rev7 i/o expander).
+ *
+ * The display streams frames by dma and completes them in its i2c interrupt.
+ * This returns false whilst a display transfer is in flight - try again on a
+ * later pass, never spin on it. On true the controller is idle and the display
+ * interrupt is masked; display updates queued meanwhile wait for the matching
+ * disp_i2c_bus_release(). The controller stays configured as disp_ssd_init()
+ * left it (I2C_PORT, pins, SSD_BAUD), whether or not a display answered, so the
+ * borrower must not re-initialise it. Core0 main loop only.
+ */
+bool disp_i2c_bus_acquire(void);
+
+/**
+ * @brief Hand the i2c controller back and start any display transfer queued
+ *        whilst it was borrowed.
+ */
+void disp_i2c_bus_release(void);
 
 extern void (*disp_write)(uint8_t x, uint8_t y, char *message);
 

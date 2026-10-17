@@ -49,6 +49,16 @@ jobs:
             build-type: Release
             variant: -pico2w-bt
             cmake-args: -DPICO_BOARD=pico2_w -DENABLE_BLUETOOTH_HID=ON
+          # rev7: chip-down rp2350a + rm2, pio-usb host on usb-a, usb device on usb-c
+          - board: BOARD_HIDPICO_REV7
+            build-type: Release
+            variant: -bt
+            cmake-args: -DENABLE_BLUETOOTH_HID=ON
+          # rev7 without the radio stack: must still compile
+          - board: BOARD_HIDPICO_REV7
+            build-type: Release
+            variant: ''
+            cmake-args: ''
 
     steps:
       - name: Additional dependencies

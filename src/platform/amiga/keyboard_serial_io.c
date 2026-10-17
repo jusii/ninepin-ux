@@ -53,6 +53,21 @@ static bool rkb_ramiga = false;
 // other's reset; whichever got there first also holds it.
 static bool kbdin_reset_active = false;
 
+// whether there is an amiga on the other end to talk to. boards without an
+// amiga-on sense input assume there always is (amiga_init()); boards with one
+// start from amiga_init_io() and follow amiga_power_on() / amiga_power_off().
+static bool amiga_powered = true;
+
+// the initpower / termpower greeting, sent from amiga_service() on its own
+// schedule after amiga_power_on() rather than blocking the main loop for it
+enum _announce_stage { ANNOUNCE_NONE, ANNOUNCE_INITPOWER, ANNOUNCE_TERMPOWER };
+static enum _announce_stage announce_stage = ANNOUNCE_NONE;
+static uint32_t announce_due_ms;
+
+// the same timings amiga_init() has always used
+#define AMIGA_ANNOUNCE_DELAY_MS     1000    // power-on to initpower
+#define AMIGA_ANNOUNCE_GAP_MS       200     // initpower to termpower
+
 enum _keyboard_pin_state { LOW, HIGH };
 
 #define AKB_EVENT_QUEUE_DEPTH 64
@@ -183,7 +198,7 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
     sleep_ms(5);
 }
 
-void amiga_init()
+void amiga_init_io(void)
 {
     // setup digital mode, direction and active high/low on /clk, /dat and /rst.
     gpio_init(KBD_AMIGA_DAT);
@@ -206,16 +221,89 @@ void amiga_init()
 
     // now the pins are setup, setup the timer callback to maintain keyboard comms in sync.
     // @todo add_alarm_in_ms() here
+}
+
+void amiga_init()
+{
+    amiga_init_io();
 
     // wait a full second then send initpower, pause 200ms and then termpower. unlike the amiga kbd 6502, we're
     // not doing anything during this time, so it's just so the computer is happy in the knowledge that we are
     // here.
-    sleep_ms(1000);
+    sleep_ms(AMIGA_ANNOUNCE_DELAY_MS);
     amiga_send_immediate(AMIGA_INITPOWER, false);
-    sleep_ms(200);
+    sleep_ms(AMIGA_ANNOUNCE_GAP_MS);
     amiga_send_immediate(AMIGA_TERMPOWER, false);
 
     // fin.
+}
+
+void amiga_power_on(void)
+{
+    amiga_powered = true;
+
+    // nothing typed whilst the amiga was off means anything to it now
+    amiga_clear_queued_events();
+    reset_line_was_low = gpio_get(KBD_AMIGA_RST) == 0;
+
+    announce_stage = ANNOUNCE_INITPOWER;
+    announce_due_ms = to_ms_since_boot(get_absolute_time()) + AMIGA_ANNOUNCE_DELAY_MS;
+}
+
+void amiga_power_off(void)
+{
+    amiga_powered = false;
+    announce_stage = ANNOUNCE_NONE;
+    amiga_clear_queued_events();
+
+    // let go of the lines; with the amiga off the board's bus switches are open
+    // and the pull-ups hold our side, but a reset we were driving must not be
+    // waiting for the amiga when it comes back
+    _keyboard_gpio_set(KBD_AMIGA_DAT, HIGH);
+    _keyboard_gpio_set(KBD_AMIGA_CLK, HIGH);
+    _keyboard_gpio_set(KBD_AMIGA_RST, HIGH);
+
+    // a powered-down amiga holds no reset and no modifier state of ours
+    in_reset = false;
+    local_reset_active = false;
+    external_reset_active = false;
+    kbdin_reset_active = false;
+    ctrl = lamiga = ramiga = false;
+    rkb_ctrl = rkb_lamiga = rkb_ramiga = false;
+    amiga_reset_stateful_flags();
+}
+
+bool amiga_powered_on(void)
+{
+    return amiga_powered;
+}
+
+/**
+ * send the next step of a pending power-on greeting when it falls due.
+ *
+ * @return true whilst the greeting is still in progress
+ */
+static bool amiga_announce_task(void)
+{
+    uint32_t now;
+
+    if (announce_stage == ANNOUNCE_NONE)
+        return false;
+
+    now = to_ms_since_boot(get_absolute_time());
+    if ((int32_t)(now - announce_due_ms) < 0)
+        return true;
+
+    if (announce_stage == ANNOUNCE_INITPOWER) {
+        amiga_send_immediate(AMIGA_INITPOWER, false);
+        announce_stage = ANNOUNCE_TERMPOWER;
+        announce_due_ms = now + AMIGA_ANNOUNCE_GAP_MS;
+        return true;
+    }
+
+    amiga_send_immediate(AMIGA_TERMPOWER, false);
+    announce_stage = ANNOUNCE_NONE;
+    return false;
 }
 
 bool amiga_caps_lock()
@@ -469,7 +557,19 @@ void amiga_release_reset()
 
 void amiga_service()
 {
-    bool reset_line_low = gpio_get(KBD_AMIGA_RST) == 0;
+    bool reset_line_low;
+
+    // nobody to talk to: input still arrives, but goes nowhere
+    if (!amiga_powered) {
+        amiga_clear_queued_events();
+        return;
+    }
+
+    // keycodes wait in the queue until the amiga has been greeted
+    if (amiga_announce_task())
+        return;
+
+    reset_line_low = gpio_get(KBD_AMIGA_RST) == 0;
 
     /*
      * On A500-style hookups the reset line can be observed from the Pico

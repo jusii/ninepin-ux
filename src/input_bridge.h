@@ -28,4 +28,11 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
     input_bridge_keyboard_sink_t const *sink);
 void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report);
 
+/**
+ * @brief Release every key and button any slot holds down on the amiga.
+ *
+ * Used when output moves away from the amiga (run_mode_set()).
+ */
+void input_bridge_release_all(void);
+
 #endif // _INPUT_BRIDGE_H

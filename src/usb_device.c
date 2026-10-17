@@ -1,0 +1,362 @@
+/**
+ * this file is part of amigahid-pico, (c) 2021 just nine <nine@aphlor.org>
+ * please locate the full source at https://github.com/borb/amigahid-pico
+ *
+ * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
+ * please find the complete license text at https://spdx.org/licenses/EPL-2.0
+ *
+ * usb device role on the native phy: cdc debug console and hid passthrough.
+ */
+
+#include "config.h"
+
+#ifdef HAS_USB_DEVICE
+
+#include <stdbool.h>
+#include <stdint.h>
+#include <string.h>
+
+#include "pico/critical_section.h"
+#include "pico/stdio.h"
+#include "pico/stdio/driver.h"
+#include "tusb.h"
+
+#include "input_bridge_bt.h"
+#include "usb_device.h"
+#include "util/output.h"
+
+//--------------------------------------------------------------------+
+// cdc console: an sdk stdio driver writing into a ring buffer which the main
+// loop drains into the cdc fifo. the driver may be entered from interrupt
+// context (bluetooth status printing), where tinyusb must not be called, hence
+// the buffer in between.
+//--------------------------------------------------------------------+
+
+// enough for the boot banner and a few screens of hotplug chatter
+#define CONSOLE_BUFSIZE 4096
+
+static char console_buf[CONSOLE_BUFSIZE];
+static uint32_t console_head, console_tail; // head: next write, tail: next read
+static critical_section_t console_lock;
+
+static void console_out_chars(char const *buf, int len)
+{
+    critical_section_enter_blocking(&console_lock);
+
+    for (int i = 0; i < len; i++) {
+        uint32_t next = (console_head + 1) % CONSOLE_BUFSIZE;
+
+        // full: drop the rest of this write rather than tear older lines
+        if (next == console_tail)
+            break;
+
+        console_buf[console_head] = buf[i];
+        console_head = next;
+    }
+
+    critical_section_exit(&console_lock);
+}
+
+static stdio_driver_t console_driver = {
+    .out_chars = console_out_chars,
+#if PICO_STDIO_ENABLE_CRLF_SUPPORT
+    .crlf_enabled = PICO_STDIO_DEFAULT_CRLF,
+#endif
+};
+
+/**
+ * move whatever fits from the ring buffer into the cdc fifo; only whilst a
+ * terminal is listening (dtr), so boot output waits for somebody to read it.
+ */
+static void console_drain(void)
+{
+    uint8_t chunk[64];
+    uint32_t avail, count = 0;
+
+    // nothing is read from the console; keep the rx fifo from backing up
+    if (tud_cdc_available())
+        tud_cdc_read_flush();
+
+    if (!tud_cdc_connected())
+        return;
+
+    avail = tud_cdc_write_available();
+    if (avail > sizeof(chunk))
+        avail = sizeof(chunk);
+
+    critical_section_enter_blocking(&console_lock);
+    while ((count < avail) && (console_tail != console_head)) {
+        chunk[count++] = (uint8_t)console_buf[console_tail];
+        console_tail = (console_tail + 1) % CONSOLE_BUFSIZE;
+    }
+    critical_section_exit(&console_lock);
+
+    if (count) {
+        tud_cdc_write(chunk, count);
+        tud_cdc_write_flush();
+    }
+}
+
+//--------------------------------------------------------------------+
+// hid passthrough state. the endpoint may still be busy with the previous
+// report when a new one arrives, so the latest state is kept here and sent from
+// the task when the endpoint is free: keys and buttons are levels (the newest
+// report supersedes), mouse motion is accumulated so none is lost.
+//--------------------------------------------------------------------+
+
+static hid_keyboard_report_t slot_keyboard[INPUT_BRIDGE_MAX_SLOTS];
+static uint8_t slot_buttons[INPUT_BRIDGE_MAX_SLOTS];
+static bool keyboard_dirty;
+static bool mouse_buttons_dirty;
+static int32_t mouse_dx, mouse_dy, mouse_wheel, mouse_pan;
+
+static bool stack_up;
+static bool connected;
+
+// hid usage table, keyboard page: "keyboard errorrollover"
+#define HID_USAGE_KEYBOARD_ERROR_ROLLOVER 0x01
+
+static void hid_wake_host(void)
+{
+    // a suspended host which allowed remote wakeup gets woken by input
+    if (tud_suspended())
+        tud_remote_wakeup();
+}
+
+static void hid_merge_keyboard(hid_keyboard_report_t *out)
+{
+    uint8_t keys = 0;
+
+    memset(out, 0, sizeof(*out));
+
+    for (uint8_t slot = 0; slot < INPUT_BRIDGE_MAX_SLOTS; slot++) {
+        out->modifier |= slot_keyboard[slot].modifier;
+
+        for (uint8_t pos = 0; pos < 6; pos++) {
+            uint8_t code = slot_keyboard[slot].keycode[pos];
+            bool dup = false;
+
+            if (code == 0)
+                continue;
+
+            for (uint8_t k = 0; k < keys; k++)
+                if (out->keycode[k] == code)
+                    dup = true;
+
+            if (dup)
+                continue;
+
+            // more than six keys down across all keyboards: boot protocol's
+            // answer is phantom state (all keys = errorrollover)
+            if (keys == 6) {
+                memset(out->keycode, HID_USAGE_KEYBOARD_ERROR_ROLLOVER, sizeof(out->keycode));
+                return;
+            }
+
+            out->keycode[keys++] = code;
+        }
+    }
+}
+
+static uint8_t hid_merge_buttons(void)
+{
+    uint8_t buttons = 0;
+
+    for (uint8_t slot = 0; slot < INPUT_BRIDGE_MAX_SLOTS; slot++)
+        buttons |= slot_buttons[slot];
+
+    return buttons;
+}
+
+static int8_t hid_take_axis(int32_t *accum)
+{
+    int32_t step = *accum;
+
+    if (step > 127)
+        step = 127;
+    if (step < -127)
+        step = -127;
+
+    *accum -= step;
+    return (int8_t)step;
+}
+
+static void hid_flush(void)
+{
+    if (!tud_mounted()) {
+        // nobody to send to: levels stay (and go out on mount), motion is stale
+        mouse_dx = mouse_dy = mouse_wheel = mouse_pan = 0;
+        return;
+    }
+
+    if (keyboard_dirty && tud_hid_n_ready(USB_DEVICE_HID_KEYBOARD)) {
+        hid_keyboard_report_t merged;
+
+        hid_merge_keyboard(&merged);
+        if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode))
+            keyboard_dirty = false;
+    }
+
+    if ((mouse_buttons_dirty || mouse_dx || mouse_dy || mouse_wheel || mouse_pan)
+        && tud_hid_n_ready(USB_DEVICE_HID_MOUSE)) {
+        int32_t dx = mouse_dx, dy = mouse_dy, wheel = mouse_wheel, pan = mouse_pan;
+        int8_t x = hid_take_axis(&dx), y = hid_take_axis(&dy);
+        int8_t v = hid_take_axis(&wheel), h = hid_take_axis(&pan);
+
+        // only consume the motion once the report is actually queued
+        if (tud_hid_n_mouse_report(USB_DEVICE_HID_MOUSE, 0, hid_merge_buttons(), x, y, v, h)) {
+            mouse_dx = dx;
+            mouse_dy = dy;
+            mouse_wheel = wheel;
+            mouse_pan = pan;
+            mouse_buttons_dirty = false;
+        }
+    }
+}
+
+//--------------------------------------------------------------------+
+// public api
+//--------------------------------------------------------------------+
+
+void usb_device_init(void)
+{
+    critical_section_init(&console_lock);
+    stdio_set_driver_enabled(&console_driver, true);
+}
+
+void usb_device_task(bool vbus_present)
+{
+    if (!stack_up) {
+        // dcd_init() presents the pull-up at once, so the stack is not even
+        // initialised until there is a powered port to present it to
+        if (!vbus_present)
+            return;
+
+        tusb_rhport_init_t const dev_init = {
+            .role = TUSB_ROLE_DEVICE,
+            .speed = TUSB_SPEED_AUTO,
+        };
+
+        if (!tusb_init(BOARD_TUD_RHPORT, &dev_init)) {
+            ahprintf("[usbd] device stack failed to start\n");
+            return;
+        }
+
+        stack_up = true;
+        connected = true;
+        ahprintf("[usbd] usb-c vbus present, device stack up\n");
+    } else if (vbus_present && !connected) {
+        tud_connect();
+        connected = true;
+        ahprintf("[usbd] usb-c vbus present, connecting\n");
+    } else if (!vbus_present && connected) {
+        tud_disconnect();
+        connected = false;
+        ahprintf("[usbd] usb-c vbus gone, disconnected\n");
+    }
+
+    tud_task();
+
+    if (!connected)
+        return;
+
+    console_drain();
+    hid_flush();
+}
+
+bool usb_device_mounted(void)
+{
+    return stack_up && tud_mounted();
+}
+
+void usb_device_keyboard(uint8_t slot, hid_keyboard_report_t const *report)
+{
+    if (slot >= INPUT_BRIDGE_MAX_SLOTS)
+        return;
+
+    slot_keyboard[slot] = *report;
+    keyboard_dirty = true;
+    hid_wake_host();
+}
+
+void usb_device_mouse(uint8_t slot, hid_mouse_report_t const *report)
+{
+    if (slot >= INPUT_BRIDGE_MAX_SLOTS)
+        return;
+
+    if (slot_buttons[slot] != report->buttons) {
+        slot_buttons[slot] = report->buttons;
+        mouse_buttons_dirty = true;
+    }
+
+    mouse_dx += report->x;
+    mouse_dy += report->y;
+    mouse_wheel += report->wheel;
+    mouse_pan += report->pan;
+
+    hid_wake_host();
+}
+
+void usb_device_gamepad(hid_gamepad_report_t const *report)
+{
+    if (!usb_device_mounted() || !tud_hid_n_ready(USB_DEVICE_HID_GAMEPAD))
+        return;
+
+    tud_hid_n_report(USB_DEVICE_HID_GAMEPAD, 0, report, sizeof(*report));
+}
+
+void usb_device_release_slot(uint8_t slot)
+{
+    if (slot >= INPUT_BRIDGE_MAX_SLOTS)
+        return;
+
+    if (memcmp(&slot_keyboard[slot], &(hid_keyboard_report_t){ 0 }, sizeof(slot_keyboard[slot])) != 0) {
+        memset(&slot_keyboard[slot], 0, sizeof(slot_keyboard[slot]));
+        keyboard_dirty = true;
+    }
+
+    if (slot_buttons[slot]) {
+        slot_buttons[slot] = 0;
+        mouse_buttons_dirty = true;
+    }
+}
+
+void usb_device_release_all(void)
+{
+    for (uint8_t slot = 0; slot < INPUT_BRIDGE_MAX_SLOTS; slot++)
+        usb_device_release_slot(slot);
+
+    mouse_dx = mouse_dy = mouse_wheel = mouse_pan = 0;
+}
+
+//--------------------------------------------------------------------+
+// tinyusb hid device callbacks
+//--------------------------------------------------------------------+
+
+uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
+    uint8_t *buffer, uint16_t reqlen)
+{
+    // nothing to poll; a stall tells the host to use the interrupt endpoint
+    (void)instance;
+    (void)report_id;
+    (void)report_type;
+    (void)buffer;
+    (void)reqlen;
+
+    return 0;
+}
+
+void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
+    uint8_t const *buffer, uint16_t bufsize)
+{
+    // the host's keyboard leds (caps lock etc.) arrive here; the usb-a
+    // keyboards follow the amiga's caps lock, not this host's, so for now
+    // they are ignored
+    (void)instance;
+    (void)report_id;
+    (void)report_type;
+    (void)buffer;
+    (void)bufsize;
+}
+
+#endif // HAS_USB_DEVICE

@@ -80,6 +80,15 @@ void status_led_source(status_led_source_t source, bool present);
 void status_led_activity(void);
 
 /**
+ * @brief Show whether input is going somewhere other than the amiga.
+ *
+ * Only a ws2812 board can show it (its red channel); two-led boards ignore it.
+ *
+ * @param alternate true for any run mode other than RUN_MODE_AMIGA_OUTPUT
+ */
+void status_led_mode(bool alternate);
+
+/**
  * @brief Report whether bluetooth is waiting on a pairing/passkey confirmation.
  *
  * @param active    true whilst a passkey or pin prompt is on display
@@ -93,6 +102,7 @@ static inline void status_led_init(void) {}
 static inline void status_led_task(void) {}
 static inline void status_led_source(status_led_source_t source, bool present) { (void)source; (void)present; }
 static inline void status_led_activity(void) {}
+static inline void status_led_mode(bool alternate) { (void)alternate; }
 static inline void status_led_pairing(bool active) { (void)active; }
 
 #endif // HAS_STATUS_LEDS

@@ -19,9 +19,36 @@
 /**
  * @brief Setup Amiga keyboard communication
  *
- * Starts clocks, sets up ISRs and sends init codes to the host
+ * Starts clocks, sets up ISRs and sends init codes to the host. Blocks for the
+ * 1.2 s greeting; boards which can tell whether the amiga is on use
+ * amiga_init_io() and amiga_power_on() / amiga_power_off() instead.
  */
 void amiga_init();
+
+/**
+ * @brief Claim and release the keyboard lines and set up the event queue,
+ *        without greeting the amiga.
+ */
+void amiga_init_io(void);
+
+/**
+ * @brief The amiga has just come on: schedule the initpower / termpower
+ *        greeting (sent by amiga_service() 1 s and 1.2 s from now, without
+ *        blocking) and start delivering keycodes after it.
+ */
+void amiga_power_on(void);
+
+/**
+ * @brief The amiga has gone off: drop queued keycodes, release the lines and
+ *        forget reset and modifier state. Input is discarded until
+ *        amiga_power_on().
+ */
+void amiga_power_off(void);
+
+/**
+ * @return true unless amiga_power_off() is in effect
+ */
+bool amiga_powered_on(void);
 
 /**
  * @brief Get the caps lock status

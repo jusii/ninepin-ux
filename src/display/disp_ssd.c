@@ -16,6 +16,7 @@
 #include "hardware/gpio.h"
 #include "hardware/i2c.h"
 #include "hardware/irq.h"
+#include "hardware/sync.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -28,7 +29,11 @@
 
 #define SSD_WIDTH           128
 #define SSD_HEIGHT          64
+#ifdef I2C_BAUD
+#define SSD_BAUD            I2C_BAUD        // the board shares the bus with a slower device
+#else
 #define SSD_BAUD            1000000         // 1MHz; if my estimation is correct, this could achieve 122fps
+#endif
 #define SSD_ADDR            0x3c            // my board has 0x78 jumper soldered closed on the back but ¯\_(ツ)_/¯
 #define I2C_MAX_TRANSFER    0x400 + 0x20    // 1KB + 32B overhead
 
@@ -49,8 +54,16 @@ typedef struct
     void *prev_transaction;
 } display_transaction_t;
 
-static display_transaction_t *current_transaction = NULL,
-                             *last_transaction = NULL;
+// current_transaction is advanced from the i2c isr, so read it fresh every time
+static display_transaction_t *volatile current_transaction = NULL;
+static display_transaction_t *last_transaction = NULL;
+
+// another driver on the same bus (disp_i2c_bus_acquire()) has the controller:
+// transactions queue up but none is started until it is handed back
+static volatile bool bus_borrowed = false;
+
+// the isr is only installed once a display has answered
+static bool display_present = false;
 
 static uint8_t queue_depth = 0;
 
@@ -315,6 +328,7 @@ bool disp_i2c_init(void)
         return false;
     }
     disp_write = _real_disp_write;
+    display_present = true;
 
     // set stop and abort interrupt flags
     i2c_get_hw(I2C_PORT)->intr_mask = I2C_IC_INTR_MASK_M_STOP_DET_BITS | I2C_IC_INTR_MASK_M_TX_ABRT_BITS;
@@ -478,6 +492,11 @@ void disp_queue_transaction(uint8_t *write_buffer, size_t write_length, uint8_t 
         new_transaction->prev_transaction = NULL;
         last_transaction = current_transaction = new_transaction;
 
+        // whilst the bus is lent out the transaction just waits at the head of
+        // the queue; disp_i2c_bus_release() starts it
+        if (bus_borrowed)
+            return;
+
         disp_i2c_trans(
             new_transaction->write_buffer,
             new_transaction->write_length,
@@ -495,7 +514,58 @@ void disp_queue_transaction(uint8_t *write_buffer, size_t write_length, uint8_t 
     new_transaction->prev_transaction = last_transaction;
     last_transaction->next_transaction = new_transaction;
     last_transaction = new_transaction;
-    irq_set_enabled(irqn, true);
+    if (!bus_borrowed)
+        irq_set_enabled(irqn, true);
+}
+
+bool disp_i2c_bus_acquire(void)
+{
+    uint irqn = (I2C_PORT == i2c0) ? I2C0_IRQ : I2C1_IRQ;
+    bool idle;
+
+    // the queue is fed from the main loop and from interrupt context (bluetooth
+    // status lines), so test-and-set with interrupts off: a transaction queued
+    // after this point sees bus_borrowed and waits
+    uint32_t flags = save_and_disable_interrupts();
+    idle = (current_transaction == NULL);
+    if (idle)
+        bus_borrowed = true;
+    restore_interrupts(flags);
+
+    if (!idle)
+        return false;
+
+    // the borrower's own stop / abort would otherwise land in disp_ssd_i2c_irqh()
+    if (display_present)
+        irq_set_enabled(irqn, false);
+
+    return true;
+}
+
+void disp_i2c_bus_release(void)
+{
+    uint irqn = (I2C_PORT == i2c0) ? I2C0_IRQ : I2C1_IRQ;
+
+    // drop the stop / abort the borrower's transfer raised, at the controller and
+    // at the nvic, so the display isr does not see a completion that was not its
+    (void)i2c_get_hw(I2C_PORT)->clr_intr;
+    irq_clear(irqn);
+
+    uint32_t flags = save_and_disable_interrupts();
+    bus_borrowed = false;
+
+    // anything queued whilst the bus was lent out starts now
+    if (current_transaction != NULL)
+        disp_i2c_trans(
+            current_transaction->write_buffer,
+            current_transaction->write_length,
+            current_transaction->read_buffer,
+            current_transaction->read_length
+        );
+    restore_interrupts(flags);
+
+    if (display_present)
+        irq_set_enabled(irqn, true);
 }
 
 /**

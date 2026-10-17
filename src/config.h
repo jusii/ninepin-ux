@@ -119,6 +119,10 @@
 #  define I2C_PORT      i2c0
 #  define I2C_PIN_SDA   0       // i2c_sda (4.7k to 3v3 on the board)
 #  define I2C_PIN_SCL   1       // i2c_scl
+// the tca9554 sharing this bus is a 400 kHz (fast mode) part, so the bus runs at
+// that rather than the 1 MHz the display alone would take; a fast-mode device is
+// not specified to ignore fast-mode-plus traffic addressed to someone else
+#  define I2C_BAUD      400000
 
 #  define KBD_AMIGA_RST 4       // kbreset_lo
 #  define KBD_AMIGA_DAT 5       // kbdata_lo
@@ -162,7 +166,23 @@
 // host must not take pio0, which keyboard_recv owns.
 #  define HAS_PIO_USB_HOST
 #  define PIO_USB_DP_PIN    26  // pio_dp (D- is always DP+1 for pio-usb)
-#  define PIO_USB_PIO       2   // pio2: pio0 = keyboard_recv, pio1 = ws2812 / free
+#  define PIO_USB_PIO       2   // pio2, all of it: pio0 = keyboard_recv; ws2812 and cyw43 claim free sms in pio0/pio1
+// pio-usb bit-bangs full speed and needs clk_sys at a multiple of 12 MHz; the
+// rp2350's 150 MHz default is not one. main() sets this before anything derives
+// a divider from clk_sys (every pio, i2c and adc divider in this tree is computed
+// at init from clock_get_hz(), none is hard-coded)
+#  define PIO_USB_SYS_CLOCK_KHZ 120000
+
+// the native usb phy is a device port on the usb-c connector: a composite cdc
+// (debug console - there is no uart) + hid (keyboard, mouse, gamepad) device.
+// its D+ pull-up is only presented while the expander sees usb-c vbus.
+#  define HAS_USB_DEVICE
+#  define USB_DEVICE_VID    0xcafe  // tinyusb's example vid; see the report's open questions
+#  define USB_DEVICE_PID    0x4a50  // "JP"; arbitrary within the example space
+
+// the BOOT button (SW1, qspi_ss through 1k) read back at runtime with the
+// bootsel trick; see util/user_button.h for the constraints that come with it
+#  define HAS_USER_BUTTON
 
 // tca9554 i2c i/o expander at 0x20 on the oled bus: P0 enc_a, P1 enc_b, P2 enc_sw,
 // P3 enc_spare (2x3 encoder header J7), P4 = usb-c vbus sense (4.7k/10k divider),
@@ -186,6 +206,9 @@
 #  define HAS_AMIGA_SENSE
 #  define AMIGA_SENSE_PIN   28  // amiga_sense
 #  define AMIGA_SENSE_ADC   2
+#  define AMIGA_SENSE_VREF_MV   3300    // adc_avdd is +3V3 through 33R
+#  define AMIGA_SENSE_ON_MV     1500    // rising above this: the amiga is on
+#  define AMIGA_SENSE_OFF_MV    1200    // falling below this: the amiga is off
 
 // rev7 dropped rev6's 3v3-side pull-ups: with the amiga off the cbtd3861 bus
 // switches open and the rp2350 side floats, so every _lo line needs the internal

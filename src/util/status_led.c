@@ -78,6 +78,9 @@ static volatile bool pairing_active;
 static volatile uint32_t pairing_since;
 static volatile bool pairing_lit;
 
+// output mode other than the amiga (see util/run_mode.h)
+static volatile bool mode_alternate;
+
 static inline bool status_led_any_source(void)
 {
     for (uint8_t source = 0; source < STATUS_LED_SOURCE_COUNT; source++)
@@ -125,7 +128,12 @@ static void status_led_paint(bool led1_lit, bool led2_lit)
     uint32_t green = led1_lit ? STATUS_RGB_LEVEL : 0;
     uint32_t blue = led2_lit ? STATUS_RGB_LEVEL : 0;
 
-    status_led_rgb_put((green << 16) | blue);
+    // the red channel is the output mode: lit whilst input goes somewhere other
+    // than the amiga, so attached + idle reads yellow instead of green. it is
+    // steady, so it shows through the heartbeat and the activity flashes
+    uint32_t red = mode_alternate ? STATUS_RGB_LEVEL : 0;
+
+    status_led_rgb_put((green << 16) | (red << 8) | blue);
 #endif
 }
 
@@ -166,6 +174,11 @@ void status_led_source(status_led_source_t source, bool present)
         return;
 
     source_present[source] = present;
+}
+
+void status_led_mode(bool alternate)
+{
+    mode_alternate = alternate;
 }
 
 void status_led_activity(void)

@@ -124,7 +124,19 @@ message(STATUS "Controller port 2 role: ${PORT2_ROLE}")
 # debugging for tinyusb - be warned that it can cause timing issues causing things to break
 # add_compile_definitions(CFG_TUSB_DEBUG=2)
 
+# rev7 drives its usb-a host port with pico-pio-usb (vendored at lib/pico_pio_usb).
+# tinyusb's rp2040 family cmake builds the tinyusb_pico_pio_usb library from
+# PICO_PIO_USB_PATH when the sdk brings tinyusb in, so this must be set before
+# pico_sdk_init(); the other boards never see it and keep the native host port.
+if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7" AND NOT PICO_PIO_USB_PATH)
+	set(PICO_PIO_USB_PATH "${CMAKE_CURRENT_LIST_DIR}/lib/pico_pio_usb")
+endif ()
+
 pico_sdk_init()
+
+if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7" AND NOT TARGET tinyusb_pico_pio_usb)
+	message(FATAL_ERROR "BOARD_HIDPICO_REV7 needs pico-pio-usb at ${PICO_PIO_USB_PATH}; try 'git submodule update --init lib/pico_pio_usb'")
+endif ()
 
 if (ENABLE_BLUETOOTH_HID AND NOT PICO_CYW43_SUPPORTED)
 	message(FATAL_ERROR "ENABLE_BLUETOOTH_HID requires a CYW43 board such as pico_w")

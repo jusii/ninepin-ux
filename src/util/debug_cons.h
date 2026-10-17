@@ -46,6 +46,14 @@ void dbgcons_mouse_wheel(int8_t wheel);
 
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses);
 
+/**
+ * board status line (boards with HAS_USB_DEVICE / HAS_AMIGA_SENSE; no-ops
+ * elsewhere): where input goes, and whether the amiga is powered.
+ */
+void dbgcons_mode(char const *mode);
+
+void dbgcons_amiga_power(bool on);
+
 void dbgcons_bt_status(char const *status);
 
 void dbgcons_bt_passkey(char const *message);
