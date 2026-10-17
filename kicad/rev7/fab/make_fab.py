@@ -19,6 +19,9 @@ PCB = os.path.join(REV7, "amigahid-pico-rev7.kicad_pcb"); PRO = os.path.join(REV
 NAME = "amigahid-pico-rev7"
 LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,Edge.Cuts"
 HAND = {"P1", "P2"}                      # deselect at JLC if their DE9 stock is short; hand-solder (Kycon K22X-E9P-N)
+# JLCPCB rotation offsets by footprint prefix: their pin-header / pin-socket models lie along the pad row at 0 deg where
+# KiCad's stand across it (seen in the order preview 2026-10-17: every header came up turned 90 deg)
+JLC_ROT = {"PinHeader_": -90, "PinSocket_": -90}
 
 
 def run(*args):
@@ -57,7 +60,8 @@ def main():
         if not lcsc: nolcsc.append(ref)
         key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
         pos = fp.GetPosition(); layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
-        cpl.append((ref, round(pos.x / 1e6, 4), round(-pos.y / 1e6, 4), layer, round(fp.GetOrientationDegrees(), 2)))   # gerber frame: KiCad y negated (board spans Y -62..0), as kicad-cli pos does
+        rot = fp.GetOrientationDegrees() + next((d for p, d in JLC_ROT.items() if fpname.startswith(p)), 0)
+        cpl.append((ref, round(pos.x / 1e6, 4), round(-pos.y / 1e6, 4), layer, round((rot + 180) % 360 - 180, 2)))   # gerber frame: KiCad y negated (board spans Y -62..0), as kicad-cli pos does
     with open(os.path.join(HERE, NAME + "-bom.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
         for key, (val, fpname, refs) in bom.items(): w.writerow([val, ",".join(refs), fpname, key if isinstance(key, str) else ""])
@@ -89,7 +93,7 @@ def main():
               "- not placed / not in the BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
               "- hand-solder candidates if JLC stock is short: %s" % ", ".join(sorted(HAND)),
-              "- CPL coordinates are in the gerber frame (KiCad X, Y negated: the board spans Y -62..0, matching the gerbers); rotations are KiCad's - check JLC's placement preview for the polarised parts (D1-D6, C4, U1-U3, U6-U10, Q1-Q3, L1, LED1)", ""]
+              "- CPL coordinates are in the gerber frame (KiCad X, Y negated: the board spans Y -62..0, matching the gerbers); rotations are KiCad's except the headers (JLC_ROT) - check JLC's placement preview for the polarised parts (D1-D6, C4, U1-U3, U6-U10, Q1-Q3, L1, LED1)", ""]
     open(os.path.join(HERE, "fab-manifest.md"), "w").write("\n".join(lines))
     shutil.rmtree(tmp)
     print("\n".join(lines[:4] + lines[-6:]))
