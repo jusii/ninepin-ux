@@ -152,30 +152,46 @@
 // rev6 led 1 / led 2 states onto its green and blue channels
 #  define HAS_STATUS_LEDS
 #  define HAS_STATUS_WS2812
-#  define LED_STATUS_WS2812 26  // ws_drv: gate of Q1 (2n7002 inverter, 1k pull-up to LED_VDD) -> led din
+#  define LED_STATUS_WS2812 2   // ws_drv: gate of Q1 (2n7002 inverter, 1k pull-up to LED_VDD) -> led din
 #  define LED_STATUS_WS2812_INVERT  // the inverter means the gpio output must be inverted
 
-// ts3usb30e 2:1 mux in front of the rp2350's only usb phy. low (r48 pull-down,
-// so also the state through reset and bootsel) = usb-c, the device port used
-// for flashing; high = usb-a, the host port the firmware runs on.
-#  define HAS_USB_MUX
-#  define USB_MUX_SEL       27  // usb_sel
-#  define USB_MUX_SEL_HOST  1
+// no usb mux any more (2026-10-15): the rp2350's native phy is on the usb-c
+// connector (device port: flashing, debug cdc, and the hid-device mode for a
+// host such as the commodore 64 ultimate), and the usb-a host port is driven by
+// pio-usb on GPIO26 (D+) / GPIO27 (D-) through 27R and a usblc6. the pio-usb
+// host must not take pio0, which keyboard_recv owns.
+#  define HAS_PIO_USB_HOST
+#  define PIO_USB_DP_PIN    26  // pio_dp (D- is always DP+1 for pio-usb)
+#  define PIO_USB_PIO       2   // pio2: pio0 = keyboard_recv, pio1 = ws2812 / free
 
-// amiga-on sense: 100k/100k divider (+100n) from the amiga's fused 5v, so about
-// 2.5v with the amiga on and 0v with it off. ADC2.
-// TODO: nothing reads it yet. board_pins_init() parks the pad as an analogue
-// input (no pulls, digital input off) so a future reader gets an unloaded
-// divider; the reader itself (hardware_adc, adc_select_input(2)) and what to do
-// with the result - e.g. hold off amiga_init()'s initpower until the amiga is
-// up - are still to be written.
+// tca9554 i2c i/o expander at 0x20 on the oled bus: P0 enc_a, P1 enc_b, P2 enc_sw,
+// P3 enc_spare (2x3 encoder header J7), P4 = usb-c vbus sense (4.7k/10k divider),
+// P5-P7 unused (the tca9554's internal pull-ups hold them). /INT is open drain
+// on GPIO3: enable the internal pull-up.
+#  define HAS_IO_EXPANDER
+#  define IO_EXPANDER_ADDR  0x20
+#  define IO_EXPANDER_INT   3   // exp_int
+#  define IO_EXPANDER_P_ENC_A   0
+#  define IO_EXPANDER_P_ENC_B   1
+#  define IO_EXPANDER_P_ENC_SW  2
+#  define IO_EXPANDER_P_ENC_SP  3
+#  define IO_EXPANDER_P_VBUS    4
+
+// amiga-on sense: 100k/100k divider (+100n) from AMIGA_IO5V, the rail the bus
+// switches run on (one schottky below the amiga's 5 v, fed from the keyboard
+// connector or either DE9 pin 7): about 2.2-2.4 v with the amiga on, 0 v off.
+// ADC2 on GPIO28, which is not 5 v tolerant and sees the rail through 100k only.
+// board_pins_init() parks the pad as an analogue input (no pulls, digital input
+// off - also the RP2350-E9 precaution); thresholds ~1.5 v on / ~1.2 v off.
 #  define HAS_AMIGA_SENSE
 #  define AMIGA_SENSE_PIN   28  // amiga_sense
 #  define AMIGA_SENSE_ADC   2
 
 // rev7 dropped rev6's 3v3-side pull-ups: with the amiga off the cbtd3861 bus
 // switches open and the rp2350 side floats, so every _lo line needs the internal
-// pull-up. board_pins_init() enables these before any driver touches the pins.
+// pull-up; the keyboard-in lines sit behind bss138 shifters (Q2/Q3) whose source
+// side is likewise pulled up here. board_pins_init() enables these before any
+// driver touches the pins.
 #  define BOARD_PULLUP_PINS { \
        KBD_AMIGA_RST, KBD_AMIGA_DAT, KBD_AMIGA_CLK, \
        QM1_AMIGA_HQ, QM1_AMIGA_VQ, QM1_AMIGA_H, QM1_AMIGA_V, \

@@ -12,7 +12,7 @@
  *
  * this only describes the chip, flash, clock and radio - everything the sdk
  * itself needs. the application pin map (keyboard, controller ports, status
- * led, usb mux, amiga sense) lives in src/config.h under BOARD_HIDPICO_REV7.
+ * led, pio-usb host, i/o expander, amiga sense) lives in src/config.h under BOARD_HIDPICO_REV7.
  */
 
 // -----------------------------------------------------
@@ -38,34 +38,28 @@ pico_board_cmake_set(PICO_CYW43_SUPPORTED, 1)
 #define XOSC_HZ 12000000u
 #endif
 
-// --- UART --- (uart0 on its aux pins; UART_FUNCSEL_NUM picks GPIO_FUNC_UART_AUX)
-#ifndef PICO_DEFAULT_UART
-#define PICO_DEFAULT_UART 0
-#endif
-#ifndef PICO_DEFAULT_UART_TX_PIN
-#define PICO_DEFAULT_UART_TX_PIN 2
-#endif
-#ifndef PICO_DEFAULT_UART_RX_PIN
-#define PICO_DEFAULT_UART_RX_PIN 3
-#endif
+// --- UART ---
+// no uart header on rev7 (the 2026-10-15 restructure gave GPIO2/3 to the status
+// led drive and the i/o-expander interrupt). no PICO_DEFAULT_UART_*_PIN, so
+// pico_stdio_uart cannot silently claim an application pin; debug output goes
+// over usb cdc on the usb-c (device) port instead.
 
 // --- LED ---
-// no PICO_DEFAULT_LED_PIN: the only indicator is the ws2812 on GPIO16, which
-// src/util/status_led.c drives itself. it is deliberately not advertised as
-// PICO_DEFAULT_WS2812_PIN so that nothing in the sdk or tinyusb's bsp claims it.
-// no CYW43_WL_GPIO_LED_PIN: the rm2 has no led on its wl gpios.
+// no PICO_DEFAULT_LED_PIN: the only indicator is the ws2812 driven through Q1
+// from GPIO2, which src/util/status_led.c drives itself. it is deliberately not
+// advertised as PICO_DEFAULT_WS2812_PIN so that nothing in the sdk or tinyusb's
+// bsp claims it. no CYW43_WL_GPIO_LED_PIN: the rm2 has no led on its wl gpios.
 
 // --- I2C ---
-// the oled is on i2c1, GPIO2/3 (see src/config.h); the sdk default instance is
-// only used by sdk examples and is left at the pico 2 w values
+// the oled and the tca9554 expander are on i2c0, GPIO0/1 (see src/config.h)
 #ifndef PICO_DEFAULT_I2C
-#define PICO_DEFAULT_I2C 1
+#define PICO_DEFAULT_I2C 0
 #endif
 #ifndef PICO_DEFAULT_I2C_SDA_PIN
-#define PICO_DEFAULT_I2C_SDA_PIN 2
+#define PICO_DEFAULT_I2C_SDA_PIN 0
 #endif
 #ifndef PICO_DEFAULT_I2C_SCL_PIN
-#define PICO_DEFAULT_I2C_SCL_PIN 3
+#define PICO_DEFAULT_I2C_SCL_PIN 1
 #endif
 
 // --- SPI ---
