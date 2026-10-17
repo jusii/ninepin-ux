@@ -55,12 +55,12 @@ def main():
         if fp.IsDNP() or ref.startswith(("H", "JP")): dnp.append(ref); continue      # mounting holes and solder jumpers are not parts
         fpname = fp.GetFPIDAsString().split(":")[-1]; val = fp.GetValue(); lcsc = fields.get("LCSC", "").strip()
         if not lcsc: nolcsc.append(ref)
-        key = (val, fpname, lcsc); bom.setdefault(key, []).append(ref)
+        key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
         pos = fp.GetPosition(); layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
         cpl.append((ref, round(pos.x / 1e6, 4), round((y0 - pos.y / 1e6), 4), layer, round(fp.GetOrientationDegrees(), 2)))
     with open(os.path.join(HERE, NAME + "-bom.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
-        for (val, fpname, lcsc), refs in bom.items(): w.writerow([val, ",".join(refs), fpname, lcsc])
+        for key, (val, fpname, refs) in bom.items(): w.writerow([val, ",".join(refs), fpname, key if isinstance(key, str) else ""])
     with open(os.path.join(HERE, NAME + "-cpl.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
         for r in cpl: w.writerow([r[0], "%.4fmm" % r[1], "%.4fmm" % r[2], r[3], r[4]])
@@ -85,7 +85,7 @@ def main():
              "## Drill table", ""]
     for f, tbl in drills.items():
         lines += ["%s: %s hits" % (f, sum(h for _, h in tbl))] + ["- %s mm x %d" % (d, h) for d, h in tbl] + [""]
-    lines += ["## BOM: %d lines, %d placements; CPL rows %d" % (len(bom), sum(len(v) for v in bom.values()), len(cpl)), "",
+    lines += ["## BOM: %d lines (one per LCSC part), %d placements; CPL rows %d" % (len(bom), sum(len(v[2]) for v in bom.values()), len(cpl)), "",
               "- not placed / not in the BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
               "- hand-solder candidates if JLC stock is short: %s" % ", ".join(sorted(HAND)),

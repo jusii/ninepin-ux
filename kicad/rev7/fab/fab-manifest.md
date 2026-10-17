@@ -1,8 +1,8 @@
 # amigahid-pico-rev7 fab package
 
-Cut from `board-rev7` @ `fe23226` (working tree clean), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
+Cut from `board-rev7` @ `12f7d76` (working tree clean), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
 
-`amigahid-pico-rev7-gerbers.zip` sha256 eba6aa86b151cb8f, 14 files: amigahid-pico-rev7-B_Cu.gbl, amigahid-pico-rev7-B_Mask.gbs, amigahid-pico-rev7-B_Paste.gbp, amigahid-pico-rev7-B_Silkscreen.gbo, amigahid-pico-rev7-Edge_Cuts.gm1, amigahid-pico-rev7-F_Cu.gtl, amigahid-pico-rev7-F_Mask.gts, amigahid-pico-rev7-F_Paste.gtp, amigahid-pico-rev7-F_Silkscreen.gto, amigahid-pico-rev7-In1_Cu.g1, amigahid-pico-rev7-In2_Cu.g2, amigahid-pico-rev7-NPTH.drl, amigahid-pico-rev7-PTH.drl, amigahid-pico-rev7-job.gbrjob
+`amigahid-pico-rev7-gerbers.zip` sha256 f74e7cbf0077f4d0, 14 files: amigahid-pico-rev7-B_Cu.gbl, amigahid-pico-rev7-B_Mask.gbs, amigahid-pico-rev7-B_Paste.gbp, amigahid-pico-rev7-B_Silkscreen.gbo, amigahid-pico-rev7-Edge_Cuts.gm1, amigahid-pico-rev7-F_Cu.gtl, amigahid-pico-rev7-F_Mask.gts, amigahid-pico-rev7-F_Paste.gtp, amigahid-pico-rev7-F_Silkscreen.gto, amigahid-pico-rev7-In1_Cu.g1, amigahid-pico-rev7-In2_Cu.g2, amigahid-pico-rev7-NPTH.drl, amigahid-pico-rev7-PTH.drl, amigahid-pico-rev7-job.gbrjob
 
 ## Drill table
 
@@ -23,7 +23,7 @@ amigahid-pico-rev7-PTH.drl: 327 hits
 - 2.500 mm x 2
 - 3.200 mm x 4
 
-## BOM: 56 lines, 128 placements; CPL rows 128
+## BOM: 51 lines (one per LCSC part), 128 placements; CPL rows 128
 
 - not placed / not in the BOM: H1, H2, H3, H4, H5, H6, H7, H8, JP1 (DNP and the mounting holes)
 - without an LCSC code: none
