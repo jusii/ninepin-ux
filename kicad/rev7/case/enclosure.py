@@ -129,15 +129,16 @@ def label(text, size, origin, xdir, ydir, into):
     sh = sh.transformGeometry(m); sh.translate(origin - into * 0.01)
     return Part.makeCompound([f.extrude(into * (LABEL_DEPTH + 0.01)) for f in sh.Faces])
 X, Y, Z = V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)
-ZL = Z_BT + 13.3 + (CEIL - Z_BT - 13.3) / 2 + 0.5          # label line on the walls: the band above the openings
-labels = [label("PORT 1", 3.0, V(CONN["P1"][4] + 5.54, OUT_Y0, Z_TOP - 2.2), X, Z, Y),
-          label("PORT 2", 3.0, V(CONN["P2"][4] + 5.54, OUT_Y0, Z_TOP - 2.2), X, Z, Y),
-          label("USB", 3.0, V(CONN["J4"][4] + 3.5, OUT_Y0, Z_BT + 11.0), X, Z, Y),
-          label("AMIGA", 3.0, V(CONN["J10"][4], OUT_Y1, Z_TOP - 2.2), -X, Z, -Y),
-          label("KEYB", 3.0, V(CONN["J12"][4], OUT_Y1, Z_TOP - 2.2), -X, Z, -Y),
-          label("BOOT", 2.5, V(OUT_X1, ky(FP["SW_Y"][0]), Z_BT + 8.5), Y, Z, -X),
-          label("RESET", 2.5, V(OUT_X1, ky(FP["SW_Y"][1]), Z_BT + 8.5), Y, Z, -X),
-          label("5V", 2.5, V(OUT_X1, ky(yc), Z_BT + 8.5), Y, Z, -X)]
+ZL = Z_PLATE_TOP + (Z_BT + 0.3 - Z_PLATE_TOP) / 2 + 0.3          # label line: the band below every opening, same on all walls
+LS = 2.5
+labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
+          label("PORT 2", LS, V(CONN["P2"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
+          label("USB", LS, V(CONN["J4"][4] + 3.5, OUT_Y0, ZL), X, Z, Y),
+          label("AMIGA", LS, V(CONN["J10"][4], OUT_Y1, ZL), -X, Z, -Y),
+          label("KEYB", LS, V(CONN["J12"][4], OUT_Y1, ZL), -X, Z, -Y),
+          label("BOOT", LS, V(OUT_X1, ky(FP["SW_Y"][0]), ZL), Y, Z, -X),
+          label("RESET", LS, V(OUT_X1, ky(FP["SW_Y"][1]), ZL), Y, Z, -X),
+          label("5V", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
 for l in labels: cap = cap.cut(l)
 
 # ---- base plate ----
