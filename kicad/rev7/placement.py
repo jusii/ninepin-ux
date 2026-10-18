@@ -37,7 +37,7 @@ P = {
  "C9":  (62.7, 20.8, 90), "C10": (64.5, 20.8, 90), "C2":  (56.3, 20.8, 90), "C3":  (48.0, 25.4, 0),
  "C1":  (63.5, 24.5, 0),
  # --- KBIN fuse and caps east of J12, AUX diode and CC resistors by the USB-C ---
- "F3":  (81.4, 7.5, 90),  "C6":  (81.8, 11.6, 0),  "C7":  (81.8, 13.5, 0),   # F3 against the mini-DIN, its caps below it, the header and expander east
+ "F3":  (81.4, 7.5, 90),  "C6":  (81.35, 12.5, 270),  "C7":  (47.6, 10.2, 90),   # F3 against the mini-DIN; C6 upright in the 3 mm slot between J3 and the H6 post (holes moved 2026-10-18), C7 on the KBIN_5V column at J8 pin 4
  "D2":  (82.2, 17.4, 0),  "R43": (91.0, 33.0, 0),  "R44": (90.9, 29.5, 180),
  # --- bus switches: U6 MCU row south (lanes), U7 MCU row north (vias); arrays east ---
  "U6":  (13.0, 22.0, 90), "U7":  (80.65, 25.0, 90),
@@ -74,6 +74,6 @@ TVS_ROWS = {
  "cont2_h": (74.88, 42.7, 0), "cont2_hq": (80.42, 42.7, 0),
  "cont2_b1": (73.49, 40.4, 0), "cont2_b2": (81.8, 40.4, 0),
  "kbclock": (38.4, 8.5, 90), "kbdata": (43.2, 8.5, 90), "kbreset": (45.6, 8.5, 90),
- "kbin_clk": (66.9, 12.2, 180), "kbin_dat": (70.2, 16.6, 90),
+ "kbin_clk": (67.1, 12.2, 270), "kbin_dat": (70.2, 16.6, 90),   # kbin_clk upright in the 3 mm slot between the H5 post and J3 (holes moved 2026-10-18)
  "kb_pwrled": (55.6, 8.5, 90), "kb_drvled": (58.1, 8.5, 90),
 }

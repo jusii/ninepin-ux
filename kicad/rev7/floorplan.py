@@ -26,7 +26,7 @@ MDIN_WALL = 2.0      # wall thinned locally at the mini-DIN bodies so the face i
 MDIN_OVH = OVH - (WALL - MDIN_WALL)
 STAND = 4.0          # board underside above the base plate
 BASE_T = 2.5
-CEIL = 15.5          # inner ceiling above board underside (OLED glass top 15.24, DE9 14.5)
+CEIL = 16.0          # inner ceiling above board underside (OLED glass top 15.32 + 0.5 socket tolerance, DE9 14.5)
 TOP_T = 2.5
 
 # ---- connectors: (ref, value, lib, footprint, x, y, rot, note) ----
@@ -65,17 +65,26 @@ CONNECTORS = [
     ("LED1", "WS2812B-2020", "LED_SMD", "LED_WS2812B-2020_PLCC4_2.0x2.0mm", LED[0], LED[1], 0, "lid peek hole"),
 ]
 
-# ---- OLED: 0.96" SSD1306 module, 27.5 x 27.8 pcb, holes 23.5 x 23.8 on 2.0 insets, 1x4
-# header on the top-hole line. Plugs into J3 (1x4 female, 8.4 mm) + four M2 posts (11 mm).
-OLED_PCB = (27.5, 27.8)
-OLED_X0, OLED_Y0 = 60.5, 11.0            # NE, pulled toward centre, clear of the RM2 antenna
-OLED_HOLES = [(OLED_X0 + 2.0, OLED_Y0 + 2.0), (OLED_X0 + 25.5, OLED_Y0 + 2.0),
-              (OLED_X0 + 2.0, OLED_Y0 + 25.8), (OLED_X0 + 25.5, OLED_Y0 + 25.8)]
-OLED_GLASS = (26.7, 19.3)                 # window; glass sits in the lower part of the module
-OLED_GLASS_Y0 = OLED_Y0 + 6.0
+# ---- OLED: 0.96" SSD1306 module as measured 2026-10-18 (the modules in hand): 26.0 x 26.0 pcb, holes
+# 22.2 x 22.2 on 1.9 insets, 1x4 header on the top-hole line (plastic 2.4 flush under the pcb, pins 8 mm),
+# pcb 1.115, glass 24.65 x 16.75 starting 5.0 below the header edge, 1.7 to the glass top; the lit area is
+# 1.0 inside the glass left/right/top and 13.0 tall, the glass below it carries the ribbon bond. Plugs into
+# J3 (1x4 female, 8.5 mm) + four M2 posts (11 mm). The module centre and the header line stay where the
+# 27.5 mm module put them, so J3 did not move when the holes did.
+OLED_PCB = (26.0, 26.0)
+OLED_HOLE_IN = 1.9
+OLED_X0, OLED_Y0 = 74.25 - OLED_PCB[0] / 2, 13.0 - OLED_HOLE_IN   # NE, pulled toward centre, clear of the RM2 antenna
+OLED_HOLES = [(OLED_X0 + OLED_HOLE_IN, OLED_Y0 + OLED_HOLE_IN), (OLED_X0 + OLED_PCB[0] - OLED_HOLE_IN, OLED_Y0 + OLED_HOLE_IN),
+              (OLED_X0 + OLED_HOLE_IN, OLED_Y0 + OLED_PCB[1] - OLED_HOLE_IN), (OLED_X0 + OLED_PCB[0] - OLED_HOLE_IN, OLED_Y0 + OLED_PCB[1] - OLED_HOLE_IN)]
+OLED_GLASS = (24.65, 16.75)               # glass outline, centred on the pcb width
+OLED_GLASS_X0 = OLED_X0 + (OLED_PCB[0] - OLED_GLASS[0]) / 2
+OLED_GLASS_Y0 = OLED_Y0 + 5.0
+OLED_WINDOW = (OLED_GLASS_X0 + 1.0, OLED_GLASS_Y0 + 1.0, OLED_GLASS[0] - 2.0, 13.0)   # lid cutout x0, y0, w, h
 J3 = ("J3", "OLED", "Connector_PinSocket_2.54mm", "PinSocket_1x04_P2.54mm_Vertical",
-      OLED_X0 + OLED_PCB[0] / 2 - 3.81, OLED_Y0 + 2.0, 90, "GND VCC SCL SDA")
-OLED_Z_TOP = BOARD_T + 8.4 + 2.54 + 1.0 + 1.7   # glass top above board underside
+      OLED_X0 + OLED_PCB[0] / 2 - 3.81, OLED_Y0 + OLED_HOLE_IN, 90, "GND VCC SCL SDA")
+OLED_SOCKET_H, OLED_HDR_PLASTIC, OLED_PCB_T, OLED_GLASS_H = 8.5, 2.4, 1.115, 1.7
+OLED_Z_PCB_BOTTOM = BOARD_T + OLED_SOCKET_H + OLED_HDR_PLASTIC        # module pcb underside above the board underside
+OLED_Z_TOP = OLED_Z_PCB_BOTTOM + OLED_PCB_T + OLED_GLASS_H            # glass top above board underside (15.32)
 
 # ---- RM2 radio module (datasheet RP-008943-DS-7, fig. 6): 14.5 x 16.5 mm, antenna on one short
 # edge, 21 castellations on the other three. Metal keep-out 35.5 x 18.5 centred on the module:

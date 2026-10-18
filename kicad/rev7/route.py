@@ -24,7 +24,9 @@ def reload_pads():
             _pads[(fp.GetReference(), pd.GetNumber())] = (pd.GetPosition().x / 1e6, pd.GetPosition().y / 1e6, pd.GetNetname())
 reload_pads()
 def pad(ref, num): x, y, n = _pads[(ref, str(num))]; return (x, y)
-def padnet(ref, num): return _pads[(ref, str(num))][2]
+def padnet(ref, num):
+    n = _pads[(ref, str(num))][2]
+    return "" if n.startswith("unconnected-") else n      # the schematic's no-connect nets are on the pads for parity, but route nothing
 def track(netname, pts, layer="F", w=0.2):
     n = net(netname)
     for a, c in zip(pts, pts[1:]):
@@ -357,7 +359,7 @@ for r in ("R41", "R42"):
 j12 = {k: pad("J12", k) for k in ("1", "3", "4", "5", "SH")}; j8 = {k: pad("J8", k) for k in ("1", "2", "3", "4", "6", "7", "8")}
 q2 = {k: pad("Q2", k) for k in (1, 2, 3)}; q3 = {k: pad("Q3", k) for k in (1, 2, 3)}; d20 = pad("D20", 1); d21 = pad("D21", 1)
 track("/kbin_clk", [j12["5"], (68.6, q3[3][1] - 0.4), (69.0, q3[3][1]), q3[3]])                       # into Q3's drain
-track("/kbin_clk", [(68.6, d20[1]), d20]); gnd_stub(pad("D20", 2), -1.2, 0)
+track("/kbin_clk", [(68.6, d20[1]), d20]); gnd_stub(pad("D20", 2), -0.9, 0.9)    # south-west at 45 deg: clear of the H5 post hole and the four B.Cu lanes at y 10.1-11.6
 track("/kbin_dat", [j12["1"], (j12["1"][0], 9.8), (69.2, 11.3), (69.2, 22.4), (69.6, 22.8), q2[3]])                        # down past D21 into Q2's drain
 # sources to the GPIO lanes (B.Cu 25.0 / 25.6, which end here), gates to the 3V3 plane
 track("/kbin_dat_lo", [q2[2], (q2[2][0], 25.1)]); via("/kbin_dat_lo", q2[2][0], 25.1)
@@ -379,12 +381,11 @@ track("/kbreset", [(j8["3"][0], 12.3), j8["3"]])
 f3 = {k: pad("F3", k) for k in ("1", "2")}; c6 = pad("C6", 1); c7 = pad("C7", 1)
 track("/KBIN_5V", [j12["4"], (j12["4"][0], 7.1), (j12["4"][0] + 0.4, 7.5), (83.3, 7.5)], "B", w=0.3)
 via("/KBIN_5V", 83.3, 7.5); track("/KBIN_5V", [(83.3, 7.5), (83.3, 7.3), (82.85, 6.85), f3["2"]], w=0.4)
-track("/KBIN_5V", [(83.3, 7.5), (83.3, 8.1), (79.6, 8.1), (79.3, 8.4), (79.3, 11.3), (79.6, 11.6), c6], w=0.3)   # between the fuse pads, down its west side
-track("/KBIN_5V", [(79.3, 11.3), (79.3, c7[1] - 0.3), (79.6, c7[1]), c7], w=0.3)
-g6 = pad("C6", 2); g7 = pad("C7", 2); track("GND", [g6, (g6[0], g7[1])])   # C6 grounds through C7's via (the I2C lanes own the B.Cu above)
-gnd_stub(pad("C7", 2), 0, 0.8)
+track("/KBIN_5V", [(83.3, 7.5), (83.3, 8.1), (79.6, 8.1), (79.3, 8.4), (79.3, c6[1] - 0.3), (79.6, c6[1]), c6], w=0.3)   # between the fuse pads, down its west side into C6's north pad
+gnd_stub(pad("C6", 2), 0, 0.8)                                                  # south pad, via below it (the I2C lanes own the B.Cu above)
 track("/KBIN_5V", [(j12["4"][0], 7.1), (j12["4"][0] - 0.4, 7.5), (46.6, 7.5)], "B", w=0.3); via("/KBIN_5V", 46.6, 7.5)
 track("/KBIN_5V", [(46.6, 7.5), (46.6, 13.02), j8["4"]], w=0.4)
+track("/KBIN_5V", [(46.6, c7[1]), c7], w=0.3); gnd_stub(pad("C7", 2), 0, -0.9)   # C7 (100n) hangs off the column; via between the y 7.5 and y 10.1 B.Cu lanes
 # AMIGA_5V: J10 pin 4 along the north edge to J1 pin 4, then down the J8 gap at x 49.43 and west at y 17.5 into F1 pad 1
 j10 = {k: pad("J10", k) for k in ("1", "3", "4", "5", "SH")}; j1 = {k: pad("J1", k) for k in ("4", "6", "7", "8")}; f1 = {k: pad("F1", k) for k in ("1", "2")}
 track("/AMIGA_5V", [j10["4"], (j10["4"][0], 4.5), (j10["4"][0] + 1.2, 3.3), (j1["4"][0] - 0.8, 3.3), (j1["4"][0], 4.1), j1["4"]], w=0.6)

@@ -103,7 +103,7 @@ def place(ref, fpid, value, x, y, rot, comp=None):
                 f.SetVisible(False); f.SetLayer(pcbnew.F_Fab)
     for pad in fp.Pads():
         nn = padnet.get((ref, pad.GetNumber()))
-        if nn and not nn.startswith("unconnected-"):
+        if nn:                                   # including the schematic's no-connect nets, so --schematic-parity sees the same netlist
             pad.SetNet(net(nn))
     b.Add(fp)
     return fp
@@ -179,7 +179,7 @@ b.Add(z)
 C, D = pcbnew.Cmts_User, pcbnew.Dwgs_User
 ox, oy = F.OLED_X0, F.OLED_Y0
 rect(ox, oy, ox + F.OLED_PCB[0], oy + F.OLED_PCB[1], C)
-rect(ox + 0.4, F.OLED_GLASS_Y0, ox + 0.4 + F.OLED_GLASS[0], F.OLED_GLASS_Y0 + F.OLED_GLASS[1], C)
+rect(F.OLED_GLASS_X0, F.OLED_GLASS_Y0, F.OLED_GLASS_X0 + F.OLED_GLASS[0], F.OLED_GLASS_Y0 + F.OLED_GLASS[1], C)
 text("OLED 0.96in on 11 mm posts", ox + F.OLED_PCB[0] / 2, oy + F.OLED_PCB[1] + 1.5, C, 0.8)
 rect(kx0, ky0, kx1, ky1, C); text("RM2 antenna keep-out, no metal, all layers", 3.0, ky0 - 1.2, C, 0.7)
 g = F.GAP; o = F.OVH

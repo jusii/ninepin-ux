@@ -157,7 +157,7 @@ PKG_HEIGHTS = [
     (r"^RaspberryPi_RM2$", 3.0),
 ]
 # underside of the OLED pcb above the board's top copper: J3 socket + header plastic
-OLED_PCB_BOTTOM = F.OLED_Z_TOP - F.BOARD_T - 1.0 - 1.7
+OLED_PCB_BOTTOM = F.OLED_Z_PCB_BOTTOM - F.BOARD_T
 
 # K: netclasses (as rev6)
 POWER_NETCLASS = "Power"
