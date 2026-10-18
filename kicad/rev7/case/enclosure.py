@@ -1,22 +1,51 @@
-"""amigahid-pico-UX rev7 enclosure, rough fit-check model. Reads ../floorplan.py.
-KiCad x, y_up = -y_kicad, z = 0 at the board underside. Base plate + cap, M3 screws from
-below through the base into heat-set inserts in cap pillars on the board's corner holes.
-Outer wall is the reference: mini-DIN / USB-A faces flush with it, DE9 flange behind a
-thinned wall with a D-cutout and 4-40 jackscrew holes, USB-C face behind a thinned wall,
-side-actuated BOOT/RESET through the east wall, OLED window and LED peek hole in the lid.
+"""amigahid-pico-UX rev7 enclosure (FreeCAD, Part workbench only, runs headless).
+
+Reads ../floorplan.py (board, connectors, case constants, OLED) and parts.json (every footprint's
+courtyard and height, written by export_parts.py). KiCad x, y_up = -y_kicad, z = 0 at the board
+underside. Two prints: CAP = walls + lid, BASE = plate with the standoffs; four M3 screws from below
+through the base and the board into heat-set inserts in cap pillars on the board's corner holes.
+Outer wall is the reference: mini-DIN and USB-A faces flush, DE9 flange and USB-C behind thinned
+walls, BOOT/RESET actuators through the east wall, OLED window + encoder + LED hole in the lid.
+
+Decisions taken here (2026-10-18), all parameters below:
+  - encoder Bourns PEC11R (7 mm M7 bushing, nut on the lid) at ENC, knob left of the display
+  - OLED window = the lit area + WIN_CLR, not the glass
+  - A500 ribbon slot in the north wall above J1 (the only way to use the A500 headers closed)
+  - debossed wall labels, 0.5 mm, DejaVu Bold
+  - DE9 flange proud distance = floorplan DE9_FLANGE (0.9, still an assumption: measure on rev6)
+Run: python3 case/run_case.py (feeds this file to FreeCAD) or exec it inside FreeCAD with REV7 set.
 """
-import FreeCAD, Part, math, os, sys
+import json, os
+import FreeCAD, Part
 from FreeCAD import Vector as V
 
-FP = {}
-exec(globals().get("FLOORPLAN_SRC") or open(FLOORPLAN_PATH).read(), FP)   # runner injects FLOORPLAN_SRC or FLOORPLAN_PATH
+REV7 = globals().get("REV7") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OUT_DIR = os.path.join(REV7, "case")
+FP = {}; exec(open(os.path.join(REV7, "floorplan.py")).read(), FP)
+PARTS = json.load(open(os.path.join(OUT_DIR, "parts.json")))
+
 W, H, BOARD_T = FP["W"], FP["H"], FP["BOARD_T"]
 GAP, WALL, OVH = FP["GAP"], FP["WALL"], FP["OVH"]
 STAND, BASE_T, CEIL, TOP_T = FP["STAND"], FP["BASE_T"], FP["CEIL"], FP["TOP_T"]
-DE9_WALL = FP["DE9_WALL"]
+DE9_WALL, MDIN_WALL = FP["DE9_WALL"], FP["MDIN_WALL"]
 HOLES = FP["HOLES"]
-INSERT_D, INSERT_L, SCREW_D, PILLAR_D = 4.0, 6.0, 3.4, 6.5
+CONN = {c[0]: c for c in FP["CONNECTORS"]}
+
+# ---- case parameters ----
+CORNER_R = 3.0
+INSERT_D, INSERT_L, SCREW_D, PILLAR_D = 4.0, 6.0, 3.4, 6.5     # M3 heat-set inserts in the cap pillars
 LIP_H, LIP_CLR = 1.2, 0.2
+FOOT_D, FOOT_H, FOOT_IN = 8.0, 0.6, 7.0                        # rubber-foot recesses under the base
+ENC = (48.0, 28.0)                                             # knob centre (KiCad), from the 2026-10-18 fit scan
+ENC_HOLE, ENC_BODY, ENC_BODY_H, ENC_PINS_H = 7.2, 13.5, 7.0, 10.0   # PEC11R: M7 bushing; body envelope below the lid
+ENC_LUG = None                                                 # (dx, dy, dia) of an anti-rotation lug hole if the part has one
+WIN_CLR = 0.3                                                  # window = lit area + this each side
+LED_HOLE = 2.5
+A500_SLOT = True                                               # ribbon exit above J1 in the north wall
+FONT = next(f for f in ("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",                      # flatpak FreeCAD sees its own fonts
+                        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",             # debian host
+                        "/run/host/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf") if os.path.exists(f))
+LABEL_DEPTH = 0.5
 
 OUT_X0, OUT_X1 = -OVH, W + OVH
 OUT_Y0, OUT_Y1 = -(H + OVH), OVH
@@ -25,116 +54,160 @@ IN_Y0, IN_Y1 = -(H + GAP), GAP
 Z_PLATE_TOP = -STAND
 Z_PLATE_BOT = Z_PLATE_TOP - BASE_T
 Z_TOP = CEIL + TOP_T
+Z_BT = BOARD_T                                                 # board top
+
 
 def ky(y): return -y
 def box(x0, x1, y0, y1, z0, z1): return Part.makeBox(x1 - x0, y1 - y0, z1 - z0, V(x0, y0, z0))
+def kbox(x0, x1, yk0, yk1, z0, z1): return box(x0, x1, ky(yk1), ky(yk0), z0, z1)    # KiCad y range
 def cyl(d, h, x, y, z, axis=V(0, 0, 1)): return Part.makeCylinder(d / 2, h, V(x, y, z), axis)
 def rbox(x0, x1, y0, y1, z0, z1, r):
     b = box(x0, x1, y0, y1, z0, z1)
     return b.makeFillet(r, [e for e in b.Edges if abs(e.tangentAt(0).z) > 0.99])
+def fillet_along(b, axis, r):
+    """fillet the edges running along a wall-normal axis (0 x, 1 y) of a cut-out box"""
+    return b.makeFillet(r, [e for e in b.Edges if abs(e.tangentAt(0)[axis]) > 0.99])
+def cut_ns(x0, x1, z0, z1, y_centre, r=1.0, depth=6): return fillet_along(box(x0, x1, y_centre - depth, y_centre + depth, z0, z1), 1, r)
+def cut_ew(yk0, yk1, z0, z1, x_centre, r=1.0, depth=6): return fillet_along(box(x_centre - depth, x_centre + depth, ky(yk1), ky(yk0), z0, z1), 0, r)
 
-doc = FreeCAD.ActiveDocument if (FreeCAD.ActiveDocument and FreeCAD.ActiveDocument.Name == "rev7_case") else FreeCAD.newDocument("rev7_case")
-for o in list(doc.Objects): doc.removeObject(o.Name)
-
-# ---- cap ----
-cap = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_TOP, Z_TOP, 3.0)
+# ---- cap: walls + lid ----
+cap = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_TOP, Z_TOP, CORNER_R)
 cap = cap.cut(box(IN_X0, IN_X1, IN_Y0, IN_Y1, Z_PLATE_TOP - 1, CEIL))
 for (cx, cy) in HOLES:
-    cap = cap.fuse(cyl(PILLAR_D, CEIL - BOARD_T, cx, ky(cy), BOARD_T))
-    cap = cap.cut(cyl(INSERT_D, INSERT_L, cx, ky(cy), BOARD_T))
-
-def cut_ns(x0, x1, z0, z1, y_centre, r=1.0, depth=6):
-    b = box(x0, x1, y_centre - depth, y_centre + depth, z0, z1)
-    return b.makeFillet(r, [e for e in b.Edges if abs(e.tangentAt(0).y) > 0.99])
-def cut_ew(y0k, y1k, z0, z1, x_centre, r=1.0, depth=6):
-    b = box(x_centre - depth, x_centre + depth, ky(y1k), ky(y0k), z0, z1)
-    return b.makeFillet(r, [e for e in b.Edges if abs(e.tangentAt(0).x) > 0.99])
+    cap = cap.fuse(cyl(PILLAR_D, CEIL - Z_BT, cx, ky(cy), Z_BT))
+    cap = cap.cut(cyl(INSERT_D, INSERT_L, cx, ky(cy), Z_BT))
 
 NY, SY, EX = (IN_Y1 + OUT_Y1) / 2, (IN_Y0 + OUT_Y0) / 2, (IN_X1 + OUT_X1) / 2
-conn = {c[0]: c for c in FP["CONNECTORS"]}
-
-# north: two mini-DIN6, body 14.5 wide x ~12.7 tall above the board (MD-60S), face flush
-MDIN_WALL = FP["MDIN_WALL"]
+# north: mini-DIN sockets, face flush, wall thinned to MDIN_WALL over the body
 for ref in ("J10", "J12"):
-    x = conn[ref][4]
-    cap = cap.cut(cut_ns(x - 7.8, x + 7.8, BOARD_T + 0.3, BOARD_T + 13.2, NY, 1.5))
-    cap = cap.cut(box(x - 8.0, x + 8.0, IN_Y1 - 0.01, OUT_Y1 - MDIN_WALL, BOARD_T + 0.3, BOARD_T + 13.4))   # pocket
-# south: DE9 flanges behind a thinned wall with a D cutout + 4-40 jackscrew holes
+    x = CONN[ref][4]
+    cap = cap.cut(cut_ns(x - 7.8, x + 7.8, Z_BT + 0.3, Z_BT + 13.2, NY, 1.5))
+    cap = cap.cut(box(x - 8.0, x + 8.0, IN_Y1 - 0.01, OUT_Y1 - MDIN_WALL, Z_BT + 0.3, Z_BT + 13.4))
+# north: A500 ribbon slot above J1 (header top 8.5 above the board top)
+if A500_SLOT:
+    x = CONN["J1"][4] + 3.5 * 2.54
+    cap = cap.cut(cut_ns(x - 7.0, x + 7.0, Z_BT + 10.0, CEIL - 0.6, NY, 1.0))
+# south: DE9 flanges behind a wall thinned to DE9_WALL, D cut-out, 4-40 jackscrew holes
 DE9_X0, DE9_W = FP["DE9_X0"], FP["DE9_W"]
 for ref in ("P1", "P2"):
-    x = conn[ref][4]
-    fx0, fx1 = x + DE9_X0 - 0.3, x + DE9_X0 + DE9_W + 0.3
-    # pocket: the wall in front of the flange is thinned to DE9_WALL from the cavity outward
-    pocket_y1 = OUT_Y0 + DE9_WALL                       # y_up of the thinned wall's inner face
-    cap = cap.cut(box(fx0, fx1, pocket_y1, IN_Y0 + 0.01, BOARD_T + 0.3, BOARD_T + 13.4))
-    # D cutout (shell 16.9 x 8.3 nominal + 0.6 clearance) centred on the pin field
-    cx = x + 5.54                                       # DE9 pin-field centre: (-6.96+18.04)/2
-    zc = BOARD_T + 6.5                                  # shell centre height above board top (approx)
-    d = box(cx - 8.9, cx + 8.9, OUT_Y0 - 1, pocket_y1 + 1, zc - 4.5, zc + 4.5)
-    d = d.makeFillet(2.0, [e for e in d.Edges if abs(e.tangentAt(0).y) > 0.99])
-    cap = cap.cut(d)
-    for sx in (cx - 12.5, cx + 12.5):                   # 4-40 jackscrews, 25.0 mm apart
+    x = CONN[ref][4]
+    cap = cap.cut(box(x + DE9_X0 - 0.3, x + DE9_X0 + DE9_W + 0.3, OUT_Y0 + DE9_WALL, IN_Y0 + 0.01, Z_BT + 0.3, Z_BT + 13.4))
+    cx, zc = x + 5.54, Z_BT + 6.5                      # pin-field centre, shell centre height
+    cap = cap.cut(fillet_along(box(cx - 8.9, cx + 8.9, OUT_Y0 - 1, OUT_Y0 + DE9_WALL + 1, zc - 4.5, zc + 4.5), 1, 2.0))
+    for sx in (cx - 12.5, cx + 12.5):
         cap = cap.cut(cyl(3.4, 10, sx, OUT_Y0 - 1, zc, V(0, 1, 0)))
-# south: USB-A, face flush, body 13.5 wide x ~7 tall
-x = conn["J4"][4]
-cap = cap.cut(cut_ns(x + 3.5 - 7.2, x + 3.5 + 7.2, BOARD_T + 0.3, BOARD_T + 7.6, SY, 1.0))
-# east: USB-C face DE9_WALL behind the outer surface: pocket + plug opening
+# south: USB-A, face flush
+x = CONN["J4"][4]
+cap = cap.cut(cut_ns(x + 3.5 - 7.2, x + 3.5 + 7.2, Z_BT + 0.3, Z_BT + 7.6, SY, 1.0))
+# east: USB-C face DE9_WALL behind the outer surface
 yc = FP["USBC_Y"]
-cap = cap.cut(box(IN_X1 - 0.01, OUT_X1 - DE9_WALL, ky(yc + 5.5), ky(yc - 5.5), BOARD_T + 0.2, BOARD_T + 3.6))
-o = box(OUT_X1 - DE9_WALL - 1, OUT_X1 + 1, ky(yc + 4.8), ky(yc - 4.8), BOARD_T - 0.2, BOARD_T + 3.4)
-cap = cap.cut(o.makeFillet(1.4, [e for e in o.Edges if abs(e.tangentAt(0).x) > 0.99]))
-# east: BOOT / RESET actuators (PTS645V: 3.5 mm wide stem, centre ~3.2 mm above the board top)
+cap = cap.cut(kbox(IN_X1 - 0.01, OUT_X1 - DE9_WALL, yc - 5.5, yc + 5.5, Z_BT + 0.2, Z_BT + 3.6))
+cap = cap.cut(fillet_along(kbox(OUT_X1 - DE9_WALL - 1, OUT_X1 + 1, yc - 4.8, yc + 4.8, Z_BT - 0.2, Z_BT + 3.4), 0, 1.4))
+# east: BOOT / RESET actuators
 for sy in FP["SW_Y"]:
-    cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), BOARD_T + 3.2, V(-1, 0, 0)))
-# lid: OLED window and LED peek hole
-ox, gy0 = FP["OLED_X0"] + 0.4, FP["OLED_GLASS_Y0"]
-gw, gh = FP["OLED_GLASS"]
-cap = cap.cut(box(ox - 0.3, ox + gw + 0.3, ky(gy0 + gh + 0.3), ky(gy0 - 0.3), CEIL - 1, Z_TOP + 1))
+    cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), Z_BT + 3.2, V(-1, 0, 0)))
+# lid: OLED window on the lit area, LED hole, encoder bushing hole
+wx, wy, ww, wh = FP["OLED_WINDOW"]
+win = kbox(wx - WIN_CLR, wx + ww + WIN_CLR, wy - WIN_CLR, wy + wh + WIN_CLR, CEIL - 1, Z_TOP + 1)
+cap = cap.cut(win.makeFillet(1.0, [e for e in win.Edges if abs(e.tangentAt(0).z) > 0.99]))
 lx, ly = FP["LED"]
-cap = cap.cut(cyl(2.2, 40, lx, ky(ly), CEIL - 1))
+cap = cap.cut(cyl(LED_HOLE, 40, lx, ky(ly), CEIL - 1))
+cap = cap.cut(cyl(ENC_HOLE, 40, ENC[0], ky(ENC[1]), CEIL - 1))
+if ENC_LUG: cap = cap.cut(cyl(ENC_LUG[2], 40, ENC[0] + ENC_LUG[0], ky(ENC[1] + ENC_LUG[1]), CEIL - 1))
+
+# ---- debossed labels ----
+def label(text, size, origin, xdir, ydir, into):
+    """text centred at origin, reading along xdir, up along ydir, cut LABEL_DEPTH along 'into'"""
+    chars = Part.makeWireString(text, FONT, size, 0)
+    faces = [Part.makeFace(wires, "Part::FaceMakerBullseye") for wires in chars if wires]   # a space has no wires
+    sh = Part.makeCompound(faces); bb = sh.BoundBox
+    sh.translate(V(-(bb.XMin + bb.XMax) / 2, -(bb.YMin + bb.YMax) / 2, 0))
+    zd = xdir.cross(ydir); m = FreeCAD.Matrix()
+    m.A11, m.A21, m.A31 = xdir.x, xdir.y, xdir.z
+    m.A12, m.A22, m.A32 = ydir.x, ydir.y, ydir.z
+    m.A13, m.A23, m.A33 = zd.x, zd.y, zd.z
+    sh = sh.transformGeometry(m); sh.translate(origin - into * 0.01)
+    return Part.makeCompound([f.extrude(into * (LABEL_DEPTH + 0.01)) for f in sh.Faces])
+X, Y, Z = V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)
+ZL = Z_BT + 13.3 + (CEIL - Z_BT - 13.3) / 2 + 0.5          # label line on the walls: the band above the openings
+labels = [label("PORT 1", 3.0, V(CONN["P1"][4] + 5.54, OUT_Y0, Z_TOP - 2.2), X, Z, Y),
+          label("PORT 2", 3.0, V(CONN["P2"][4] + 5.54, OUT_Y0, Z_TOP - 2.2), X, Z, Y),
+          label("USB", 3.0, V(CONN["J4"][4] + 3.5, OUT_Y0, Z_BT + 11.0), X, Z, Y),
+          label("AMIGA", 3.0, V(CONN["J10"][4], OUT_Y1, Z_TOP - 2.2), -X, Z, -Y),
+          label("KEYB", 3.0, V(CONN["J12"][4], OUT_Y1, Z_TOP - 2.2), -X, Z, -Y),
+          label("BOOT", 2.5, V(OUT_X1, ky(FP["SW_Y"][0]), Z_BT + 8.5), Y, Z, -X),
+          label("RESET", 2.5, V(OUT_X1, ky(FP["SW_Y"][1]), Z_BT + 8.5), Y, Z, -X),
+          label("5V", 2.5, V(OUT_X1, ky(yc), Z_BT + 8.5), Y, Z, -X)]
+for l in labels: cap = cap.cut(l)
 
 # ---- base plate ----
-base = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_BOT, Z_PLATE_TOP, 3.0)
+base = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_BOT, Z_PLATE_TOP, CORNER_R)
 base = base.fuse(box(IN_X0 + LIP_CLR, IN_X1 - LIP_CLR, IN_Y0 + LIP_CLR, IN_Y1 - LIP_CLR, Z_PLATE_TOP, Z_PLATE_TOP + LIP_H))
 for (cx, cy) in HOLES:
     base = base.fuse(cyl(7.0, STAND, cx, ky(cy), Z_PLATE_TOP))
     base = base.cut(cyl(SCREW_D, 20, cx, ky(cy), Z_PLATE_BOT - 1))
     base = base.cut(Part.makeCone(3.4, 6.4, 1.7, V(cx, ky(cy), Z_PLATE_BOT - 0.01), V(0, 0, -1)).mirror(V(cx, ky(cy), Z_PLATE_BOT), V(0, 0, 1)))
+for fx in (OUT_X0 + FOOT_IN, OUT_X1 - FOOT_IN):
+    for fy in (OUT_Y0 + FOOT_IN, OUT_Y1 - FOOT_IN):
+        base = base.cut(cyl(FOOT_D, FOOT_H + 1, fx, fy, Z_PLATE_BOT - 1))
 
-# ---- board + tall parts as a fit-check dummy ----
-board = box(0, W, ky(H), 0, 0, BOARD_T)
-dummies = []
+# ---- fit check: every footprint from the board, plus the bodies the footprints do not describe ----
+THROUGH_WALL = {"J10", "J12", "P1", "P2", "J4", "J13", "SW1", "SW2"}      # modelled explicitly below
+checks = []
+for p in PARTS:
+    if p["ref"] in THROUGH_WALL or p["ref"].startswith(("H", "JP")) or not p["h"]: continue
+    x0, y0, x1, y1 = p["box"]
+    checks.append((p["ref"], kbox(x0, x1, y0, y1, Z_BT, Z_BT + p["h"])))
 for ref in ("J10", "J12"):
-    x = conn[ref][4]; dummies.append(box(x - 7.25, x + 7.25, ky(12.65 - FP["MDIN_OVH"]), ky(-FP["MDIN_OVH"]), BOARD_T + 0.3, BOARD_T + 12.9))
+    x = CONN[ref][4]; checks.append((ref, kbox(x - 7.25, x + 7.25, -FP["MDIN_OVH"], 12.65 - FP["MDIN_OVH"], Z_BT + 0.3, Z_BT + 12.9)))
 for ref in ("P1", "P2"):
-    x = conn[ref][4]; cx = x + 5.54
-    dummies.append(box(x + DE9_X0, x + DE9_X0 + DE9_W, ky(H + FP["DE9_FLANGE"]), ky(H - 13.3), BOARD_T + 0.3, BOARD_T + 12.9))
-    dummies.append(box(cx - 8.3, cx + 8.3, ky(H + FP["DE9_FLANGE"] + 6.0), ky(H + FP["DE9_FLANGE"]), BOARD_T + 2.5, BOARD_T + 10.5))
-x = conn["J4"][4]; dummies.append(box(x - 3.5, x + 10.5, ky(H + OVH), ky(H - 10), BOARD_T + 0.3, BOARD_T + 7.0))
-dummies.append(box(W - 5.6, W + OVH - DE9_WALL, ky(yc + 4.5), ky(yc - 4.5), BOARD_T + 0.2, BOARD_T + 3.3))
-ox0, oy0 = FP["OLED_X0"], FP["OLED_Y0"]
-dummies.append(box(ox0, ox0 + 27.5, ky(oy0 + 27.8), ky(oy0), BOARD_T + 11.0, BOARD_T + 12.0))
-dummies.append(box(ox0 + 0.4, ox0 + 0.4 + gw, ky(gy0 + gh), ky(gy0), BOARD_T + 12.0, FP["OLED_Z_TOP"]))
-rx0, ry0 = FP["RM2_X0"], FP["RM2_Y0"]
-dummies.append(box(rx0, rx0 + FP["RM2_SIZE"][0], ky(ry0 + FP["RM2_SIZE"][1]), ky(ry0), BOARD_T, BOARD_T + 2.55))
-for sy in FP["SW_Y"]:
-    dummies.append(box(W - 4.5, W - 0.2, ky(sy + 3.2), ky(sy - 3.2), BOARD_T, BOARD_T + 6.5))   # body
-    dummies.append(box(W - 0.2, W + OVH, ky(sy + 1.75), ky(sy - 1.75), BOARD_T + 1.45, BOARD_T + 4.95))  # stem
+    x = CONN[ref][4]; cx = x + 5.54
+    checks.append((ref + " body", kbox(x + DE9_X0, x + DE9_X0 + DE9_W, H - 13.3, H + FP["DE9_FLANGE"], Z_BT + 0.3, Z_BT + 12.9)))
+    checks.append((ref + " shell", kbox(cx - 8.3, cx + 8.3, H + FP["DE9_FLANGE"], H + FP["DE9_FLANGE"] + 6.0, Z_BT + 2.5, Z_BT + 10.5)))
+x = CONN["J4"][4]; checks.append(("J4", kbox(x - 3.5, x + 10.5, H - 10, H + OVH, Z_BT + 0.3, Z_BT + 7.0)))
+checks.append(("J13", kbox(W - 5.6, W + OVH - DE9_WALL, yc - 4.5, yc + 4.5, Z_BT + 0.2, Z_BT + 3.3)))
+for ref, sy in zip(("SW1", "SW2"), FP["SW_Y"]):
+    checks.append((ref + " body", kbox(W - 4.5, W - 0.2, sy - 3.2, sy + 3.2, Z_BT, Z_BT + 6.5)))
+    checks.append((ref + " stem", kbox(W - 0.2, W + OVH, sy - 1.75, sy + 1.75, Z_BT + 1.45, Z_BT + 4.95)))
+ox0, oy0 = FP["OLED_X0"], FP["OLED_Y0"]; pw, ph = FP["OLED_PCB"]
+checks.append(("OLED pcb", kbox(ox0, ox0 + pw, oy0, oy0 + ph, FP["OLED_Z_PCB_BOTTOM"], FP["OLED_Z_PCB_BOTTOM"] + FP["OLED_PCB_T"])))
+gx0, gy0 = FP["OLED_GLASS_X0"], FP["OLED_GLASS_Y0"]; gw, gh = FP["OLED_GLASS"]
+checks.append(("OLED glass", kbox(gx0, gx0 + gw, gy0, gy0 + gh, FP["OLED_Z_PCB_BOTTOM"] + FP["OLED_PCB_T"], FP["OLED_Z_TOP"])))
+for i, (hx, hy) in enumerate(FP["OLED_HOLES"]): checks.append(("OLED post %d" % i, cyl(4.0, FP["OLED_Z_PCB_BOTTOM"] - Z_BT, hx, ky(hy), Z_BT)))
+checks.append(("encoder body", kbox(ENC[0] - ENC_BODY / 2, ENC[0] + ENC_BODY / 2, ENC[1] - ENC_BODY / 2, ENC[1] + ENC_BODY / 2, CEIL - ENC_BODY_H, CEIL - 0.01)))
+checks.append(("encoder pins", kbox(ENC[0] - ENC_BODY / 2, ENC[0] + ENC_BODY / 2, ENC[1] - ENC_BODY / 2, ENC[1] + ENC_BODY / 2, CEIL - ENC_PINS_H, CEIL - ENC_BODY_H)))
 
-def add(name, shape, color=None):
+report = ["outer %.1f x %.1f x %.1f mm (cap %.1f + base %.1f); lid underside %.2f above the board underside, glass top %.2f, gap %.2f"
+          % (OUT_X1 - OUT_X0, OUT_Y1 - OUT_Y0, Z_TOP - Z_PLATE_BOT, Z_TOP - Z_PLATE_TOP, BASE_T, CEIL, FP["OLED_Z_TOP"], CEIL - FP["OLED_Z_TOP"]),
+          "cap valid %s, base valid %s" % (cap.isValid(), base.isValid())]
+hits = []
+for name, shape in checks:
+    v = cap.common(shape).Volume
+    if v > 1e-3: hits.append("%s %.2f mm3" % (name, v))
+# the encoder body against every board part (it hangs 7 mm below the lid, parts up to 3.9 mm are fine)
+enc = checks[-2][1].fuse(checks[-1][1])
+for p in PARTS:
+    if p["h"] and not p["ref"].startswith(("H", "JP")):
+        x0, y0, x1, y1 = p["box"]; v = enc.common(kbox(x0, x1, y0, y1, Z_BT, Z_BT + p["h"])).Volume
+        if v > 1e-3: hits.append("encoder vs %s %.2f mm3" % (p["ref"], v))
+report.append("interference: " + (", ".join(hits) if hits else "none"))
+print("\n".join(report))
+
+# ---- document + exports ----
+doc = FreeCAD.newDocument("rev7_case")
+def add(name, shape, color):
     o = doc.addObject("Part::Feature", name); o.Shape = shape
-    if color and hasattr(o, "ViewObject") and o.ViewObject: o.ViewObject.ShapeColor = color
+    try: o.ViewObject.ShapeColor = color
+    except Exception: pass
     return o
 add("Cap", cap, (0.85, 0.85, 0.9)); add("Base", base, (0.6, 0.6, 0.65))
-add("Board", board, (0.1, 0.45, 0.2))
-parts = Part.makeCompound(dummies); add("Parts", parts, (0.8, 0.7, 0.2))
+add("Board", box(0, W, ky(H), 0, 0, BOARD_T), (0.1, 0.45, 0.2))
+add("Parts", Part.makeCompound([s for _, s in checks]), (0.8, 0.7, 0.2))
 doc.recompute()
-print("cap valid", cap.isValid(), "base valid", base.isValid())
-print("outer", OUT_X1 - OUT_X0, "x", OUT_Y1 - OUT_Y0, "x", Z_TOP - Z_PLATE_BOT, "mm; lid underside", CEIL, "oled glass top", FP["OLED_Z_TOP"])
-# interference check: parts vs cap
-inter = cap.common(parts)
-print("cap/parts interference volume", round(inter.Volume, 3))
-for i, d in enumerate(dummies):
-    v = cap.common(d).Volume
-    if v > 1e-3: print("  dummy", i, "bbox", [round(c, 1) for c in (d.BoundBox.XMin, d.BoundBox.XMax, d.BoundBox.YMin, d.BoundBox.YMax, d.BoundBox.ZMin, d.BoundBox.ZMax)], "vol", round(v, 2))
-if inter.Volume > 1e-3: add("Interference", inter, (1.0, 0.0, 0.0))
+import MeshPart
+for name, shape in (("cap", cap), ("base", base)):
+    MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.05, AngularDeflection=0.3).write(os.path.join(OUT_DIR, "amigahid-pico-rev7-%s.stl" % name))
+Part.export([doc.getObject("Cap"), doc.getObject("Base")], os.path.join(OUT_DIR, "amigahid-pico-rev7-case.step"))
+doc.saveAs(os.path.join(OUT_DIR, "amigahid-pico-rev7-case.FCStd"))
+open(os.path.join(OUT_DIR, "fit-report.txt"), "w").write("\n".join(report) + "\n")
+print("exported to", OUT_DIR)
