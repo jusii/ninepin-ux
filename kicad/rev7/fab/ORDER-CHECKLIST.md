@@ -35,7 +35,7 @@ re-placed; package re-cut.
 | Board outline tolerance | ±0.2 mm (regular) | |
 | Delivery format | **Panel by JLCPCB** ⚠ | assembly needs edge rails: **rails on the north and south (100 mm) edges only**, 5 mm, **mouse-bites** (not V-cut: the pours sit 0.3 mm from the edge). West edge is the RM2 antenna (0.3 mm from the edge), east edge is the USB-C overhang — neither may carry a rail or a bite. |
 | Castellated holes | No | the RM2's castellations are on the module, not the board |
-| Remove order number | **Specify a location** ⚠ | `JLCJLCJLCJLC` text is on the back silk at (50, 40) |
+| Remove order number | **Yes** ⚠ (paid option) | no anchor text on the board any more; the back silk carries the description block instead (2026-10-18) |
 | Confirm production file | Yes | look at their rendered silk/mask once more |
 
 ## 2. Assembly form
