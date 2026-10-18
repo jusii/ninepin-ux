@@ -198,7 +198,7 @@ for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90),
     silk(txt, x, y, rot)
 silk("A500", 59.3, 2.2, 90, h=0.8, w=0.15); silk("OUT", 60.4, 2.0, 90, h=0.8, w=0.15); silk("A500 IN", 50.8, 16.6, 0, h=0.8, w=0.15)   # out of the way of the pin names, J1 outline and JP1
 # back silk: what the board is (no JLCPCB order-number anchor: tick "remove order number" when ordering)
-for i, (txt, h) in enumerate((("amigahid-pico-UX  rev7  2026-10", 1.5), ("Amiga keyboard, mouse and joystick adapter", 1.0),
+for i, (txt, h) in enumerate((("amigahid-pico-UX  rev7  2026-10", 1.5), ("Amiga keyboard, mouse and joystick adapter  |  C64 joystick ports", 1.0),
                               ("USB HID host  |  Bluetooth HID  |  USB device for C64 Ultimate", 1.0), ("github.com/jusii/amigahid-pico", 1.0))):
     silk(txt, 50, 23.5 + i * 2.2 + (0 if i == 0 else 0.6), 0, pcbnew.B_SilkS, h, 0.2 if h > 1 else 0.15)   # between the OLED post rows (y 13 / 35.2)
 # pin names on the headers, then reference + value beside every part that has room (silk_labels.py)
