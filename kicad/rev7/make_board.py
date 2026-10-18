@@ -185,8 +185,6 @@ rect(kx0, ky0, kx1, ky1, C); text("RM2 antenna keep-out, no metal, all layers", 
 g = F.GAP; o = F.OVH
 rect(-g, -g, W + g, H + g, D); rect(-o, -o, W + o, H + o, D)
 text("hid-pico Amiga UX rev7", W / 2, H + o + 2.5, D, 1.2)
-t = pcbnew.PCB_TEXT(b); t.SetText("amigahid-pico-UX rev7"); t.SetPosition(P(50, 30)); t.SetLayer(pcbnew.B_SilkS)
-t.SetTextSize(VECTOR2I(mm(1.5), mm(1.5))); t.SetTextThickness(mm(0.25)); t.SetMirrored(True); b.Add(t)
 
 # top silk: connector and button labels (1.0 mm / 0.16 mm, JLCPCB minimums), and the JLCPCB order-number anchor on the back
 def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
@@ -194,11 +192,20 @@ def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
     t.SetTextSize(VECTOR2I(mm(h), mm(h))); t.SetTextThickness(mm(w)); t.SetTextAngleDegrees(rot)
     if layer == pcbnew.B_SilkS: t.SetMirrored(True)
     b.Add(t)
-for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90), ("A500 OUT", 44.5, 2.0, 0), ("KEY", 50.3, 2.0, 0), ("A500 IN", 43.8, 16.6, 0), ("KEY", 48.6, 16.6, 0),
+for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90),
                        ("SWD", 17.0, 8.0, 0), ("ENC", 86.8, 9.2, 0), ("BOOT", 90.6, 17.0, 90), ("RESET", 96.5, 53.65, 0),
                        ("PORT 1", 33.5, 47.6, 0), ("PORT 2", 89.6, 48.6, 0)):
     silk(txt, x, y, rot)
-silk("JLCJLCJLCJLC", 50, 40, 0, pcbnew.B_SilkS)
+silk("A500", 59.3, 2.2, 90, h=0.8, w=0.15); silk("OUT", 60.4, 2.0, 90, h=0.8, w=0.15); silk("A500 IN", 50.8, 16.6, 0, h=0.8, w=0.15)   # out of the way of the pin names, J1 outline and JP1
+# back silk: what the board is (no JLCPCB order-number anchor: tick "remove order number" when ordering)
+for i, (txt, h) in enumerate((("amigahid-pico-UX  rev7  2026-10", 1.5), ("Amiga keyboard, mouse and joystick adapter", 1.0),
+                              ("USB HID host  |  Bluetooth HID  |  USB device for C64 Ultimate", 1.0), ("github.com/jusii/amigahid-pico", 1.0))):
+    silk(txt, 50, 23.5 + i * 2.2 + (0 if i == 0 else 0.6), 0, pcbnew.B_SilkS, h, 0.2 if h > 1 else 0.15)   # between the OLED post rows (y 13 / 35.2)
+# pin names on the headers, then reference + value beside every part that has room (silk_labels.py)
+import silk_labels
+pp, pm = silk_labels.label_pins(b, W, H)
+lp, lm = silk_labels.label_parts(b, W, H, skip_refs=("P1", "P2", "J10", "J12", "J4", "J13", "SW1", "SW2", "J1", "J8", "J2", "J3", "J7", "U9"))   # these carry their own labels
+print("silk: %d pin names (%d missed: %s); %d parts labelled, %d without room: %s" % (len(pp), len(pm), " ".join(pm), len(lp), len(lm), " ".join(lm)))
 # footprint silk below JLCPCB's 0.15 mm minimum line width (library 0.12 mm outlines) is thickened
 for fp in b.Footprints():
     for it in fp.GraphicalItems():
