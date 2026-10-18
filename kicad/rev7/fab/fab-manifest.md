@@ -1,8 +1,8 @@
 # amigahid-pico-rev7 fab package
 
-Cut from `board-rev7` @ `30853b8` (working tree clean), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
+Cut from `board-rev7` @ `6ddb197` (working tree clean), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
 
-`amigahid-pico-rev7-gerbers.zip` sha256 9ee20c9ce43168b4, 14 files: amigahid-pico-rev7-B_Cu.gbl, amigahid-pico-rev7-B_Mask.gbs, amigahid-pico-rev7-B_Paste.gbp, amigahid-pico-rev7-B_Silkscreen.gbo, amigahid-pico-rev7-Edge_Cuts.gm1, amigahid-pico-rev7-F_Cu.gtl, amigahid-pico-rev7-F_Mask.gts, amigahid-pico-rev7-F_Paste.gtp, amigahid-pico-rev7-F_Silkscreen.gto, amigahid-pico-rev7-In1_Cu.g1, amigahid-pico-rev7-In2_Cu.g2, amigahid-pico-rev7-NPTH.drl, amigahid-pico-rev7-PTH.drl, amigahid-pico-rev7-job.gbrjob
+`amigahid-pico-rev7-gerbers.zip` sha256 5615f739bdf4f331, 14 files: amigahid-pico-rev7-B_Cu.gbl, amigahid-pico-rev7-B_Mask.gbs, amigahid-pico-rev7-B_Paste.gbp, amigahid-pico-rev7-B_Silkscreen.gbo, amigahid-pico-rev7-Edge_Cuts.gm1, amigahid-pico-rev7-F_Cu.gtl, amigahid-pico-rev7-F_Mask.gts, amigahid-pico-rev7-F_Paste.gtp, amigahid-pico-rev7-F_Silkscreen.gto, amigahid-pico-rev7-In1_Cu.g1, amigahid-pico-rev7-In2_Cu.g2, amigahid-pico-rev7-NPTH.drl, amigahid-pico-rev7-PTH.drl, amigahid-pico-rev7-job.gbrjob
 
 ## Drill table
 
@@ -11,8 +11,8 @@ amigahid-pico-rev7-NPTH.drl: 10 hits
 - 2.200 mm x 4
 - 3.200 mm x 4
 
-amigahid-pico-rev7-PTH.drl: 327 hits
-- 0.300 mm x 244
+amigahid-pico-rev7-PTH.drl: 328 hits
+- 0.300 mm x 245
 - 0.600 mm x 4
 - 0.950 mm x 4
 - 0.990 mm x 4
