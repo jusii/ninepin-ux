@@ -4,13 +4,15 @@ Package: `amigahid-pico-rev7-gerbers.zip`, `amigahid-pico-rev7-bom.csv`, `amigah
 written by `make_fab.py` from the board file at the commit named in `fab-manifest.md`. Never hand-edit them; re-run the
 script after any board change (it restores the project file it has to touch).
 
-Board gates at that commit: ERC 0; DRC `--severity-all --schematic-parity --refill-zones` 0 violations / 0 unconnected;
-`tools/check_rev7_pcb.py` 40/40; `tools/check_rev7_netlist.py` 490/490; `tools/check_rev7_style.py` S1–S3; two
-independent full audits (routing/power, placement/assembly, parts/BOM) adjudicated — see the vault Changelog 2026-10-16.
+Board gates at that commit: ERC 0; DRC `--severity-all --schematic-parity --refill-zones` 0 violations / 0 unconnected /
+0 footprint (parity) errors; `tools/check_rev7_pcb.py` 40/40; `tools/check_rev7_netlist.py` 490/490; `tools/check_rev7_style.py`
+S1–S3; two independent full audits (routing/power, placement/assembly, parts/BOM) adjudicated — see the vault Changelog
+2026-10-16. 2026-10-18: OLED posts H5–H8 moved to the measured 26 mm module (22.2 × 22.2 holes) before ordering; C6, C7, D20
+re-placed; package re-cut.
 
 ## 0. Before paying
 
-- **OLED module measured** (socket height 8.4 vs 8.5 mm, glass position) — needed by the case, not by the board.
+- ~~**OLED module measured**~~ done 2026-10-18: 26 × 26 module, holes 22.2 × 22.2 — the posts on the board now match it (H5–H8 moved).
 - **Board count decided.** Thin JLC stock on 2026-10-16: DE9 C305939 8 (6 sellable → 3 boards), mini-DIN C6089346 50,
   CBTD3861 C44508 103, RM2 C49451547 114, L1 C17701150 plenty. Reserve the extended parts in the JLC parts cart first.
 - If the DE9 line is short: **untick P1/P2 in the BOM step** and hand-solder the Kycon K22X-E9P-N you already have
