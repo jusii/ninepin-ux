@@ -19,6 +19,7 @@ from bomprice import Cache, best_qty, resolve
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BOM = os.path.join(REPO, "kicad/rev7/fab/amigahid-pico-rev7-bom.csv"); OUT = os.path.join(REPO, "kicad/rev7/bom")
+PROJECT = "amigahid rev7"      # goes first in every Customer Reference: the distributors print it on the bag label
 
 # LCSC code -> (candidate MPNs in preference order, keyword fallback, description tokens the fallback must contain)
 # The first MPN is what JLC sells under that code; the rest are the same part from brands the western distributors carry
@@ -143,7 +144,7 @@ def main():
             with open(os.path.join(OUT, "rev7-%s-bom-%d.csv" % (dname, n)), "w", newline="") as f:
                 w = csv.writer(f); w.writerow(["%s Part Number" % dname.title(), "Manufacturer Part Number", "Quantity", "Customer Reference", "Description"])
                 for ln, per, hit, how, q in rows:
-                    if q: w.writerow([hit[pnkey], hit["mpn"], per if n == 1 else q[n][0], ln["Designator"], hit["description"]])
+                    if q: w.writerow([hit[pnkey], hit["mpn"], per if n == 1 else q[n][0], "%s %s" % (PROJECT, ln["Designator"]), hit["description"]])
         print("%s: %d lines priced, %d unavailable; %s" % (dname, len(rows) - len(missing), len(missing), ", ".join("x%d %.2f" % (n, totals[n]) for n in boards)))
     open(os.path.join(OUT, "rev7-distributor-bom.md"), "w").write("\n".join(md))
 

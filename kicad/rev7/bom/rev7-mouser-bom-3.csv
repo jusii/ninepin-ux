@@ -1,51 +1,51 @@
 Mouser Part Number,Manufacturer Part Number,Quantity,Customer Reference,Description
-187-CL21A226KOQNNNG,CL21A226KOQNNNG,3,C1,Multilayer Ceramic Capacitors MLCC - SMD/SMT 22uF+/-10% 16V X5R 2 0805
-187-CL21A106KAYQNWE,CL21A106KAYQNWE,12,"C2,C6,C10,C14",Multilayer Ceramic Capacitors MLCC - SMD/SMT 10uF  10% X5R 25V 0805
-80-C0603C104M5R,C0603C104M5RACTU,50,"C3,C5,C7,C11,C12,C13,C23,C24,C26,C27,C28,C32,C36",Multilayer Ceramic Capacitors MLCC - SMD/SMT 50V 0.1uF X7R 0603 20%
-667-EEE-FKC151XAP,EEE-FKC151XAP,3,C4,Aluminium Electrolytic Capacitors - SMD 150uF 16V ELECT FK SMD
-187-CL10B105KB8NQNC,CL10B105KB8NQNC,10,"C8,C9,C31",Multilayer Ceramic Capacitors MLCC - SMD/SMT 1.0uF +/-10% 50V X7R 0603
-187-CL05A475MQ5NRNC,CL05A475MQ5NRNC,10,"C20,C29,C38",Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-20% 6.3V X5R 0402
-187-CL05B104KP5NNNC,CL05B104KP5NNNC,15,"C21,C22,C25,C30,C39",Multilayer Ceramic Capacitors MLCC - SMD/SMT 100nF+/-10% 10V X7R 0402
-80-C0603C150J5GAC,C0603C150J5GAC,10,"C33,C34",Multilayer Ceramic Capacitors MLCC - SMD/SMT 50V 15pF C0G 0603 5%
-187-CL21A475KAQNNNE,CL21A475KAQNNNE,3,C35,Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-10% 25V X5R 0805
-187-CL10A475MO8NNNC,CL10A475MO8NNNC,3,C37,Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-20% 16V X5R 0603
-241-SX34_R1_00001,SX34_R1_00001,10,"D1,D2,D3","Schottky Diodes & Rectifiers 40V,Schottky,SMA,3A"
-621-1N5819HW-F,1N5819HW-7-F,10,"D4,D5,D6",Schottky Diodes & Rectifiers Vr/40V Io/1A T/R
-771-PESD5V0S1BAF,PESD5V0S1BAF,42,"D10,D11,D12,D20,D21,D22,D23,D24,D25,D26,D27,D28,D29,D30",ESD Protection Diodes / TVS Diodes PESD5V0S1BA/SOD323/SOD2
-771-PESD5V0S1BL-QYL,PESD5V0S1BL-QYL,21,"D13,D14,D15,D16,D17,D18,D19",ESD Protection Diodes / TVS Diodes PESD5V0S1BL-Q/SOD882/DFN1006-2
-652-MF-MSMF075-2,MF-MSMF075-2,3,F1,Resettable Fuses - PPTC 13V    750MA-HD  100A  MAX
-652-MF-MSMF050-2,MF-MSMF050-2,6,"F2,F3",Resettable Fuses - PPTC 15V    500MA-HD  100A  MAX
-810-MMZ1608Y601CTAH0,MMZ1608Y601CTAH0,3,FB1,Ferrite Beads 0603 600ohms 500mA HiSpd Signal Line
-737-PH1-08-UA,PH1-08-UA,6,"J1,J8",Headers & Wire Housings CONN HEADER VERT 8POS 2.54MM
-737-PH1-03-UA,PH1-03-UA,3,J2,Headers & Wire Housings CONN HEADER VERT 3POS 2.54MM
-710-61300411821,61300411821,3,J3,Headers & Wire Housings WR-PHD 2.54mm Scket Header 4 pins
-538-67643-2910,67643-2910,3,J4,"USB Connectors Universal Serial Bus (USB) Shielded I/O Recept., R/A, Type A, High-Temperature Black Nylon, Gold (Au) Flash, PCB Thick. 1.6mm, w/o Upper Flange, for IR Reflow Process, Lead-Free"
-737-PH2-06-UA,PH2-06-UA,3,J7,Headers & Wire Housings CONN HEADER VERT 6POS 2.54MM
-490-MD-60S,MD-60S,6,"J10,J12",Circular DIN Connectors Mini Din Connectors
-640-USB4105-GF-A,USB4105-GF-A,3,J13,"USB Connectors USB Type C,2.0, Rec,SMT, 0.95mmTH Shell Stakes,G/F,RA,Top Mnt,T&R"
-815-AB201610S3R3101T,AOTA-B201610S3R3-101-T,3,L1,Power Inductors - SMD IND 3.3uH
-523-L717SDE09PA4CH4R,L717SDE09PA4CH4R,6,"P1,P2",D-Sub Standard Connectors 9P Sz E Std Density Pin Rear Insert 4-40
-771-2N7002NXAKR,2N7002NXAKR,3,Q1,MOSFETs 2N7002NXAK/SOT23/TO-236AB
-771-BSS138P215,"BSS138P,215",10,"Q2,Q3",MOSFETs BSS138P/SOT23/TO-236AB
-603-RC0603FR-074K7L,RC0603FR-074K7L,10,"R41,R42,R68","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 4.7kOhms, 1%, 1/10W"
-603-RC0603FR-075K1L,RC0603FR-075K1L,10,"R43,R44","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 5.1kOhms, 1%, 1/10W"
-603-RC0603FR-07470RL,RC0603FR-07470RL,10,"R45,R55","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 470Ohms, 1%, 1/10W"
-603-RC0603FR-07100KL,RC0603FR-07100KL,10,"R46,R47","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 100kOhms, 1%, 1/10W"
-791-WR06X1001FTL,WR06X1001FTL,15,"R49,R52,R53,R54,R60",Thick Film Resistors - SMD 1K ohms 1% 0603
-603-RC0603FR-0733RL,RC0603FR-0733RL,10,"R50,R59","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 33Ohms, 1%, 1/10W"
-603-RC0603FR-0710KL,RC0603FR-0710KL,10,"R56,R69","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 10kOhms, 1%, 1/10W"
-603-RC0603FR-0727RL,RC0603FR-0727RL,10,"R57,R58","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
-603-RC0402FR-0710KL,RC0402FR-0710KL,21,"R61,R62,R63,R64,R65,R66,R67","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 10kOhms, 1%, 1/16W"
-603-RC0603FR-0727RL,RC0603FR-0727RL,10,"R70,R71","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
-603-RC0402FR-0715KL,RC0402FR-0715KL,10,"R72,R73","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 15kOhms, 1%, 1/16W"
-652-CAY10-103J4LF,CAY10-103J4LF,10,"RN1,RN2,RN4",Resistor Networks & Arrays 10K 5% Convex 4resistors
-652-CAY16-103J4LF,CAY16-103J4LF,3,RN3,Resistor Networks & Arrays 10K 5% Convex 4resistors
-611-PTS645VK582,PTS645VK58-2 LFS,6,"SW1,SW2",Tactile Switches PTS645VK58-2 LFS
-358-SC150913,SC1509(13)-A4,3,U1,ARM Microcontrollers - MCU RP2350A 150MHz clock Dual Arm Cortex-M33 cores 520KB RAM 8KB on-chip QFN-60
-511-USBLC6-2SC6,USBLC6-2SC6,10,"U2,U4",ESD Protection Diodes / TVS Diodes ESD Protection Low Cap
-595-TLV75733PDRVR,TLV75733PDRVR,3,U3,LDO Voltage Regulators 1-A low-IQ high-acc uracy low-dropout (L
-595-SN74CBTD3861DBQR,SN74CBTD3861DBQR,6,"U6,U7",Digital Bus Switch ICs 10bit FET w/Lvl Shft
-454-W25Q128JVSIQTR,W25Q128JVSIQ TR,3,U8,"NOR Flash spiFlash, 3V, 128M-bit, 4Kb Uniform Sector"
-358-SC1169,SC1169,3,U9,Raspberry Pi Accessories Raspberry Pi Radio Module RMC20452T Single-band 2.4GHz Wi-Fi 4 BT 5.2
-595-TCA9554PWR,TCA9554PWR,3,U10,Interface - I/O Expanders Remote 8-B I2C & SM Bus I/O Expander
-815-ABM8-272-T3,ABM8-272-T3,3,Y1,Crystals Ultra Miniature Ceramic SMD Crystal
+187-CL21A226KOQNNNG,CL21A226KOQNNNG,3,amigahid rev7 C1,Multilayer Ceramic Capacitors MLCC - SMD/SMT 22uF+/-10% 16V X5R 2 0805
+187-CL21A106KAYQNWE,CL21A106KAYQNWE,12,"amigahid rev7 C2,C6,C10,C14",Multilayer Ceramic Capacitors MLCC - SMD/SMT 10uF  10% X5R 25V 0805
+80-C0603C104M5R,C0603C104M5RACTU,50,"amigahid rev7 C3,C5,C7,C11,C12,C13,C23,C24,C26,C27,C28,C32,C36",Multilayer Ceramic Capacitors MLCC - SMD/SMT 50V 0.1uF X7R 0603 20%
+667-EEE-FKC151XAP,EEE-FKC151XAP,3,amigahid rev7 C4,Aluminium Electrolytic Capacitors - SMD 150uF 16V ELECT FK SMD
+187-CL10B105KB8NQNC,CL10B105KB8NQNC,10,"amigahid rev7 C8,C9,C31",Multilayer Ceramic Capacitors MLCC - SMD/SMT 1.0uF +/-10% 50V X7R 0603
+187-CL05A475MQ5NRNC,CL05A475MQ5NRNC,10,"amigahid rev7 C20,C29,C38",Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-20% 6.3V X5R 0402
+187-CL05B104KP5NNNC,CL05B104KP5NNNC,15,"amigahid rev7 C21,C22,C25,C30,C39",Multilayer Ceramic Capacitors MLCC - SMD/SMT 100nF+/-10% 10V X7R 0402
+80-C0603C150J5GAC,C0603C150J5GAC,10,"amigahid rev7 C33,C34",Multilayer Ceramic Capacitors MLCC - SMD/SMT 50V 15pF C0G 0603 5%
+187-CL21A475KAQNNNE,CL21A475KAQNNNE,3,amigahid rev7 C35,Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-10% 25V X5R 0805
+187-CL10A475MO8NNNC,CL10A475MO8NNNC,3,amigahid rev7 C37,Multilayer Ceramic Capacitors MLCC - SMD/SMT 4.7uF+/-20% 16V X5R 0603
+241-SX34_R1_00001,SX34_R1_00001,10,"amigahid rev7 D1,D2,D3","Schottky Diodes & Rectifiers 40V,Schottky,SMA,3A"
+621-1N5819HW-F,1N5819HW-7-F,10,"amigahid rev7 D4,D5,D6",Schottky Diodes & Rectifiers Vr/40V Io/1A T/R
+771-PESD5V0S1BAF,PESD5V0S1BAF,42,"amigahid rev7 D10,D11,D12,D20,D21,D22,D23,D24,D25,D26,D27,D28,D29,D30",ESD Protection Diodes / TVS Diodes PESD5V0S1BA/SOD323/SOD2
+771-PESD5V0S1BL-QYL,PESD5V0S1BL-QYL,21,"amigahid rev7 D13,D14,D15,D16,D17,D18,D19",ESD Protection Diodes / TVS Diodes PESD5V0S1BL-Q/SOD882/DFN1006-2
+652-MF-MSMF075-2,MF-MSMF075-2,3,amigahid rev7 F1,Resettable Fuses - PPTC 13V    750MA-HD  100A  MAX
+652-MF-MSMF050-2,MF-MSMF050-2,6,"amigahid rev7 F2,F3",Resettable Fuses - PPTC 15V    500MA-HD  100A  MAX
+810-MMZ1608Y601CTAH0,MMZ1608Y601CTAH0,3,amigahid rev7 FB1,Ferrite Beads 0603 600ohms 500mA HiSpd Signal Line
+737-PH1-08-UA,PH1-08-UA,6,"amigahid rev7 J1,J8",Headers & Wire Housings CONN HEADER VERT 8POS 2.54MM
+737-PH1-03-UA,PH1-03-UA,3,amigahid rev7 J2,Headers & Wire Housings CONN HEADER VERT 3POS 2.54MM
+710-61300411821,61300411821,3,amigahid rev7 J3,Headers & Wire Housings WR-PHD 2.54mm Scket Header 4 pins
+538-67643-2910,67643-2910,3,amigahid rev7 J4,"USB Connectors Universal Serial Bus (USB) Shielded I/O Recept., R/A, Type A, High-Temperature Black Nylon, Gold (Au) Flash, PCB Thick. 1.6mm, w/o Upper Flange, for IR Reflow Process, Lead-Free"
+737-PH2-06-UA,PH2-06-UA,3,amigahid rev7 J7,Headers & Wire Housings CONN HEADER VERT 6POS 2.54MM
+490-MD-60S,MD-60S,6,"amigahid rev7 J10,J12",Circular DIN Connectors Mini Din Connectors
+640-USB4105-GF-A,USB4105-GF-A,3,amigahid rev7 J13,"USB Connectors USB Type C,2.0, Rec,SMT, 0.95mmTH Shell Stakes,G/F,RA,Top Mnt,T&R"
+815-AB201610S3R3101T,AOTA-B201610S3R3-101-T,3,amigahid rev7 L1,Power Inductors - SMD IND 3.3uH
+523-L717SDE09PA4CH4R,L717SDE09PA4CH4R,6,"amigahid rev7 P1,P2",D-Sub Standard Connectors 9P Sz E Std Density Pin Rear Insert 4-40
+771-2N7002NXAKR,2N7002NXAKR,3,amigahid rev7 Q1,MOSFETs 2N7002NXAK/SOT23/TO-236AB
+771-BSS138P215,"BSS138P,215",10,"amigahid rev7 Q2,Q3",MOSFETs BSS138P/SOT23/TO-236AB
+603-RC0603FR-074K7L,RC0603FR-074K7L,10,"amigahid rev7 R41,R42,R68","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 4.7kOhms, 1%, 1/10W"
+603-RC0603FR-075K1L,RC0603FR-075K1L,10,"amigahid rev7 R43,R44","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 5.1kOhms, 1%, 1/10W"
+603-RC0603FR-07470RL,RC0603FR-07470RL,10,"amigahid rev7 R45,R55","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 470Ohms, 1%, 1/10W"
+603-RC0603FR-07100KL,RC0603FR-07100KL,10,"amigahid rev7 R46,R47","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 100kOhms, 1%, 1/10W"
+791-WR06X1001FTL,WR06X1001FTL,15,"amigahid rev7 R49,R52,R53,R54,R60",Thick Film Resistors - SMD 1K ohms 1% 0603
+603-RC0603FR-0733RL,RC0603FR-0733RL,10,"amigahid rev7 R50,R59","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 33Ohms, 1%, 1/10W"
+603-RC0603FR-0710KL,RC0603FR-0710KL,10,"amigahid rev7 R56,R69","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 10kOhms, 1%, 1/10W"
+603-RC0603FR-0727RL,RC0603FR-0727RL,10,"amigahid rev7 R57,R58","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
+603-RC0402FR-0710KL,RC0402FR-0710KL,21,"amigahid rev7 R61,R62,R63,R64,R65,R66,R67","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 10kOhms, 1%, 1/16W"
+603-RC0603FR-0727RL,RC0603FR-0727RL,10,"amigahid rev7 R70,R71","Thick Film Resistors - SMD General Purpose Chip Resistor 0603, 27Ohms, 1%, 1/10W"
+603-RC0402FR-0715KL,RC0402FR-0715KL,10,"amigahid rev7 R72,R73","Thick Film Resistors - SMD General Purpose Chip Resistor 0402, 15kOhms, 1%, 1/16W"
+652-CAY10-103J4LF,CAY10-103J4LF,10,"amigahid rev7 RN1,RN2,RN4",Resistor Networks & Arrays 10K 5% Convex 4resistors
+652-CAY16-103J4LF,CAY16-103J4LF,3,amigahid rev7 RN3,Resistor Networks & Arrays 10K 5% Convex 4resistors
+611-PTS645VK582,PTS645VK58-2 LFS,6,"amigahid rev7 SW1,SW2",Tactile Switches PTS645VK58-2 LFS
+358-SC150913,SC1509(13)-A4,3,amigahid rev7 U1,ARM Microcontrollers - MCU RP2350A 150MHz clock Dual Arm Cortex-M33 cores 520KB RAM 8KB on-chip QFN-60
+511-USBLC6-2SC6,USBLC6-2SC6,10,"amigahid rev7 U2,U4",ESD Protection Diodes / TVS Diodes ESD Protection Low Cap
+595-TLV75733PDRVR,TLV75733PDRVR,3,amigahid rev7 U3,LDO Voltage Regulators 1-A low-IQ high-acc uracy low-dropout (L
+595-SN74CBTD3861DBQR,SN74CBTD3861DBQR,6,"amigahid rev7 U6,U7",Digital Bus Switch ICs 10bit FET w/Lvl Shft
+454-W25Q128JVSIQTR,W25Q128JVSIQ TR,3,amigahid rev7 U8,"NOR Flash spiFlash, 3V, 128M-bit, 4Kb Uniform Sector"
+358-SC1169,SC1169,3,amigahid rev7 U9,Raspberry Pi Accessories Raspberry Pi Radio Module RMC20452T Single-band 2.4GHz Wi-Fi 4 BT 5.2
+595-TCA9554PWR,TCA9554PWR,3,amigahid rev7 U10,Interface - I/O Expanders Remote 8-B I2C & SM Bus I/O Expander
+815-ABM8-272-T3,ABM8-272-T3,3,amigahid rev7 Y1,Crystals Ultra Miniature Ceramic SMD Crystal
