@@ -29,7 +29,9 @@ BOM = os.path.join(REPO, "kicad/rev7/fab/amigahid-pico-rev7-bom.csv"); OUT = os.
 Y06 = lambda v: "RC0603FR-07%sL" % v
 Y04 = lambda v: "RC0402FR-07%sL" % v
 PARTS = {
-    "C45783":  (["CL21A226MAQNNNE", "GRM21BR61E226ME44L", "CL21A226MAYNNNE", "C2012X5R1E226M125AB", "TMK212ABJ226MG-T", "C2012X5R1E226M125AC"], "22uF 0805 25V X5R", ["22uF", "0805", "25V"]),
+    # C1 is the SYS5V bulk (a 5 V rail): 25 V preferred, the 16 V Samsung parts are an accepted fallback when every 25 V part is out
+    "C45783":  (["CL21A226MAQNNNE", "CL21A226MAYNNWE", "GRM21BR61E226ME44L", "GRM21BR61E226ME44K", "CL21A226MAYNNNE", "C2012X5R1E226M125AB", "TMK212ABJ226MG-T",
+                 "C2012X5R1E226M125AC", "CL21A226KOQNNNG", "CL21A226KOQNNNE", "CL21A226MOQNNNG"], "22uF 0805 25V X5R", ["22uF", "0805", "25V"]),
     "C15850":  (["CL21A106KAYNNNE", "CL21B106KAYQNNE", "GRM21BR61E106KA73L", "C2012X5R1E106K125AB"], "10uF 0805 25V X5R", ["10uF", "0805", "25V"]),
     "C14663":  (["CC0603KRX7R9BB104", "CL10B104KB8NNNC", "GRM188R71H104KA93D"], "100nF 0603 50V X7R", ["0.1uF", "0603", "50V"]),
     "C413656": (["EEE-FKC151XAP", "EEEFKC151XAP", "EEE-FK1C151P", "865080345010"], None, []),
@@ -71,7 +73,8 @@ PARTS = {
     "C25756":  ([Y04("15K"), "CRCW040215K0FKED", "ERJ-2RKF1502X"], "0402 15k 1%", ["15k", "0402", "1%"]),
     "C25725":  (["YC124-JR-0710KL", "EXB-28V103JX", "CAY10-103J4LF"], "resistor array 4x0402 10k", ["10k", "0402"]),
     "C29718":  (["YC164-JR-0710KL", "EXB-38V103JV", "CAY16-103J4LF"], "resistor array 4x0603 10k", ["10k", "0603"]),
-    "C285519": (["PTS645VK392LFS", "PTS645VK39-2 LFS", "PTS645VK83-2 LFS"], None, []),
+    # the case is drawn for the 5.8 mm actuator (tip flush with the wall); JLC's VK39 (3.85 mm) was the assembly compromise, not the design
+    "C285519": (["PTS645VK58-2 LFS"], None, []),
     "C42411118": (["RP2350A", "SC1509(13)-A4", "SC1509-A4", "SC1509(13)", "SC1509"], "RP2350A", ["RP2350A"]),
     "C7519":   (["USBLC6-2SC6", "USBLC6-2SC6Y"], "USBLC6-2SC6", ["USBLC6"]),
     "C2868428": (["TLV75733PDRVR"], "TLV75733PDRVR", ["TLV75733"]),

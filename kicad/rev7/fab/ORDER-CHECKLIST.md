@@ -51,6 +51,15 @@ re-placed; package re-cut.
 | THT parts placed by JLC | J10, J12 (mini-DIN C6089346), P1, P2 (DE9 C305939 if in stock), J4 (USB-A C564920), SW1, SW2 (C285519), J1, J2, J3, J7, J8 (headers/socket) | all in the BOM; untick any you want to hand-solder |
 | DNP | JP1 (solder jumper), H1–H8 (holes) | already absent from the BOM and CPL |
 
+## 2b. Recipe B: partial assembly + Mouser (decided 2026-10-18, the first rev7 order)
+
+JLC places **U1 (RP2350A), U3 (TLV75733, WSON-6) and D13–D19 (SOD-882 TVS)** only: untick every other line in the
+BOM step. Everything else comes from Mouser (`kicad/rev7/bom/rev7-mouser-bom-1.csv` uploaded to Mouser's BOM tool,
+multiplied by the board count, those three lines deleted; raise resistor and diode lines to the 10-piece break where the
+tool shows it) and LED1 (WS2812B-2020) from LCSC or AliExpress. Hand assembly with hot air; the Mouser list uses the
+PTS645VK58-2 switches the case is drawn for (JLC's VK39 is 2 mm shorter) and accepts a 16 V 22 µF for C1 when the 25 V
+parts are out. Re-run `python3 tools/rev7_distributor_bom.py --boards 2 3 10` before ordering: stock moves weekly.
+
 ## 3. After the boards arrive
 
 - Clip pin 5 of J1 and J8 flush (the A500 keyboard plug's key position; the "KEY" silk marks it).
