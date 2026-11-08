@@ -22,6 +22,7 @@
 
 // other includes
 #include <stdint.h>
+#include <string.h>
 
 #include "input_bridge.h"
 #include "platform/amiga/keyboard_serial_io.h"
@@ -30,12 +31,23 @@
 #include "util/debug_cons.h"
 #include "util/status_led.h"
 #include "usb_hid.h"
+#include "ds5.h"
+#include "hid_gamepad.h"
+#include "pad.h"
 
 // maximum number of reports per hid device
 #define MAX_REPORT 4
 
 // textual representations of attached devices
 const uint8_t hid_protocol_type[] = { AP_H_UNKNOWN, AP_H_KEYBOARD, AP_H_MOUSE };
+
+// pads on usb (pad.h): which decoder a slot's reports go through
+typedef enum {
+    USB_PAD_NONE = 0,
+    USB_PAD_GENERIC,                // hid_gamepad.c, from the report descriptor
+    USB_PAD_PS3,                    // sixaxis / dualshock 3: fixed report, start command
+    USB_PAD_DS5,                    // dualsense: ds5.c
+} usb_pad_kind_t;
 
 typedef struct
 {
@@ -44,6 +56,14 @@ typedef struct
     uint8_t instance;
     uint8_t report_count;
     tuh_hid_report_info_t report_info[MAX_REPORT];
+
+    usb_pad_kind_t pad_kind;
+    uint16_t vid, pid;
+    hid_gamepad_t gamepad;
+    ds5_t ds5;
+    bool ps3_start_pending;         // the start command still has to go
+    bool leds_pending;              // a dualsense's player leds still have to go
+    int8_t player;
 } usb_hid_slot_t;
 
 typedef struct
@@ -63,9 +83,143 @@ static void handle_event_keyboard(uint8_t slot, uint8_t dev_addr, uint8_t instan
     hid_keyboard_report_t const *report);
 static void handle_event_mouse(uint8_t slot, hid_mouse_report_t const *report);
 
+static void usb_pad_player(uint8_t slot, int8_t player)
+{
+    if (slot >= CFG_TUH_HID)
+        return;
+    hid_info[slot].player = player;
+    hid_info[slot].leds_pending = hid_info[slot].pad_kind == USB_PAD_DS5;
+}
+
 void hid_app_task(void)
 {
-    // null function to satisfy stack
+    // a ps3 pad waits for this feature report before it sends any input; the
+    // payload has to outlive the asynchronous control transfer
+    static uint8_t ps3_start[] = { 0x42, 0x0c, 0x00, 0x00 };
+    static uint8_t ds5_output[DS5_USB_OUTPUT_LEN];
+
+    for (uint8_t slot = 0; slot < CFG_TUH_HID; slot++) {
+        usb_hid_slot_t *hid = &hid_info[slot];
+
+        if (!hid->mounted)
+            continue;
+
+        if (hid->ps3_start_pending
+            && tuh_hid_set_report(hid->dev_addr, hid->instance, 0xf4, HID_REPORT_TYPE_FEATURE,
+                ps3_start, sizeof(ps3_start)))
+            hid->ps3_start_pending = false;
+
+        if (hid->leds_pending) {
+            size_t length = ds5_output_usb(ds5_output, sizeof(ds5_output), hid->player);
+
+            // the report id goes separately; the rest after it
+            if (length && tuh_hid_send_report(hid->dev_addr, hid->instance, ds5_output[0],
+                    ds5_output + 1, (uint16_t)(length - 1)))
+                hid->leds_pending = false;
+        }
+    }
+}
+
+/**
+ * a non-boot hid interface: is it a pad, and which decoder does it need?
+ */
+static void usb_pad_mount(uint8_t slot, uint8_t dev_addr, uint8_t const *desc_report, uint16_t desc_len)
+{
+    // playstation pads number cross 2, circle 3, square 1, triangle 4
+    static uint8_t const playstation[PAD_LOGICAL_BUTTONS] = { 2, 3, 1, 4, 5, 6, 10 };
+    usb_hid_slot_t *hid = &hid_info[slot];
+    char const *name = "usb pad";
+
+    hid->pad_kind = USB_PAD_NONE;
+    hid->player = -1;
+    if (!tuh_vid_pid_get(dev_addr, &hid->vid, &hid->pid))
+        hid->vid = hid->pid = 0;
+
+    if (ds5_matches(hid->vid, hid->pid)) {
+        memset(&hid->ds5, 0, sizeof(hid->ds5));
+        hid->pad_kind = USB_PAD_DS5;
+        name = "DualSense";
+    } else if (hid_gamepad_parse(&hid->gamepad, desc_report, desc_len)) {
+        hid->pad_kind = USB_PAD_GENERIC;
+        if (hid->vid == 0x054c) {
+            memcpy(hid->gamepad.defaults, playstation, sizeof(playstation));
+            name = "PlayStation pad";
+        }
+        // a ps3 pad (and controllers posing as one) by its exact report layout
+        if ((hid->vid == 0x054c) && (hid->pid == 0x0268) && hid->gamepad.report_ids
+            && (hid->gamepad.report_count == 1) && (hid->gamepad.reports[0].id == 1)
+            && (hid->gamepad.reports[0].bits == 48 * 8)) {
+            hid->pad_kind = USB_PAD_PS3;
+            hid->ps3_start_pending = true;
+            name = "PS3 pad";
+        }
+    }
+
+    if (hid->pad_kind == USB_PAD_NONE)
+        return;
+
+    dbgcons_plug(AP_H_CONTROLLER);
+    pads_connected(slot, ((uint32_t)hid->vid << 16) | hid->pid, name, usb_pad_player);
+}
+
+/**
+ * a ps3 report (id 1): d-pad and buttons in fixed bits, sticks after them.
+ * the own button numbers follow the pad's hid descriptor: select 1, l3 2,
+ * r3 3, start 4, d-pad 5-8, l2 9, r2 10, l1 11, r1 12, triangle 13, circle 14,
+ * cross 15, square 16.
+ */
+static bool usb_pad_ps3(uint8_t const *report, uint16_t len, pad_input_t *input)
+{
+    static uint8_t const defaults[PAD_LOGICAL_BUTTONS] = { 15, 14, 16, 13, 11, 12, 4 };
+
+    if ((len < 49) || (report[0] != 1))
+        return false;
+
+    memset(input, 0, sizeof(*input));
+    input->buttons = (uint16_t)(report[2] | (report[3] << 8));
+    input->home = (report[4] & 0x01) != 0;
+    if (report[2] & 0x10) input->dpad |= PAD_UP;
+    if (report[2] & 0x20) input->dpad |= PAD_RIGHT;
+    if (report[2] & 0x40) input->dpad |= PAD_DOWN;
+    if (report[2] & 0x80) input->dpad |= PAD_LEFT;
+    input->hat = PAD_HAT_CENTRED;
+    input->lx = (int8_t)((int)report[6] - 128 < -127 ? -127 : (int)report[6] - 128);
+    input->ly = (int8_t)((int)report[7] - 128 < -127 ? -127 : (int)report[7] - 128);
+    input->rx = (int8_t)((int)report[8] - 128 < -127 ? -127 : (int)report[8] - 128);
+    input->ry = (int8_t)((int)report[9] - 128 < -127 ? -127 : (int)report[9] - 128);
+    memcpy(input->defaults, defaults, sizeof(defaults));
+    return true;
+}
+
+/**
+ * @return true if the slot is a pad and the report went to it
+ */
+static bool usb_pad_report(uint8_t slot, uint8_t const *report, uint16_t len)
+{
+    usb_hid_slot_t *hid = &hid_info[slot];
+    pad_input_t input;
+    bool ok = false;
+
+    switch (hid->pad_kind) {
+        case USB_PAD_DS5:
+            ok = ds5_decode_usb(&hid->ds5, report, len, &input);
+            break;
+        case USB_PAD_PS3:
+            ok = usb_pad_ps3(report, len, &input);
+            break;
+        case USB_PAD_GENERIC:
+            ok = hid_gamepad_decode(&hid->gamepad, report, len, &input);
+            // a playstation pad's ps button is its 13th
+            if (ok && (hid->vid == 0x054c))
+                input.home = (input.buttons & (1u << 12)) != 0;
+            break;
+        default:
+            return false;
+    }
+
+    if (ok)
+        pads_report(slot, &input);
+    return true;
 }
 
 void usb_hid_sync_keyboard_leds(void)
@@ -171,6 +325,9 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const *desc_re
     if (hid_protocol == HID_ITF_PROTOCOL_NONE) {
         hid_info[slot].report_count = tuh_hid_parse_report_descriptor(hid_info[slot].report_info, MAX_REPORT, desc_report, desc_len);
         // ahprintf("[PLUG] %02x report(s)\n", hid_info[instance].report_count);
+        usb_pad_mount((uint8_t)slot, dev_addr, desc_report, desc_len);
+    } else {
+        hid_info[slot].pad_kind = USB_PAD_NONE;
     }
 
     receive_ok = tuh_hid_receive_report(dev_addr, instance);
@@ -196,6 +353,13 @@ void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance)
     dbgcons_hid_status(dev_addr, instance, hid_protocol, true, slot >= 0 ? hid_info[slot].report_count : 0, false);
 
     if (slot >= 0) {
+        if (hid_info[slot].pad_kind != USB_PAD_NONE) {
+            pads_disconnected((uint8_t)slot);
+            dbgcons_unplug(AP_H_CONTROLLER);
+        }
+        hid_info[slot].pad_kind = USB_PAD_NONE;
+        hid_info[slot].ps3_start_pending = false;
+        hid_info[slot].leds_pending = false;
         input_bridge_disconnect((uint8_t)slot);
         hid_info[slot].mounted = false;
         hid_info[slot].report_count = 0;
@@ -232,9 +396,10 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
             break;
 
         default:
-            // if report was not immediately identifiable as a keyboard event, read the usage page;
-            // some reports have a classifier as "desktop" for media keys, power, or are just encapsulated.
-            process_report((uint8_t)slot, dev_addr, instance, report, len);
+            // pads first; anything else: read the usage page, as some reports have a classifier as
+            // "desktop" for media keys, power, or are just encapsulated.
+            if (!usb_pad_report((uint8_t)slot, report, len))
+                process_report((uint8_t)slot, dev_addr, instance, report, len);
             break;
     }
 

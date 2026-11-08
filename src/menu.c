@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "menu.h"
+#include "pad.h"
 
 #ifdef HAS_MENU
 
@@ -266,6 +267,7 @@ static void release_everything(void)
     usb_device_release_all();
 #endif
     amiga_keyboard_recv_release_all();
+    pads_release_all();
 }
 
 static void menu_open(char const *how)

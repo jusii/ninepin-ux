@@ -37,6 +37,7 @@
 #include "util/run_mode.h"
 #include "util/console_cmd.h"
 #include "menu.h"
+#include "pad.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -431,6 +432,7 @@ int main(void)
     // the mode the settings remember, now that everything a switch touches is up
     run_mode_restore();
     menu_init();
+    pads_init();
 
     boot_stage("loop");
 
@@ -456,6 +458,10 @@ int main(void)
 
         // the settings menu: a held help key opens it
         menu_task();
+
+        // pads: usb pad start-up and leds, players, outputs
+        hid_app_task();
+        pads_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID
