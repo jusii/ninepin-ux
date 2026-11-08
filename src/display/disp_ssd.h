@@ -32,7 +32,21 @@ bool disp_i2c_bus_acquire(void);
  */
 void disp_i2c_bus_release(void);
 
+typedef void (*disp_write_fn)(uint8_t x, uint8_t y, char *message);
+
 extern void (*disp_write)(uint8_t x, uint8_t y, char *message);
+
+/**
+ * @return the writer that reaches the panel even whilst disp_write is pointed
+ *         elsewhere (blanked, or borrowed by the menu)
+ */
+disp_write_fn disp_writer(void);
+
+/**
+ * @brief Blank the panel and point disp_write at the no-op (the "display off"
+ *        setting), or bring disp_write back. The caller redraws after.
+ */
+void disp_blank(bool blank);
 
 // where disp_write points whilst there is no display (or it is borrowed)
 void _noop_disp_write(uint8_t x, uint8_t y, char *message);

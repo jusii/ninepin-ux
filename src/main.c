@@ -36,6 +36,7 @@
 #include "util/output.h"
 #include "util/run_mode.h"
 #include "util/console_cmd.h"
+#include "apply.h"
 #include "menu.h"
 #include "platform/amiga/de9.h"
 #include "pad.h"
@@ -374,6 +375,7 @@ int main(void)
 
     // say hello, trevor ("hello, trevor")
     dbgcons_init();
+    apply_report_watchdog_reboot();
 #if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     dbgcons_mode(run_mode_name(run_mode_get()));
     dbgcons_amiga_power(amiga_sense_is_on());
@@ -436,6 +438,9 @@ int main(void)
     // the mode the settings remember, now that everything a switch touches is up
     run_mode_restore();
     menu_init();
+
+    // mouse speed, display, watchdog: the stored settings take effect
+    apply_settings();
     pads_init();
 
     boot_stage("loop");
@@ -467,6 +472,9 @@ int main(void)
         hid_app_task();
         pads_task();
         de9_task();
+
+        // the watchdog, if the settings ask for one
+        apply_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID

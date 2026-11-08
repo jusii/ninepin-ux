@@ -10,6 +10,7 @@
 
 #include "input_bridge.h"
 #include "menu.h"
+#include "settings.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -217,8 +218,9 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
     if (report->x || report->y)
         amiga_quad_mouse_set_motion(report->x, report->y);
 
-    if (report->wheel)
-        amiga_quad_mouse_wheel(report->wheel);
+    // the tankmouse/cocolino wheel, if the settings want it, either way round
+    if (report->wheel && settings_get()->wheel_enabled)
+        amiga_quad_mouse_wheel(settings_get()->wheel_reverse ? (int8_t)-report->wheel : report->wheel);
 
     // the keyboard path pulses the activity indicator as it queues; do the same
     // for anything the mouse actually handed to the amiga (an idle report which

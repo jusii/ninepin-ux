@@ -36,6 +36,12 @@ bool amiga_quad_mouse_port(int8_t port, uint32_t timeout_us);
 int8_t amiga_quad_mouse_get_port(void);
 
 /**
+ * @brief Time between quadrature steps (the mouse speed setting: 300, 200,
+ *        150 or 100 us). Higher rates need an amiga that keeps up.
+ */
+void amiga_quad_mouse_set_interval(uint16_t microseconds);
+
+/**
  * @brief Send motion and buttons somewhere else (the c64 1351); NULLs restore
  *        the quadrature mouse.
  */

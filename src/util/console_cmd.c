@@ -45,6 +45,7 @@ static void cmd_log(char const *arg);
 static void cmd_bt(char const *arg);
 static void cmd_pads(char const *arg);
 static void cmd_ports(char const *arg);
+static void cmd_hang(char const *arg);
 
 typedef struct {
     char const *name;
@@ -63,6 +64,7 @@ static const console_cmd_t commands[] = {
     { "log",      cmd_log,      "the last 2K of console output, boot messages included" },
     { "bt",       cmd_bt,       "bt [pair|forget]: bluetooth state, bonds; open pairing 2 min; forget all bonds" },
     { "pads",     cmd_pads,     "pads, players and what goes out" },
+    { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };
@@ -243,6 +245,15 @@ static void cmd_ports(char const *arg)
 {
     (void)arg;
     de9_describe();
+}
+
+static void cmd_hang(char const *arg)
+{
+    (void)arg;
+    ahprintf("main loop stopping; the watchdog, if on, restarts the board\n");
+    sleep_ms(50);
+    for (;;)
+        tight_loop_contents();
 }
 
 void console_cmd_task(void)

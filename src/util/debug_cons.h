@@ -69,6 +69,12 @@ void dbgcons_boot_stage(char const *stage);
 
 void dbgcons_bt_status(char const *status);
 
+/**
+ * @brief The display setting: 0 status, 1 hid diagnostics, 2 mouse
+ *        diagnostics, 3 off (the panel blanked; the menu still shows).
+ */
+void dbgcons_display_mode(uint8_t mode);
+
 void dbgcons_bt_passkey(char const *message);
 
 void dbgcons_bt_passkey_clear(void);

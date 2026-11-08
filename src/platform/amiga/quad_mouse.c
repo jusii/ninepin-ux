@@ -23,7 +23,7 @@
 
 #define AQM_MOTION_QUEUE_DEPTH 32
 #define AQM_WHEEL_QUEUE_DEPTH 16
-#define AQM_STEP_INTERVAL_US 300
+#define AQM_STEP_INTERVAL_US 300   // default; the mouse speed setting changes it
 #define AQM_WHEEL_STEP_US 4
 #define AQM_WHEEL_HOLD_US 40
 #define AQM_WHEEL_RESPONSE_TIMEOUT_US 2000
@@ -70,6 +70,8 @@ static volatile int8_t aqm_port_active = 0;
 
 // core1's copy of the pins in use
 static aqm_pins_t cur;
+
+static volatile uint16_t aqm_step_us = AQM_STEP_INTERVAL_US;
 
 // somewhere else for the mouse (the c64 1351, de9.c); NULL: the quadrature mouse
 static void (*redirect_motion)(int16_t x, int16_t y);
@@ -516,7 +518,7 @@ void amiga_quad_mouse_motion()
         if (out_y < 0) out_y++;
         if (out_y > 0) out_y--;
 
-        next_motion_at = time_us_32() + AQM_STEP_INTERVAL_US;
+        next_motion_at = time_us_32() + aqm_step_us;
     }
 }
 
@@ -534,6 +536,11 @@ bool amiga_quad_mouse_port(int8_t port, uint32_t timeout_us)
         tight_loop_contents();
     }
     return true;
+}
+
+void amiga_quad_mouse_set_interval(uint16_t microseconds)
+{
+    aqm_step_us = microseconds ? microseconds : AQM_STEP_INTERVAL_US;
 }
 
 int8_t amiga_quad_mouse_get_port(void)

@@ -1,4 +1,5 @@
 add_executable(amigahid-pico
+  apply.c
   ds5.c
   hid_gamepad.c
   input_bridge.c

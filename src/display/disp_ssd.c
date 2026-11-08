@@ -676,7 +676,32 @@ void _real_disp_write(uint8_t x, uint8_t y, char *message)
 
 bool disp_present(void)
 {
-    return display_present && (disp_write != _noop_disp_write);
+    return display_present;
+}
+
+// the writer that reaches the panel, whatever disp_write points at just now
+disp_write_fn disp_writer(void)
+{
+    return display_present ? _real_disp_write : _noop_disp_write;
+}
+
+static disp_write_fn blank_saved;
+static bool blanked;
+
+void disp_blank(bool blank)
+{
+    if (!display_present || (blank == blanked))
+        return;
+
+    if (blank) {
+        blank_saved = disp_write;
+        disp_write = _noop_disp_write;
+        memset(framebuffer, 0, DISP_FRAMEBUFFER_BYTES);
+        disp_ssd_update();
+    } else {
+        disp_write = blank_saved;
+    }
+    blanked = blank;
 }
 
 void disp_save(uint8_t copy[DISP_FRAMEBUFFER_BYTES])

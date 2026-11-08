@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include <string.h>
+
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 
@@ -31,13 +33,46 @@ struct
 static bool bt_passkey_active;
 #endif
 
+// the display setting (settings.h, enum settings_display): 0 status, 1 hid
+// diagnostics, 2 mouse diagnostics, 3 off. the DEBUG_* build flags force the
+// diagnostics on regardless
+#define DBGCONS_DISPLAY_STATUS  0
+#define DBGCONS_DISPLAY_HID     1
+#define DBGCONS_DISPLAY_MOUSE   2
+#define DBGCONS_DISPLAY_OFF     3
+
+static uint8_t display_mode = DBGCONS_DISPLAY_STATUS;
+
+static bool diag_hid(void)
+{
+#ifdef DEBUG_HID_STATUS
+    return true;
+#else
+    return display_mode == DBGCONS_DISPLAY_HID;
+#endif
+}
+
+static bool diag_mouse(void)
+{
+#ifdef DEBUG_MOUSE
+    return true;
+#else
+    return display_mode == DBGCONS_DISPLAY_MOUSE;
+#endif
+}
+
 #if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+// what lines 1-3 last showed, for a redraw after the display comes back on
+static char line_cache[4][DBGCONS_OLED_COLS + 1];
+
 static void dbgcons_write_padded_line(uint8_t line, char const *message)
 {
     char linebuf[DBGCONS_OLED_COLS + 1] = "";
 
     snprintf(linebuf, sizeof(linebuf), "%-*.*s", DBGCONS_OLED_COLS, DBGCONS_OLED_COLS,
         message != NULL ? message : "");
+    if (line < 4)
+        memcpy(line_cache[line], linebuf, sizeof(linebuf));
     disp_write(0, line, linebuf);
 }
 #endif
@@ -190,7 +225,7 @@ void dbgcons_amiga_mod(uint8_t outcode, char updown)
 
 void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol, bool receive_ok, uint8_t report_count, bool mounted)
 {
-#ifdef DEBUG_HID_STATUS
+    if (diag_hid()) {
     char linebuf[32] = "";
 
     snprintf(
@@ -225,19 +260,12 @@ void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol
         receive_ok ? "ok" : "fail"
     );
     disp_write(17, 2, linebuf);
-#else
-    (void)dev_addr;
-    (void)instance;
-    (void)hid_protocol;
-    (void)receive_ok;
-    (void)report_count;
-    (void)mounted;
-#endif
+    }
 }
 
 void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons)
 {
-#ifdef DEBUG_MOUSE
+    if (diag_mouse()) {
     char linebuf[32] = "";
 
     snprintf(
@@ -264,16 +292,12 @@ void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons)
 #else
     disp_write(0, 3, linebuf);
 #endif
-#else
-    (void)x;
-    (void)y;
-    (void)buttons;
-#endif
+    }
 }
 
 void dbgcons_mouse_wheel(int8_t wheel)
 {
-#ifdef DEBUG_MOUSE
+    if (diag_mouse()) {
     char linebuf[32] = "";
 
     snprintf(linebuf, sizeof(linebuf), "wheel %+d", wheel);
@@ -291,9 +315,7 @@ void dbgcons_mouse_wheel(int8_t wheel)
 #else
     disp_write(0, 4, linebuf);
 #endif
-#else
-    (void)wheel;
-#endif
+    }
 }
 
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses)
@@ -415,5 +437,29 @@ void dbgcons_bt_passkey_clear(void)
 #else
     dbgcons_write_padded_line(3, "");
 #endif
+#endif
+}
+
+void dbgcons_display_mode(uint8_t mode)
+{
+    bool was_off = display_mode == DBGCONS_DISPLAY_OFF;
+
+    display_mode = mode;
+
+    if (mode == DBGCONS_DISPLAY_OFF) {
+        disp_blank(true);
+        return;
+    }
+
+    if (!was_off)
+        return;
+
+    // back on: draw what the status screen showed before it went dark
+    disp_blank(false);
+    dbgcons_print_counters();
+#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+    for (uint8_t line = 1; line < 4; line++)
+        if (line_cache[line][0])
+            disp_write(0, line, line_cache[line]);
 #endif
 }

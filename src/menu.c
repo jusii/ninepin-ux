@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "menu.h"
+#include "apply.h"
 #include "pad.h"
 
 #ifdef HAS_MENU
@@ -168,6 +169,7 @@ static char const *notice;          // one-off message on the hint line
 static uint32_t confirm_since;      // an action waiting for its second select; 0: none
 
 static void (*real_write)(uint8_t x, uint8_t y, char *message);
+static void (*saved_write)(uint8_t x, uint8_t y, char *message);
 static uint8_t saved_screen[DISP_FRAMEBUFFER_BYTES];
 
 // keyboards: the last report per slot (edges), help holds, and slots ignored
@@ -306,7 +308,8 @@ static void menu_open(char const *how)
 
     // take the display: everyone else writes into the void until we close
     disp_save(saved_screen);
-    real_write = disp_write;
+    real_write = disp_writer();     // reaches the panel even with the display set to off
+    saved_write = disp_write;
     disp_write = _noop_disp_write;
     disp_clear();
 
@@ -341,7 +344,7 @@ static void menu_close(bool save)
     }
     amiga_help_since = 0;
 
-    disp_write = real_write;
+    disp_write = saved_write;
     disp_restore(saved_screen);
     dbgcons_print_counters();
 
@@ -351,8 +354,8 @@ static void menu_close(bool save)
     // ports follow the saved port settings either way
     if (mode_changed)
         run_mode_set((run_mode_t)edited.mode);
-    else if (save)
-        de9_apply();
+    if (save)
+        apply_settings();
 }
 
 static void action_defaults(void)
