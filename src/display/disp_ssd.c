@@ -27,6 +27,9 @@
 #include "display/disp_ssd.h"
 #include "display/ugui.h"
 
+// longest disp_i2c_bus_release() waits for a borrower's stop condition to finish
+#define DISP_BUS_IDLE_WAIT_US   200
+
 #define SSD_WIDTH           128
 #define SSD_HEIGHT          64
 #ifdef I2C_BAUD
@@ -177,6 +180,14 @@ static void disp_ssd_i2c_irqh(void)
     uint32_t status = i2c_get_hw(I2C_PORT)->intr_stat;
     display_transaction_t *next_transaction = NULL;
     uint irqn = (I2C_PORT == i2c0) ? I2C0_IRQ : I2C1_IRQ;
+
+    // nothing of ours in flight: a late stop / abort from a transfer the bus
+    // was lent out for. clear it and leave; there is no transaction to finish
+    // (and dereferencing the null one would free whatever sits at address 0)
+    if (current_transaction == NULL) {
+        (void)i2c_get_hw(I2C_PORT)->clr_intr;
+        return;
+    }
 
     // check for trans abort; read register causes clear to occur
     if (status & I2C_IC_INTR_STAT_R_TX_ABRT_BITS) {
@@ -545,6 +556,14 @@ bool disp_i2c_bus_acquire(void)
 void disp_i2c_bus_release(void)
 {
     uint irqn = (I2C_PORT == i2c0) ? I2C0_IRQ : I2C1_IRQ;
+
+    // the sdk's blocking read returns once the last byte is in, before the
+    // controller has finished the stop condition; let that finish first, so its
+    // stop_det is raised now and cleared below rather than after the display
+    // irq is back on (a few us at 400 kHz; bounded in case the bus is stuck)
+    absolute_time_t idle_by = make_timeout_time_us(DISP_BUS_IDLE_WAIT_US);
+    while ((i2c_get_hw(I2C_PORT)->status & I2C_IC_STATUS_ACTIVITY_BITS) && !time_reached(idle_by))
+        tight_loop_contents();
 
     // drop the stop / abort the borrower's transfer raised, at the controller and
     // at the nvic, so the display isr does not see a completion that was not its
