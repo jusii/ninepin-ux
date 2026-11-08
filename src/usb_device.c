@@ -25,6 +25,7 @@
 
 #include "input_bridge_bt.h"
 #include "usb_device.h"
+#include "pad.h"
 #include "util/output.h"
 
 //--------------------------------------------------------------------+
@@ -160,6 +161,10 @@ static int32_t mouse_dx, mouse_dy, mouse_wheel, mouse_pan;
 static bool stack_up;
 static bool connected;
 
+// the two gamepads' latest reports, sent when their endpoints are free
+static hid_gamepad_report_t gamepad_report[2];
+static bool gamepad_dirty[2];
+
 // the "1200 baud touch": a host that sets the console to this rate asks for a
 // reboot into the bootrom's usb boot mode (BOOTSEL), so new firmware can be
 // copied over without anyone holding the button. the reboot waits a moment so
@@ -291,6 +296,14 @@ static void hid_flush(void)
         hid_merge_keyboard(&merged);
         if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode))
             keyboard_dirty = false;
+    }
+
+    for (uint8_t player = 0; player < 2; player++) {
+        uint8_t instance = player ? USB_DEVICE_HID_GAMEPAD2 : USB_DEVICE_HID_GAMEPAD;
+
+        if (gamepad_dirty[player] && tud_hid_n_ready(instance)
+            && tud_hid_n_report(instance, 0, &gamepad_report[player], sizeof(gamepad_report[player])))
+            gamepad_dirty[player] = false;
     }
 
     if ((mouse_buttons_dirty || mouse_dx || mouse_dy || mouse_wheel || mouse_pan)
@@ -443,12 +456,43 @@ void usb_device_mouse(uint8_t slot, hid_mouse_report_t const *report)
     hid_wake_host();
 }
 
-void usb_device_gamepad(hid_gamepad_report_t const *report)
+/**
+ * a player's pad, passed through to the host as it is: sticks, triggers (as
+ * rx / ry), the hat (a d-pad without one becomes one) and the pad's own
+ * buttons in its own order. the host maps them.
+ */
+void pads_output_usb(uint8_t player, pad_player_t const *source)
 {
-    if (!usb_device_mounted() || !tud_hid_n_ready(USB_DEVICE_HID_GAMEPAD))
+    static uint8_t const hat_for_dpad[16] = {
+        GAMEPAD_HAT_CENTERED, GAMEPAD_HAT_UP, GAMEPAD_HAT_DOWN, GAMEPAD_HAT_CENTERED,
+        GAMEPAD_HAT_LEFT, GAMEPAD_HAT_UP_LEFT, GAMEPAD_HAT_DOWN_LEFT, GAMEPAD_HAT_LEFT,
+        GAMEPAD_HAT_RIGHT, GAMEPAD_HAT_UP_RIGHT, GAMEPAD_HAT_DOWN_RIGHT, GAMEPAD_HAT_RIGHT,
+        GAMEPAD_HAT_CENTERED, GAMEPAD_HAT_UP, GAMEPAD_HAT_DOWN, GAMEPAD_HAT_CENTERED,
+    };
+    hid_gamepad_report_t report;
+    pad_input_t const *in;
+
+    if ((player > 1) || !source)
         return;
 
-    tud_hid_n_report(USB_DEVICE_HID_GAMEPAD, 0, report, sizeof(*report));
+    in = &source->input;
+    memset(&report, 0, sizeof(report));
+
+    if (source->active) {
+        report.x = in->lx;
+        report.y = in->ly;
+        report.z = in->rx;
+        report.rz = in->ry;
+        report.rx = (int8_t)((in->lt > 0) ? ((int)in->lt - 128) : -127);
+        report.ry = (int8_t)((in->rt > 0) ? ((int)in->rt - 128) : -127);
+        // our hat counts 0 = up clockwise, 8 = centred; tinyusb's 1 = up, 0 = centred
+        report.hat = (in->hat < PAD_HAT_CENTRED) ? (uint8_t)(in->hat + 1) : hat_for_dpad[in->dpad & 0x0f];
+        report.buttons = in->buttons;
+    }
+
+    gamepad_report[player] = report;
+    gamepad_dirty[player] = true;
+    hid_wake_host();
 }
 
 size_t usb_device_console_history(char *out, size_t size)

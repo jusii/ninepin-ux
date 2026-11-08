@@ -84,6 +84,7 @@ enum
     ITF_NUM_HID_KEYBOARD,
     ITF_NUM_HID_MOUSE,
     ITF_NUM_HID_GAMEPAD,
+    ITF_NUM_HID_GAMEPAD2,
     ITF_NUM_TOTAL
 };
 
@@ -93,11 +94,12 @@ enum
 #define EPNUM_HID_KEYBOARD  0x83
 #define EPNUM_HID_MOUSE     0x84
 #define EPNUM_HID_GAMEPAD   0x85
+#define EPNUM_HID_GAMEPAD2  0x86
 
-// 1 ms polling for all three; the hosts this talks to are not short of bandwidth
+// 1 ms polling for all of them; the hosts this talks to are not short of bandwidth
 #define HID_POLL_MS         1
 
-#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + (3 * TUD_HID_DESC_LEN))
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + (4 * TUD_HID_DESC_LEN))
 
 static uint8_t const desc_configuration[] = {
     // config number, interface count, string index, total length, attribute, power in ma.
@@ -115,6 +117,9 @@ static uint8_t const desc_configuration[] = {
         EPNUM_HID_MOUSE, CFG_TUD_HID_EP_BUFSIZE, HID_POLL_MS),
     TUD_HID_DESCRIPTOR(ITF_NUM_HID_GAMEPAD, 7, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_gamepad),
         EPNUM_HID_GAMEPAD, CFG_TUD_HID_EP_BUFSIZE, HID_POLL_MS),
+    // player 2: a second, separate controller to the host
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_GAMEPAD2, 8, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_gamepad),
+        EPNUM_HID_GAMEPAD2, CFG_TUD_HID_EP_BUFSIZE, HID_POLL_MS),
 };
 
 _Static_assert(sizeof(desc_configuration) == CONFIG_TOTAL_LEN, "configuration descriptor length");
@@ -137,7 +142,8 @@ static char const *const string_desc_arr[] = {
     "amigahid debug console",   // 4: cdc
     "amigahid keyboard",        // 5: hid keyboard
     "amigahid mouse",           // 6: hid mouse
-    "amigahid gamepad",         // 7: hid gamepad
+    "amigahid gamepad 1",       // 7: hid gamepad, player 1
+    "amigahid gamepad 2",       // 8: hid gamepad, player 2
 };
 
 #define USB_STRING_MAX_CHARS 32

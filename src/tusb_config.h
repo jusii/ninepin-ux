@@ -120,7 +120,7 @@
 // one cdc (debug console) and three hid interfaces (boot keyboard, boot mouse,
 // gamepad), in that order; usb_device.h names the hid instances
 #   define CFG_TUD_CDC 1
-#   define CFG_TUD_HID 3
+#   define CFG_TUD_HID 4
 #   define CFG_TUD_MSC 0
 #   define CFG_TUD_MIDI 0
 #   define CFG_TUD_VENDOR 0

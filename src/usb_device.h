@@ -45,6 +45,7 @@
 #define USB_DEVICE_HID_KEYBOARD 0
 #define USB_DEVICE_HID_MOUSE    1
 #define USB_DEVICE_HID_GAMEPAD  2
+#define USB_DEVICE_HID_GAMEPAD2 3   // player 2
 
 /**
  * @brief Hook stdout into the cdc console buffer.
@@ -139,10 +140,9 @@ void usb_device_keyboard(uint8_t slot, hid_keyboard_report_t const *report);
 void usb_device_mouse(uint8_t slot, hid_mouse_report_t const *report);
 
 /**
- * @brief Send a gamepad report. Nothing feeds this yet (the host side does not
- *        parse joysticks); it is here so the interface has a producer to grow.
+ * the two gamepads (players 1 and 2) are fed by the player manager through
+ * pads_output_usb() (pad.h), implemented in usb_device.c.
  */
-void usb_device_gamepad(hid_gamepad_report_t const *report);
 
 /**
  * @brief Release whatever one slot holds down on the usb-c host.
