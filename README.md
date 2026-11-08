@@ -27,6 +27,8 @@ working. Both inputs are merged on the board; nothing on the Amiga changes.
 ## start here
 
 * [UX rev 1 board guide](./doc/ux-rev1.md) — connectors, pin orders, power, bring-up, cautions.
+* [rev7 firmware guide](./doc/rev7-guide.md) — modes, the menu, game controllers, Bluetooth,
+  the Wi-Fi settings page and firmware updates on the rev7 board.
 * [installation](./doc/installation.md) — building and flashing (pick the image for *your* Pico).
 * [errata](./doc/errata.md) — the short list of gotchas, read before building.
 * Fabrication: [`kicad/rev6/fab/`](./kicad/rev6/fab/) (gerbers + JLCPCB order checklist + 1:1
