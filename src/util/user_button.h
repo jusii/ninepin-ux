@@ -38,6 +38,8 @@ typedef enum
     USER_BUTTON_EVENT_NONE = 0,
     USER_BUTTON_EVENT_PRESS,        // released before the long-press time
     USER_BUTTON_EVENT_LONG_PRESS,   // held for USER_BUTTON_LONG_PRESS_MS (fires once, whilst still held)
+    USER_BUTTON_EVENT_LONG_RELEASE, // released after the long-press time, before the hold time
+    USER_BUTTON_EVENT_HOLD,         // held for USER_BUTTON_HOLD_PRESS_MS (3 s; fires once, whilst still held)
 } user_button_event_t;
 
 #ifdef HAS_USER_BUTTON

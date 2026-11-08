@@ -38,4 +38,10 @@ void amiga_keyboard_recv_task(void);
  */
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to);
 
+/**
+ * @brief Release every real-keyboard key held on either side (the menu takes
+ *        the keyboards over). Keys still held release nowhere afterwards.
+ */
+void amiga_keyboard_recv_release_all(void);
+
 #endif // _PLATFORM_AMIGA_KEYBOARD_RECV_H

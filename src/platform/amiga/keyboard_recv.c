@@ -44,6 +44,7 @@
 #include "keyboard_serial_io.h"
 #include "keyboard_recv.pio.h" // generated at compile time
 #include "input_bridge_bt.h"
+#include "menu.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
@@ -402,6 +403,11 @@ static void kbdin_key(uint8_t keycode, bool up)
     if (keycode == AMIGA_CAPSLOCK) {
         caps_lamp = !up;
 
+        // the menu owns the keyboards; the sides catch up on the next caps
+        // press or mode switch
+        if (menu_is_open())
+            return;
+
         if (kbdin_to_usb()) {
             kbdin_usb_caps_sync(true);
             status_led_activity();
@@ -410,6 +416,10 @@ static void kbdin_key(uint8_t keycode, bool up)
         }
         return;
     }
+
+    // a held help opens the settings menu, which then keeps the keys
+    if (menu_keyboard_amiga(keycode, up))
+        return;
 
     if (!up) {
         if (kbdin_to_usb()) {
@@ -646,6 +656,12 @@ void amiga_keyboard_recv_task(void)
     amiga_keyboard_recv_reset_task();
 }
 
+void amiga_keyboard_recv_release_all(void)
+{
+    kbdin_amiga_release();
+    kbdin_usb_release();
+}
+
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to)
 {
     bool usb_before = run_mode_keyboard_usb(from);
@@ -677,5 +693,6 @@ void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to)
 void amiga_keyboard_recv_init(void) {}
 void amiga_keyboard_recv_task(void) {}
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to) { (void)from; (void)to; }
+void amiga_keyboard_recv_release_all(void) {}
 
 #endif // HAS_KBD_IN

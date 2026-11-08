@@ -674,6 +674,28 @@ void _real_disp_write(uint8_t x, uint8_t y, char *message)
     disp_ssd_update();
 }
 
+bool disp_present(void)
+{
+    return display_present && (disp_write != _noop_disp_write);
+}
+
+void disp_save(uint8_t copy[DISP_FRAMEBUFFER_BYTES])
+{
+    memcpy(copy, framebuffer, DISP_FRAMEBUFFER_BYTES);
+}
+
+void disp_restore(uint8_t const copy[DISP_FRAMEBUFFER_BYTES])
+{
+    memcpy(framebuffer, copy, DISP_FRAMEBUFFER_BYTES);
+    disp_ssd_update();
+}
+
+void disp_clear(void)
+{
+    memset(framebuffer, 0, DISP_FRAMEBUFFER_BYTES);
+    disp_ssd_update();
+}
+
 /**
  * Write a byte to a register on the i2c device
  *

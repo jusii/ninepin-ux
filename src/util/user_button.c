@@ -26,6 +26,7 @@
 // samples to count
 #define USER_BUTTON_POLL_MS         50
 #define USER_BUTTON_LONG_PRESS_MS   1000
+#define USER_BUTTON_HOLD_PRESS_MS   3000
 
 // how long to wait for core1 to park before giving up on this sample
 #define USER_BUTTON_LOCKOUT_US      2000
@@ -35,6 +36,7 @@ static bool last_raw;
 static bool pressed;
 static uint32_t pressed_since;
 static bool long_fired;
+static bool hold_fired;
 
 /**
  * float qspi_ss and read it. runs from ram with interrupts off: nothing on this
@@ -92,6 +94,7 @@ void user_button_init(void)
     last_raw = false;
     pressed = false;
     long_fired = false;
+    hold_fired = false;
 }
 
 user_button_event_t user_button_task(void)
@@ -117,6 +120,7 @@ user_button_event_t user_button_task(void)
         pressed = true;
         pressed_since = now;
         long_fired = false;
+        hold_fired = false;
         return USER_BUTTON_EVENT_NONE;
     }
 
@@ -125,12 +129,21 @@ user_button_event_t user_button_task(void)
         return USER_BUTTON_EVENT_LONG_PRESS;
     }
 
+    if (raw && pressed && !hold_fired && ((uint32_t)(now - pressed_since) >= USER_BUTTON_HOLD_PRESS_MS)) {
+        hold_fired = true;
+        return USER_BUTTON_EVENT_HOLD;
+    }
+
     if (!raw && pressed) {
         pressed = false;
 
-        // a long press already reported itself; its release is not a short one
+        // a long press already reported itself; its release is not a short
+        // one. a release between the long-press and hold times is reported on
+        // its own, for users that act on the release instead
         if (!long_fired)
             return USER_BUTTON_EVENT_PRESS;
+        if (!hold_fired)
+            return USER_BUTTON_EVENT_LONG_RELEASE;
     }
 
     return USER_BUTTON_EVENT_NONE;

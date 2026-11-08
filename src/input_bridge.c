@@ -9,6 +9,7 @@
  */
 
 #include "input_bridge.h"
+#include "menu.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -143,6 +144,11 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
     if ((slot >= INPUT_BRIDGE_MAX_SLOTS) || (report == NULL))
         return;
 
+    // the settings menu sees every keyboard first: a held help key opens it,
+    // and whilst it is open (or a keyboard still holds keys from it) it keeps them
+    if (menu_keyboard_hid(slot, report))
+        return;
+
 #ifdef HAS_USB_DEVICE
     // passthrough hands the report on untouched; the amiga-side state stays
     // empty, so switching back starts from nothing held
@@ -175,6 +181,10 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
     input_bridge_state_t *state;
 
     if ((slot >= INPUT_BRIDGE_MAX_SLOTS) || (report == NULL))
+        return;
+
+    // the settings menu owns the inputs whilst it is open
+    if (menu_is_open())
         return;
 
 #ifdef HAS_USB_DEVICE

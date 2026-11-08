@@ -177,6 +177,8 @@
 // (debug console - there is no uart) + hid (keyboard, mouse, gamepad) device.
 // its D+ pull-up is only presented while the expander sees usb-c vbus.
 #  define HAS_USB_DEVICE
+// the settings menu on the oled (menu.c): keyboards, BOOT, encoder, console
+#  define HAS_MENU
 #  define USB_DEVICE_VID    0xcafe  // tinyusb's example vid; see the report's open questions
 #  define USB_DEVICE_PID    0x4a50  // "JP"; arbitrary within the example space
 

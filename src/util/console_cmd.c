@@ -21,6 +21,7 @@
 #include "pico/bootrom.h"
 #include "pico/platform.h"
 
+#include "menu.h"
 #include "settings.h"
 #include "usb_device.h"
 #include "util/output.h"
@@ -33,6 +34,7 @@ static void cmd_mode(char const *arg);
 static void cmd_defaults(char const *arg);
 static void cmd_reboot(char const *arg);
 static void cmd_bootsel(char const *arg);
+static void cmd_menu(char const *arg);
 
 typedef struct {
     char const *name;
@@ -48,6 +50,7 @@ static const console_cmd_t commands[] = {
     { "defaults", cmd_defaults, "store the factory defaults" },
     { "reboot",   cmd_reboot,   "restart the board" },
     { "bootsel",  cmd_bootsel,  "restart into the usb bootloader (BOOTSEL)" },
+    { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };
 
 static void cmd_help(char const *arg)
@@ -130,6 +133,40 @@ static void cmd_bootsel(char const *arg)
     ahprintf("rebooting into BOOTSEL\n");
     sleep_ms(50);
     reset_usb_boot(0, 0);
+}
+
+static void cmd_menu(char const *arg)
+{
+    static const struct { char const *name; menu_input_t input; } inputs[] = {
+        { "open", MENU_IN_OPEN }, { "next", MENU_IN_NEXT }, { "prev", MENU_IN_PREV },
+        { "inc", MENU_IN_INC }, { "dec", MENU_IN_DEC }, { "enter", MENU_IN_ENTER },
+        { "leave", MENU_IN_LEAVE },
+    };
+    char lines[MENU_LINES][MENU_COLS + 1];
+
+    if (*arg) {
+        unsigned i;
+
+        for (i = 0; i < count_of(inputs); i++) {
+            if (strcmp(arg, inputs[i].name) == 0) {
+                menu_input(inputs[i].input);
+                break;
+            }
+        }
+        if (i == count_of(inputs)) {
+            ahprintf("menu [open|next|prev|inc|dec|enter|leave]\n");
+            return;
+        }
+    }
+
+    if (!menu_is_open()) {
+        ahprintf("menu closed\n");
+        return;
+    }
+
+    menu_lines(lines);
+    for (unsigned i = 0; i < MENU_LINES; i++)
+        ahprintf("|%s|\n", lines[i]);
 }
 
 void console_cmd_task(void)

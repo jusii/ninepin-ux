@@ -36,6 +36,7 @@
 #include "util/output.h"
 #include "util/run_mode.h"
 #include "util/console_cmd.h"
+#include "menu.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -303,25 +304,23 @@ static void board_controls_task(void)
 
     while ((iox_event = io_expander_poll_event()) != IO_EXPANDER_EVENT_NONE) {
         switch (iox_event) {
-            case IO_EXPANDER_EVENT_ENC_CW:      ahprintf("[ctl] encoder +1\n"); break;
-            case IO_EXPANDER_EVENT_ENC_CCW:     ahprintf("[ctl] encoder -1\n"); break;
-            case IO_EXPANDER_EVENT_ENC_PRESS:   ahprintf("[ctl] encoder switch down\n"); break;
-            case IO_EXPANDER_EVENT_ENC_RELEASE: ahprintf("[ctl] encoder switch up\n"); break;
+            case IO_EXPANDER_EVENT_ENC_CW:      menu_encoder_turn(+1); break;
+            case IO_EXPANDER_EVENT_ENC_CCW:     menu_encoder_turn(-1); break;
+            case IO_EXPANDER_EVENT_ENC_PRESS:   menu_encoder_switch(true); break;
+            case IO_EXPANDER_EVENT_ENC_RELEASE: menu_encoder_switch(false); break;
             case IO_EXPANDER_EVENT_VBUS_ON:     ahprintf("[ctl] usb-c vbus on\n"); break;
             case IO_EXPANDER_EVENT_VBUS_OFF:    ahprintf("[ctl] usb-c vbus off\n"); break;
             default: break;
         }
     }
 
-    switch (user_button_task()) {
-        case USER_BUTTON_EVENT_PRESS:
-            ahprintf("[ctl] boot button press\n");
-            break;
-        case USER_BUTTON_EVENT_LONG_PRESS:
+    // the menu takes the button whilst open, and a double-press to open it;
+    // otherwise a 1 s hold steps to the next mode
+    user_button_event_t button = user_button_task();
+
+    if ((button != USER_BUTTON_EVENT_NONE) && !menu_button(button)) {
+        if (button == USER_BUTTON_EVENT_LONG_PRESS)
             run_mode_next();
-            break;
-        default:
-            break;
     }
 }
 #endif
@@ -431,6 +430,7 @@ int main(void)
 
     // the mode the settings remember, now that everything a switch touches is up
     run_mode_restore();
+    menu_init();
 
     boot_stage("loop");
 
@@ -453,6 +453,9 @@ int main(void)
 
         // commands typed on the usb-c console
         console_cmd_task();
+
+        // the settings menu: a held help key opens it
+        menu_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID
