@@ -60,6 +60,7 @@ _Static_assert(sizeof(settings_record_t) <= FLASH_PAGE_SIZE, "a settings record 
 static settings_t active;
 static int current_bank = -1;
 static uint32_t current_sequence;
+static uint32_t generation;
 
 void settings_defaults(settings_t *settings)
 {
@@ -212,6 +213,11 @@ settings_t const *settings_get(void)
     return &active;
 }
 
+uint32_t settings_generation(void)
+{
+    return generation;
+}
+
 char const *settings_source(void)
 {
     return (current_bank < 0) ? "defaults" : "flash";
@@ -236,6 +242,7 @@ static void publish(settings_t const *settings)
     // whole validated set in at once
     uint32_t interrupts = save_and_disable_interrupts();
     active = *settings;
+    generation++;
     restore_interrupts(interrupts);
 }
 

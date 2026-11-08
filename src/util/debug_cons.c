@@ -31,6 +31,8 @@ struct
 
 #ifdef ENABLE_BLUETOOTH_HID
 static bool bt_passkey_active;
+// line 3 when no bluetooth prompt is up (wifi.c)
+static char wifi_text[DBGCONS_OLED_COLS + 1];
 #endif
 
 // the display setting (settings.h, enum settings_display): 0 status, 1 hid
@@ -433,10 +435,22 @@ void dbgcons_bt_passkey_clear(void)
 #ifdef ENABLE_BLUETOOTH_HID
     bt_passkey_active = false;
 #ifdef DEBUG_MOUSE
-    dbgcons_write_padded_line(3, "mouse --");
+    dbgcons_write_padded_line(3, wifi_text[0] ? wifi_text : "mouse --");
 #else
-    dbgcons_write_padded_line(3, "");
+    dbgcons_write_padded_line(3, wifi_text);
 #endif
+#endif
+}
+
+void dbgcons_wifi(char const *text)
+{
+#ifdef ENABLE_BLUETOOTH_HID
+    snprintf(wifi_text, sizeof(wifi_text), "%s", text != NULL ? text : "");
+    // a passkey prompt keeps the line; clearing it puts this back
+    if (!bt_passkey_active)
+        dbgcons_write_padded_line(3, wifi_text);
+#else
+    (void)text;
 #endif
 }
 

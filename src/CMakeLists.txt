@@ -8,6 +8,7 @@ add_executable(amigahid-pico
   menu.c
   pads.c
   settings.c
+  settings_names.c
   usb_hid.c
 )
 
@@ -23,7 +24,17 @@ if (ENABLE_BLUETOOTH_HID)
   target_sources(amigahid-pico PRIVATE
     bt_ds4.c
     bt_hid.c
+    radio.c
   )
+  # rev7: wi-fi and the settings page on the same radio (HAS_WIFI, config.h)
+  if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7")
+    target_sources(amigahid-pico PRIVATE
+      dhcp_server.c
+      http_server.c
+      web_page.c
+      wifi.c
+    )
+  endif ()
 endif ()
 
 add_subdirectory(platform)
@@ -72,11 +83,22 @@ if (ENABLE_BLUETOOTH_HID)
     -Wno-error=maybe-uninitialized
   )
   target_link_libraries(amigahid-pico PUBLIC
-    pico_cyw43_arch_none
     pico_btstack_ble
     pico_btstack_classic
     pico_btstack_cyw43
   )
+  if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7")
+    # lwip (lwipopts.h) in the same background context as btstack
+    target_link_libraries(amigahid-pico PUBLIC
+      pico_cyw43_arch_lwip_threadsafe_background
+      pico_lwip_mdns
+      pico_rand
+    )
+  else ()
+    target_link_libraries(amigahid-pico PUBLIC
+      pico_cyw43_arch_none
+    )
+  endif ()
 endif ()
 
 if (ENABLE_BLUETOOTH_HID AND COMMAND suppress_btstack_warnings)

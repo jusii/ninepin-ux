@@ -53,6 +53,7 @@
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
 #endif
+#include "wifi.h"
 
 // defined within usb_hid.c
 extern void hid_app_task(void);
@@ -434,6 +435,8 @@ int main(void)
 #ifdef ENABLE_BLUETOOTH_HID
     bt_hid_init();
 #endif
+    // wi-fi on the same radio (rev7), off unless the settings say otherwise
+    wifi_init();
 
     // the mode the settings remember, now that everything a switch touches is up
     run_mode_restore();
@@ -480,6 +483,8 @@ int main(void)
 #ifdef ENABLE_BLUETOOTH_HID
         bt_hid_task();
 #endif
+        // wi-fi: follow the settings, store a save from the page
+        wifi_task();
 
 #ifdef HAS_KBD_IN
         LOOP_STAGE("L kbd");

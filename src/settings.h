@@ -214,6 +214,12 @@ settings_t const *settings_get(void);
 bool settings_save(settings_t const *settings);
 
 /**
+ * @return a count of the successful settings_save() calls since boot, stored
+ *         or unchanged alike: "the settings were saved again"
+ */
+uint32_t settings_generation(void);
+
+/**
  * @return where the active settings came from: "flash", "defaults"
  */
 char const *settings_source(void);

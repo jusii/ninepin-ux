@@ -32,6 +32,7 @@
 #include "platform/amiga/de9.h"
 #include "platform/amiga/keyboard_recv.h"
 #include "settings.h"
+#include "settings_names.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
@@ -40,6 +41,9 @@
 #endif
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
+#endif
+#ifdef HAS_WIFI
+#include "wifi.h"
 #endif
 
 #define MENU_HOLD_OPEN_MS       1000    // help held this long opens the menu
@@ -57,34 +61,12 @@ typedef struct {
     char const *label;
     item_kind_t kind;
     uint16_t offset;                // ITEM_CHOICE: offsetof(settings_t, field)
-    uint8_t count;                  // ITEM_CHOICE: number of values
-    char const *const *names;       // ITEM_CHOICE: one per value
+    settings_names_t const *names;  // ITEM_CHOICE: one per value
     bool (*visible)(void);          // NULL: always
     void (*action)(void);           // ITEM_ACTION
     uint8_t slot;                   // ITEM_REMAP: slot number
     bool from_amiga;                // ITEM_REMAP: amiga keyboard -> usb (else usb -> amiga)
 } menu_item_t;
-
-static char const *const names_mode[] = { "amiga", "c64", "usb" };
-static char const *const names_amiga_port[] = { "mouse", "joystick", "cd32 pad", "off" };
-static char const *const names_c64_port[] = { "joystick", "1351 mouse", "off" };
-static char const *const names_no_yes[] = { "no", "yes" };
-static char const *const names_off_on[] = { "off", "on" };
-static char const *const names_deadzone[] = { "25%", "50%", "75%" };
-static char const *const names_directions[] = { "d-pad + stick", "d-pad", "stick" };
-static char const *const names_triangle[] = { "up (jump)", "autofire", "off" };
-static char const *const names_wheel_dir[] = { "normal", "reversed" };
-static char const *const names_mouse_speed[] = { "300 us", "200 us", "150 us", "100 us" };
-static char const *const names_display[] = { "status", "hid diag", "mouse diag", "off" };
-static char const *const names_watchdog[] = { "off", "2 s", "5 s" };
-static char const *const names_bt_pairing[] = { "automatic", "paired only" };
-static char const *const names_wifi[] = { "off", "access point", "join network" };
-static char const *const names_kb_preset[] = { "original", "Y<->Z", "A<->Q W<->Z" };
-static char const *const names_kb_help[] = { "insert", "home", "page up", "F11", "none" };
-static char const *const names_kb_delete[] = { "delete", "backspace", "none" };
-static char const *const names_kb_iso[] = { "backslash", "amiga iso key" };
-static char const *const names_ak_parens[] = { "keypad keys", "US/UK", "Nordic/DE", "French" };
-static char const *const names_ak_cad[] = { "nothing", "ctrl-alt-del" };
 
 static settings_t edited;
 
@@ -98,15 +80,19 @@ static void action_cancel(void);
 static void action_bt_pair(void);
 static void action_bt_forget(void);
 #endif
+#ifdef HAS_WIFI
+static void action_page_password_show(void);
+static void action_page_password_new(void);
+#endif
 
 #define CHOICE(label, field, names, visible) \
-    { label, ITEM_CHOICE, offsetof(settings_t, field), count_of(names), names, visible, NULL, 0, false }
+    { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, false }
 #define ACTION(label, fn) \
-    { label, ITEM_ACTION, 0, 0, NULL, NULL, fn, 0, false }
+    { label, ITEM_ACTION, 0, NULL, NULL, fn, 0, false }
 #define REMAP_PC(n) \
-    { "PC remap " #n, ITEM_REMAP, offsetof(settings_t, kb_remap), 0, NULL, NULL, NULL, (n) - 1, false }
+    { "PC remap " #n, ITEM_REMAP, offsetof(settings_t, kb_remap), NULL, NULL, NULL, (n) - 1, false }
 #define REMAP_A4000(n) \
-    { "A4000 remap " #n, ITEM_REMAP, offsetof(settings_t, ak_remap), 0, NULL, NULL, NULL, (n) - 1, true }
+    { "A4000 remap " #n, ITEM_REMAP, offsetof(settings_t, ak_remap), NULL, NULL, NULL, (n) - 1, true }
 
 static const menu_item_t items[] = {
     CHOICE("Mode",              mode,           names_mode,         NULL),
@@ -142,6 +128,10 @@ static const menu_item_t items[] = {
     ACTION("Forget BT devices", action_bt_forget),
 #endif
     CHOICE("Wi-Fi",             wifi_mode,      names_wifi,         NULL),
+#ifdef HAS_WIFI
+    ACTION("Show page password", action_page_password_show),
+    ACTION("New page password", action_page_password_new),
+#endif
     CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
     ACTION("Factory defaults",  action_defaults),
     ACTION("Save & exit",       action_save),
@@ -220,7 +210,7 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
     snprintf(lines[1], MENU_COLS + 1, "%-*s", MENU_COLS, item->label);
 
     if (item->kind == ITEM_CHOICE) {
-        char const *value = item->names[*item_value(cursor)];
+        char const *value = item->names->names[*item_value(cursor)];
         snprintf(lines[2], MENU_COLS + 1, editing ? " [ %s ]" : " < %s >", value);
     } else if (item->kind == ITEM_REMAP) {
         settings_remap_t const *remap = (settings_remap_t const *)item_value(cursor) + item->slot;
@@ -409,6 +399,33 @@ static void action_bt_forget(void)
 }
 #endif
 
+#ifdef HAS_WIFI
+/**
+ * the page password works on the stored settings, like the bluetooth actions;
+ * a new one goes into the edits as well, so saving them does not undo it
+ */
+static char page_password_notice[MENU_COLS + 1];
+
+static void action_page_password_show(void)
+{
+    char const *password = settings_get()->page_password;
+
+    snprintf(page_password_notice, sizeof(page_password_notice), "pw %s", *password ? password : "(none yet)");
+    notice = page_password_notice;
+}
+
+static void action_page_password_new(void)
+{
+    if (!wifi_new_page_password()) {
+        notice = "save failed";
+        return;
+    }
+    memcpy(edited.page_password, settings_get()->page_password, sizeof(edited.page_password));
+    snprintf(page_password_notice, sizeof(page_password_notice), "new: %s", settings_get()->page_password);
+    notice = page_password_notice;
+}
+#endif
+
 //--------------------------------------------------------------------+
 // inputs
 //--------------------------------------------------------------------+
@@ -442,7 +459,7 @@ static void change(int step)
         return;
 
     value = item_value(cursor);
-    *value = (uint8_t)((*value + item->count + step) % item->count);
+    *value = (uint8_t)((*value + item->names->count + step) % item->names->count);
     dirty = true;
 }
 

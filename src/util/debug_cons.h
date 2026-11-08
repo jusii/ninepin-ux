@@ -79,4 +79,11 @@ void dbgcons_bt_passkey(char const *message);
 
 void dbgcons_bt_passkey_clear(void);
 
+/**
+ * @brief The wi-fi state for oled line 3 ("wifi ap amigahid-1a2b",
+ *        "wifi 192.168.1.23"), shown whilst no bluetooth prompt is up; NULL
+ *        or "" clears it. Main loop.
+ */
+void dbgcons_wifi(char const *text);
+
 #endif // _PLATFORM_COMMON_DEBUG_CONS_H

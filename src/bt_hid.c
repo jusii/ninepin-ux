@@ -16,10 +16,11 @@
  * instead of his input bridge; the dualsense over bluetooth is this tree's.
  *
  * everything below except the public functions at the end runs in the
- * btstack context: the cyw43 background interrupt (pico_cyw43_arch_none's
- * threadsafe-background async context). input is posted to a queue and handed
- * on from bt_hid_task() in the main loop; the main loop only calls into
- * btstack holding the async context lock.
+ * btstack context: the cyw43 background interrupt (the threadsafe-background
+ * async context of pico_cyw43_arch_none, or of its lwip variant on rev7, where
+ * wi-fi shares it). input is posted to a queue and handed on from
+ * bt_hid_task() in the main loop; the main loop only calls into btstack holding
+ * the async context lock.
  */
 
 #include "bt_hid.h"
@@ -42,6 +43,7 @@
 #include "hid_gamepad.h"
 #include "input_bridge_bt.h"
 #include "pad.h"
+#include "radio.h"
 #include "settings.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -1955,7 +1957,8 @@ void bt_hid_init(void)
         bt_hid_queue_ready = true;
     }
 
-    if (cyw43_arch_init()) {
+    // the radio may already be up for wi-fi
+    if (!radio_init()) {
         ahprintf("[bt] cyw43 init failed\n");
         dbgcons_bt_status("bt init fail");
         snprintf(bt_status_text, sizeof(bt_status_text), "cyw43 init failed (no radio?)");

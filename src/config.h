@@ -179,6 +179,11 @@
 #  define HAS_USB_DEVICE
 // the settings menu on the oled (menu.c): keyboards, BOOT, encoder, console
 #  define HAS_MENU
+// wi-fi and the settings page share the rm2 with bluetooth: builds with the
+// radio only (wifi.c)
+#  ifdef ENABLE_BLUETOOTH_HID
+#    define HAS_WIFI
+#  endif
 #  define USB_DEVICE_VID    0xcafe  // tinyusb's example vid; see the report's open questions
 #  define USB_DEVICE_PID    0x4a50  // "JP"; arbitrary within the example space
 

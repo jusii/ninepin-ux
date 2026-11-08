@@ -31,6 +31,9 @@
 #include "settings.h"
 #include "usb_device.h"
 #include "util/output.h"
+#ifdef HAS_WIFI
+#include "wifi.h"
+#endif
 #include "util/run_mode.h"
 
 static void cmd_help(char const *arg);
@@ -46,6 +49,7 @@ static void cmd_bt(char const *arg);
 static void cmd_pads(char const *arg);
 static void cmd_ports(char const *arg);
 static void cmd_hang(char const *arg);
+static void cmd_wifi(char const *arg);
 
 typedef struct {
     char const *name;
@@ -64,6 +68,7 @@ static const console_cmd_t commands[] = {
     { "log",      cmd_log,      "the last 2K of console output, boot messages included" },
     { "bt",       cmd_bt,       "bt [pair|forget]: bluetooth state, bonds; open pairing 2 min; forget all bonds" },
     { "pads",     cmd_pads,     "pads, players and what goes out" },
+    { "wifi",     cmd_wifi,     "wifi [off|ap|join <ssid> [password]]: wi-fi state, page password; set the mode" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
@@ -232,6 +237,48 @@ static void cmd_bt(char const *arg)
 #else
     (void)arg;
     ahprintf("bluetooth: not in this build\n");
+#endif
+}
+
+static void cmd_wifi(char const *arg)
+{
+#ifdef HAS_WIFI
+    settings_t settings = *settings_get();
+
+    if (!*arg) {
+        wifi_describe();
+        return;
+    }
+
+    if (strcmp(arg, "off") == 0) {
+        settings.wifi_mode = SETTINGS_WIFI_OFF;
+    } else if (strcmp(arg, "ap") == 0) {
+        settings.wifi_mode = SETTINGS_WIFI_AP;
+    } else if (strncmp(arg, "join ", 5) == 0) {
+        // "join <ssid> [password]": no spaces in either from here
+        char const *ssid = arg + 5;
+        char const *space = strchr(ssid, ' ');
+        size_t ssid_len = space ? (size_t)(space - ssid) : strlen(ssid);
+        char const *password = space ? space + 1 : "";
+
+        if (!ssid_len || ssid_len >= sizeof(settings.wifi_ssid)
+            || (*password && (strlen(password) < 8 || strlen(password) >= sizeof(settings.wifi_password)))) {
+            ahprintf("wifi join <ssid, 1-32> [password, 8-63]\n");
+            return;
+        }
+        memset(settings.wifi_ssid, 0, sizeof(settings.wifi_ssid));
+        memcpy(settings.wifi_ssid, ssid, ssid_len);
+        memset(settings.wifi_password, 0, sizeof(settings.wifi_password));
+        strcpy(settings.wifi_password, password);
+        settings.wifi_mode = SETTINGS_WIFI_JOIN;
+    } else {
+        ahprintf("wifi [off|ap|join <ssid> [password]]\n");
+        return;
+    }
+    ahprintf(settings_save(&settings) ? "stored\n" : "could not store the settings\n");
+#else
+    (void)arg;
+    ahprintf("wifi: not in this build\n");
 #endif
 }
 
