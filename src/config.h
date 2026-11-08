@@ -184,6 +184,9 @@
 #  ifdef ENABLE_BLUETOOTH_HID
 #    define HAS_WIFI
 #  endif
+// a/b partition slots and try-before-you-buy images (ota.c): every rev7 build
+// accepts itself after a clean start; uploads come over wi-fi where there is one
+#  define HAS_OTA
 #  define USB_DEVICE_VID    0xcafe  // tinyusb's example vid; see the report's open questions
 #  define USB_DEVICE_PID    0x4a50  // "JP"; arbitrary within the example space
 

@@ -31,8 +31,15 @@ struct
 
 #ifdef ENABLE_BLUETOOTH_HID
 static bool bt_passkey_active;
-// line 3 when no bluetooth prompt is up (wifi.c)
+// line 3 when no bluetooth prompt is up: a firmware update (ota.c) over the
+// wi-fi state (wifi.c)
 static char wifi_text[DBGCONS_OLED_COLS + 1];
+static char ota_text[DBGCONS_OLED_COLS + 1];
+
+static char const *line3_text(void)
+{
+    return ota_text[0] ? ota_text : wifi_text;
+}
 #endif
 
 // the display setting (settings.h, enum settings_display): 0 status, 1 hid
@@ -435,9 +442,9 @@ void dbgcons_bt_passkey_clear(void)
 #ifdef ENABLE_BLUETOOTH_HID
     bt_passkey_active = false;
 #ifdef DEBUG_MOUSE
-    dbgcons_write_padded_line(3, wifi_text[0] ? wifi_text : "mouse --");
+    dbgcons_write_padded_line(3, line3_text()[0] ? line3_text() : "mouse --");
 #else
-    dbgcons_write_padded_line(3, wifi_text);
+    dbgcons_write_padded_line(3, line3_text());
 #endif
 #endif
 }
@@ -448,7 +455,18 @@ void dbgcons_wifi(char const *text)
     snprintf(wifi_text, sizeof(wifi_text), "%s", text != NULL ? text : "");
     // a passkey prompt keeps the line; clearing it puts this back
     if (!bt_passkey_active)
-        dbgcons_write_padded_line(3, wifi_text);
+        dbgcons_write_padded_line(3, line3_text());
+#else
+    (void)text;
+#endif
+}
+
+void dbgcons_ota(char const *text)
+{
+#ifdef ENABLE_BLUETOOTH_HID
+    snprintf(ota_text, sizeof(ota_text), "%s", text != NULL ? text : "");
+    if (!bt_passkey_active)
+        dbgcons_write_padded_line(3, line3_text());
 #else
     (void)text;
 #endif

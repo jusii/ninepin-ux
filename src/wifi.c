@@ -554,6 +554,8 @@ void wifi_task(void)
     uint32_t now = now_ms();
 
     page_save_task();
+    // an upload waiting for the flash to catch up
+    http_server_task();
 
     // a page password exists from the first boot on (and again after the
     // factory defaults cleared it)

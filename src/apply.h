@@ -19,6 +19,12 @@
 void apply_settings(void);
 
 /**
+ * @brief Follow the watchdog setting (apply_settings() does this too); also
+ *        when a firmware on trial has accepted itself. Main loop.
+ */
+void apply_watchdog(void);
+
+/**
  * @brief Keep the watchdog fed. Every main loop pass.
  */
 void apply_task(void);

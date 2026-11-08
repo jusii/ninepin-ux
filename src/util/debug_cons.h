@@ -86,4 +86,11 @@ void dbgcons_bt_passkey_clear(void);
  */
 void dbgcons_wifi(char const *text);
 
+/**
+ * @brief A firmware update's state for oled line 3 ("BOOT: install (25s)"),
+ *        over the wi-fi state, under a bluetooth prompt; NULL or "" clears
+ *        it. Main loop.
+ */
+void dbgcons_ota(char const *text);
+
 #endif // _PLATFORM_COMMON_DEBUG_CONS_H

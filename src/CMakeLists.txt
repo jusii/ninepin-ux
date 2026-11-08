@@ -5,6 +5,7 @@ add_executable(amigahid-pico
   input_bridge.c
   keyboard_map.c
   main.c
+  ota.c
   menu.c
   pads.c
   settings.c
@@ -125,6 +126,12 @@ if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7")
     COMMENT "Creating the rev7 partition table uf2"
     VERBATIM)
   add_custom_target(amigahid-pico-partition-table ALL DEPENDS ${AHP_PT_UF2})
+
+  # every rev7 image is try-before-you-buy: a flash update boot runs it under
+  # the bootrom's 16.7 s watchdog and it stays only once it accepts itself
+  # (ota.c, after ten seconds of clean main loop); otherwise the previous
+  # firmware boots again
+  target_compile_definitions(amigahid-pico PRIVATE PICO_CRT0_IMAGE_TYPE_TBYB=1)
 
   # the smaller slot (B) bounds the image
   add_custom_command(TARGET amigahid-pico POST_BUILD

@@ -17,21 +17,27 @@
 
 #include "platform/amiga/de9.h"
 #include "platform/amiga/quad_mouse.h"
+#include "ota.h"
 #include "settings.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
 
-static uint32_t watchdog_ms;    // 0: off
+// what runs now; unknown at boot, when the bootrom may have one counting (a
+// trial boot of a new firmware: 16.7 s to accept itself, see ota.c)
+#define WATCHDOG_UNKNOWN    UINT32_MAX
+#define WATCHDOG_TRIAL_MS   5000u
 
-void apply_settings(void)
+static uint32_t watchdog_ms = WATCHDOG_UNKNOWN;     // 0: off
+
+void apply_watchdog(void)
 {
-    static uint16_t const step_us[SETTINGS_MOUSE_SPEED_COUNT] = { 300, 200, 150, 100 };
     static uint32_t const timeout_ms[SETTINGS_WATCHDOG_COUNT] = { 0, 2000, 5000 };
-    settings_t const *s = settings_get();
-    uint32_t wanted = timeout_ms[s->watchdog % SETTINGS_WATCHDOG_COUNT];
+    uint32_t wanted = timeout_ms[settings_get()->watchdog % SETTINGS_WATCHDOG_COUNT];
 
-    amiga_quad_mouse_set_interval(step_us[s->mouse_speed % SETTINGS_MOUSE_SPEED_COUNT]);
-    dbgcons_display_mode(s->display);
+    // a firmware on trial keeps a watchdog even with the setting off: if it
+    // stops before it has accepted itself, the previous firmware comes back
+    if (!wanted && ota_trial())
+        wanted = WATCHDOG_TRIAL_MS;
 
     // nothing the main loop does blocks for anywhere near 2 s (the longest:
     // the amiga reset pulse, 0.5 s, and a flash write)
@@ -40,16 +46,27 @@ void apply_settings(void)
             watchdog_enable(wanted, true);
         else
             watchdog_disable();
+        if (watchdog_ms != WATCHDOG_UNKNOWN || wanted)
+            ahprintf("[wdt] %s%s\n", wanted ? (wanted == 2000 ? "2 s" : "5 s") : "off",
+                (wanted && !settings_get()->watchdog) ? " (new firmware on trial)" : "");
         watchdog_ms = wanted;
-        ahprintf("[wdt] %s\n", wanted ? (wanted == 2000 ? "2 s" : "5 s") : "off");
     }
+}
 
+void apply_settings(void)
+{
+    static uint16_t const step_us[SETTINGS_MOUSE_SPEED_COUNT] = { 300, 200, 150, 100 };
+    settings_t const *s = settings_get();
+
+    amiga_quad_mouse_set_interval(step_us[s->mouse_speed % SETTINGS_MOUSE_SPEED_COUNT]);
+    dbgcons_display_mode(s->display);
+    apply_watchdog();
     de9_apply();
 }
 
 void apply_task(void)
 {
-    if (watchdog_ms)
+    if (watchdog_ms && (watchdog_ms != WATCHDOG_UNKNOWN))
         watchdog_update();
 }
 

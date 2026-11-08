@@ -43,6 +43,7 @@
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
+#include "ota.h"
 
 #include "tusb_config.h"
 
@@ -322,7 +323,8 @@ static void board_controls_task(void)
     // otherwise a 1 s hold steps to the next mode
     user_button_event_t button = user_button_task();
 
-    if ((button != USER_BUTTON_EVENT_NONE) && !menu_button(button)) {
+    // an update waiting for BOOT takes the press first
+    if ((button != USER_BUTTON_EVENT_NONE) && !ota_button() && !menu_button(button)) {
         if (button == USER_BUTTON_EVENT_LONG_PRESS)
             run_mode_next();
     }
@@ -485,6 +487,10 @@ int main(void)
 #endif
         // wi-fi: follow the settings, store a save from the page
         wifi_task();
+
+        // firmware updates: accept this one after a clean start, write an
+        // uploaded one to the free slot
+        ota_task();
 
 #ifdef HAS_KBD_IN
         LOOP_STAGE("L kbd");

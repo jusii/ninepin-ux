@@ -18,6 +18,7 @@
 #include <string.h>
 #include <strings.h>
 
+#include "pico/cyw43_arch.h"
 #include "pico/rand.h"
 
 #include "lwip/tcp.h"
@@ -73,6 +74,7 @@ typedef struct {
     size_t tail_len;
     uint32_t offset;                        // passed on so far
     bool refused;                           // ota_receive() said no
+    struct pbuf *held;                      // waiting for ota_space(), window shut
 
     // the response: the head in small[], the body there too or in page[]
     char small[HTTP_SMALL_MAX];
@@ -96,6 +98,11 @@ static char text[256];                      // a response's text, built before t
 //--------------------------------------------------------------------+
 // firmware update hooks: refuse until the ota code exists
 //--------------------------------------------------------------------+
+
+__attribute__((weak)) size_t ota_space(void)
+{
+    return SIZE_MAX;
+}
 
 __attribute__((weak)) bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
 {
@@ -276,6 +283,10 @@ static void conn_release(http_conn_t *c)
         page_owner = NULL;
     if (upload_owner == c)
         upload_owner = NULL;
+    if (c->held) {
+        pbuf_free(c->held);
+        c->held = NULL;
+    }
     c->pcb = NULL;
     c->phase = CONN_FREE;
 }
@@ -848,10 +859,39 @@ static bool feed(http_conn_t *c, uint8_t const *data, size_t len)
 // lwip callbacks
 //--------------------------------------------------------------------+
 
+static bool must_wait(http_conn_t const *c, struct pbuf const *p)
+{
+    return (c->phase == CONN_UPLOAD) && !c->refused && (ota_space() < p->tot_len);
+}
+
+/**
+ * a chunk read: the window reopens chunk by chunk, so an upload streams and
+ * never piles up. first, though: a close with data not yet taken would be a
+ * reset
+ *
+ * @return false if the connection is gone
+ */
+static bool take(http_conn_t *c, struct pbuf *p)
+{
+    c->idle_polls = 0;
+    tcp_recved(c->pcb, p->tot_len);
+
+    for (struct pbuf *q = p; q; q = q->next) {
+        if (!feed(c, q->payload, q->len)) {
+            pbuf_free(p);
+            return false;
+        }
+        if (c->phase == CONN_FREE)
+            break;      // closed cleanly: the pcb is no longer ours
+    }
+
+    pbuf_free(p);
+    return true;
+}
+
 static err_t on_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
 {
     http_conn_t *c = arg;
-    u16_t total;
 
     if (!c) {
         if (p) {
@@ -875,23 +915,20 @@ static err_t on_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
         return err;
     }
 
-    // the window reopens chunk by chunk, so an upload streams and never piles
-    // up. first: a close with data not yet taken would be a reset
     c->idle_polls = 0;
-    total = p->tot_len;
-    tcp_recved(pcb, total);
 
-    for (struct pbuf *q = p; q; q = q->next) {
-        if (!feed(c, q->payload, q->len)) {
-            pbuf_free(p);
-            return ERR_ABRT;
-        }
-        if (c->phase == CONN_FREE)
-            break;      // closed cleanly: the pcb is no longer ours
+    // an upload goes no faster than the flash takes it: a chunk that does not
+    // fit yet waits here, unacknowledged, which keeps the tcp window shut
+    // until http_server_task() hands it on. anything later queues behind it
+    if (c->held) {
+        pbuf_cat(c->held, p);
+        return ERR_OK;
     }
-
-    pbuf_free(p);
-    return ERR_OK;
+    if (must_wait(c, p)) {
+        c->held = p;
+        return ERR_OK;
+    }
+    return take(c, p) ? ERR_OK : ERR_ABRT;
 }
 
 static err_t on_sent(void *arg, struct tcp_pcb *pcb, u16_t len)
@@ -979,6 +1016,29 @@ static err_t on_accept(void *arg, struct tcp_pcb *pcb, err_t err)
     tcp_poll(pcb, on_poll, HTTP_POLL_INTERVAL);
     tcp_setprio(pcb, TCP_PRIO_MIN);
     return ERR_OK;
+}
+
+void http_server_task(void)
+{
+    bool waiting = false;
+
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++)
+        if (conns[i].held)
+            waiting = true;
+    if (!waiting)
+        return;
+
+    cyw43_arch_lwip_begin();
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
+        http_conn_t *c = &conns[i];
+        struct pbuf *p = c->held;
+
+        if (!p || must_wait(c, p))
+            continue;
+        c->held = NULL;
+        take(c, p);
+    }
+    cyw43_arch_lwip_end();
 }
 
 bool http_server_start(void)

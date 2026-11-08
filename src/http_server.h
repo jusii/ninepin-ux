@@ -32,6 +32,12 @@
 bool http_server_start(void);
 
 /**
+ * @brief Hand an upload's held-back data on once the update side has room for
+ *        it. Main loop (takes the lwip lock itself).
+ */
+void http_server_task(void);
+
+/**
  * @brief The token the page's forms carry (a per-boot random value).
  */
 char const *http_server_token(void);

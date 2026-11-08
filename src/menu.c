@@ -31,6 +31,7 @@
 #include "platform/amiga/keyboard.h"
 #include "platform/amiga/de9.h"
 #include "platform/amiga/keyboard_recv.h"
+#include "ota.h"
 #include "settings.h"
 #include "settings_names.h"
 #include "util/debug_cons.h"
@@ -84,6 +85,9 @@ static void action_bt_forget(void);
 static void action_page_password_show(void);
 static void action_page_password_new(void);
 #endif
+#ifdef HAS_OTA
+static void action_previous_firmware(void);
+#endif
 
 #define CHOICE(label, field, names, visible) \
     { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, false }
@@ -133,6 +137,9 @@ static const menu_item_t items[] = {
     ACTION("New page password", action_page_password_new),
 #endif
     CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
+#ifdef HAS_OTA
+    ACTION("Previous firmware", action_previous_firmware),
+#endif
     ACTION("Factory defaults",  action_defaults),
     ACTION("Save & exit",       action_save),
     ACTION("Cancel",            action_cancel),
@@ -423,6 +430,32 @@ static void action_page_password_new(void)
     memcpy(edited.page_password, settings_get()->page_password, sizeof(edited.page_password));
     snprintf(page_password_notice, sizeof(page_password_notice), "new: %s", settings_get()->page_password);
     notice = page_password_notice;
+}
+#endif
+
+#ifdef HAS_OTA
+/**
+ * back to the firmware before the last update, if it was saved; asks twice
+ */
+static void action_previous_firmware(void)
+{
+    static char message[MENU_COLS + 1];
+    uint32_t now = now_ms();
+
+    if (!ota_previous_available()) {
+        notice = "no previous firmware";
+        return;
+    }
+    if (confirm_since && ((uint32_t)(now - confirm_since) < MENU_CONFIRM_MS)) {
+        confirm_since = 0;
+        notice = "restarting...";
+        draw();
+        ota_boot_previous(message, sizeof(message));
+        notice = message;   // only reached when it did not happen
+        return;
+    }
+    confirm_since = now;
+    notice = "select again: restart";
 }
 #endif
 

@@ -26,6 +26,7 @@
 #include "bt_hid.h"
 #endif
 #include "menu.h"
+#include "ota.h"
 #include "pad.h"
 #include "platform/amiga/de9.h"
 #include "settings.h"
@@ -50,6 +51,7 @@ static void cmd_pads(char const *arg);
 static void cmd_ports(char const *arg);
 static void cmd_hang(char const *arg);
 static void cmd_wifi(char const *arg);
+static void cmd_ota(char const *arg);
 
 typedef struct {
     char const *name;
@@ -69,6 +71,7 @@ static const console_cmd_t commands[] = {
     { "bt",       cmd_bt,       "bt [pair|forget]: bluetooth state, bonds; open pairing 2 min; forget all bonds" },
     { "pads",     cmd_pads,     "pads, players and what goes out" },
     { "wifi",     cmd_wifi,     "wifi [off|ap|join <ssid> [password]]: wi-fi state, page password; set the mode" },
+    { "ota",      cmd_ota,      "ota [previous]: firmware slots and updates; restart into the previous firmware" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
@@ -330,6 +333,31 @@ void console_cmd_task(void)
         }
     }
     ahprintf("unknown command; try help\n");
+}
+
+
+static void cmd_ota(char const *arg)
+{
+#ifdef HAS_OTA
+    char message[64];
+
+    if (strcmp(arg, "previous") == 0) {
+        if (!ota_boot_previous(message, sizeof(message)))
+            ahprintf("not done: %s\n", message);
+        return;
+    }
+    if (*arg) {
+        ahprintf("ota [previous]\n");
+        return;
+    }
+    ahprintf("update: %s\n", ota_status());
+    ahprintf("this firmware: %s\n", ota_trial() ? "on trial (accepts itself 10 s after boot)" : "accepted");
+    ahprintf("previous firmware: %s\n", ota_previous_available() ? "can be booted again (ota previous)" : "none");
+    ahprintf("updates need BOOT: %s\n", settings_get()->ota_needs_boot ? "yes" : "no");
+#else
+    (void)arg;
+    ahprintf("updates: not in this build\n");
+#endif
 }
 
 #endif // HAS_USB_DEVICE
