@@ -166,7 +166,7 @@
 // host must not take pio0, which keyboard_recv owns.
 #  define HAS_PIO_USB_HOST
 #  define PIO_USB_DP_PIN    26  // pio_dp (D- is always DP+1 for pio-usb)
-#  define PIO_USB_PIO       2   // pio2, all of it: pio0 = keyboard_recv; ws2812 and cyw43 claim free sms in pio0/pio1
+#  define PIO_USB_PIO       2   // pio2, all of it: pio0 = keyboard_recv; the ws2812 skips this pio (status_led.c), cyw43 finds it full
 // pio-usb bit-bangs full speed and needs clk_sys at a multiple of 12 MHz; the
 // rp2350's 150 MHz default is not one. main() sets this before anything derives
 // a divider from clk_sys (every pio, i2c and adc divider in this tree is computed

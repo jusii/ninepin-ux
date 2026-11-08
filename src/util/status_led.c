@@ -92,6 +92,43 @@ static inline bool status_led_any_source(void)
 
 #ifdef HAS_STATUS_WS2812
 /**
+ * claim a state machine and room for the ws2812 program on one pio, lowest
+ * numbered first. the sdk's pio_claim_free_sm_and_add_program_for_gpio_range()
+ * searches from the highest pio down, which on the rp2350 is pio2: the pio the
+ * usb host (PIO_USB_PIO) needs whole, all 32 instructions and sms 0-2, and
+ * claims later in boot with a panic if any of it is taken. so that pio is
+ * skipped here, and the keyboard receiver shares pio0 or pio1 with the led.
+ *
+ * @return true if the program is loaded and a state machine claimed
+ */
+static bool status_led_rgb_claim(void)
+{
+    for (uint pio_num = 0; pio_num < NUM_PIOS; pio_num++) {
+        PIO pio = pio_get_instance(pio_num);
+        int sm;
+
+#ifdef HAS_PIO_USB_HOST
+        if (pio_num == PIO_USB_PIO)
+            continue;
+#endif
+
+        if (!pio_can_add_program(pio, &ws2812_program))
+            continue;
+
+        sm = pio_claim_unused_sm(pio, false);
+        if (sm < 0)
+            continue;
+
+        rgb_pio = pio;
+        rgb_sm = (uint)sm;
+        rgb_offset = pio_add_program(pio, &ws2812_program);
+        return true;
+    }
+
+    return false;
+}
+
+/**
  * send one grb frame, unless it is already on display or the previous frame has
  * not latched yet; a deferred frame goes out on a later pass of the task.
  */
@@ -148,11 +185,11 @@ void status_led_init(void)
     gpio_set_dir(LED_STATUS2, GPIO_OUT);
     gpio_put(LED_STATUS2, STATUS_LED_OFF);
 #else
-    // any pio with a free sm and room for four instructions; this runs before
-    // the keyboard receiver and the cyw43 driver claim theirs. a status led is
-    // not worth a boot panic, so if there is no room the led just stays dark
-    if (!pio_claim_free_sm_and_add_program_for_gpio_range(&ws2812_program,
-            &rgb_pio, &rgb_sm, &rgb_offset, LED_STATUS_WS2812, 1, true)) {
+    // a pio other than the usb host's with a free sm and room for four
+    // instructions; this runs before the keyboard receiver and the cyw43
+    // driver claim theirs. a status led is not worth a boot panic, so if there
+    // is no room the led just stays dark
+    if (!status_led_rgb_claim()) {
         rgb_pio = NULL;
     } else {
         ws2812_program_init(rgb_pio, rgb_sm, rgb_offset, LED_STATUS_WS2812);
