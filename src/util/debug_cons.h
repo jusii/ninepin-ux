@@ -61,6 +61,12 @@ void dbgcons_amiga_power(bool on);
  */
 void dbgcons_usb_c(char const *state, uint32_t iox_attempts);
 
+/**
+ * bring-up breadcrumb (AHP_BRINGUP builds): the text on oled line 3 and the
+ * console; blocks ~40 ms so the frame is on the panel before the caller moves on.
+ */
+void dbgcons_boot_stage(char const *stage);
+
 void dbgcons_bt_status(char const *status);
 
 void dbgcons_bt_passkey(char const *message);

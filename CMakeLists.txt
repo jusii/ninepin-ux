@@ -84,6 +84,15 @@ if (DEBUG_HID_STATUS)
 	add_compile_definitions(DEBUG_HID_STATUS=1)
 endif ()
 
+# board bring-up aids (boards with a usb device port): the usb console served
+# from a timer irq from the top of main(), oled boot-stage breadcrumbs, and a
+# hard-fault / watchdog trap that reports on the next boot. the console comes up
+# without waiting for vbus sense, so only use it on a board powered from usb-c
+option(AHP_BRINGUP "Enable board bring-up diagnostics" OFF)
+if (AHP_BRINGUP)
+	add_compile_definitions(USB_DEVICE_BRINGUP_SERVICE=1)
+endif ()
+
 # real amiga keyboard input timings (milliseconds), for bench tuning; see
 # src/platform/amiga/keyboard_recv.c for the defaults and what they mean
 if (KBDIN_RESET_HOLD_MS)

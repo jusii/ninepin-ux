@@ -17,6 +17,8 @@
 #include "tusb.h"
 
 #ifdef HAS_PIO_USB_HOST
+#include <stdio.h>
+
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
@@ -96,6 +98,163 @@ static void amiga_power_task(void)
 }
 #endif
 
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+#include "hardware/watchdog.h"
+#include "hardware/structs/watchdog.h"
+
+/*
+ * BRING-UP ONLY: catch whatever stops the cpu during init. a hard fault records
+ * where it hit in the watchdog scratch registers (they survive a watchdog
+ * reboot) and reboots through the watchdog; a TRAP_WDT_MS watchdog, fed from
+ * the bring-up timer irq, covers interrupts stopping without a fault. the next
+ * boot shows the report on the oled and stops there.
+ *
+ * scratch0: [31:20] TRAP_MAGIC, [19] fault, [16:9] boot stage number,
+ *           [8:0] exception number active when the fault hit (0 = thread)
+ * scratch1: stacked pc   scratch2: stacked lr   scratch3: cfsr
+ */
+#define TRAP_MAGIC      0xB0Bu
+#define TRAP_FAULT_BIT  (1u << 19)
+#define TRAP_WDT_MS     300
+
+static volatile uint32_t boot_stage_count;
+static uint32_t trap_report[4];
+static bool trap_pending;
+
+/**
+ * a thread-mode fault returns here instead of rebooting, with interrupts on:
+ * the bring-up irq keeps the usb console alive, so whatever panic() printed
+ * before it hit its breakpoint still reaches the host.
+ */
+static void __attribute__((noreturn)) __not_in_flash_func(trap_park)(void)
+{
+    __asm volatile("cpsie i");
+    ahprintf("\n[trap] parked after a thread-mode fault: pc %08lx lr %08lx\n",
+        (unsigned long)watchdog_hw->scratch[1], (unsigned long)watchdog_hw->scratch[2]);
+    disp_write(0, 3, "PARKED: see console  ");
+    for (;;)
+        __asm volatile("wfi");
+}
+
+void __attribute__((used)) __not_in_flash_func(trap_hardfault_c)(uint32_t *frame)
+{
+    watchdog_hw->scratch[0] = (TRAP_MAGIC << 20) | TRAP_FAULT_BIT
+        | ((boot_stage_count & 0xffu) << 9) | (frame[7] & 0x1ffu);
+    watchdog_hw->scratch[1] = frame[6];
+    watchdog_hw->scratch[2] = frame[5];
+    watchdog_hw->scratch[3] = *(volatile uint32_t *)0xE000ED28u;   // cfsr
+
+    // thread mode (a panic's breakpoint, say): return into trap_park() with
+    // interrupts on rather than reboot, so the console can still talk
+    if ((frame[7] & 0x1ffu) == 0) {
+        frame[6] = (uint32_t)&trap_park & ~1u;
+        frame[7] = 0x01000000u;     // thumb, no exception
+        return;
+    }
+
+    // the watchdog (armed at boot, so psm wdsel is set) reboots the chip
+    // without clearing the scratch registers
+    watchdog_hw->ctrl |= WATCHDOG_CTRL_TRIGGER_BITS;
+    for (;;)
+        ;
+}
+
+void __attribute__((naked)) __not_in_flash_func(isr_hardfault)(void)
+{
+    __asm volatile(
+        "movs r0, #4        \n"
+        "mov  r1, lr        \n"
+        "tst  r0, r1        \n"
+        "beq  1f            \n"
+        "mrs  r0, psp       \n"
+        "b    trap_hardfault_c \n"
+        "1:                 \n"
+        "mrs  r0, msp       \n"
+        "b    trap_hardfault_c \n");
+}
+
+/**
+ * first thing in main(): pick up a report left by the previous run.
+ */
+static void trap_collect(void)
+{
+    uint32_t s0 = watchdog_hw->scratch[0];
+
+    if ((s0 >> 20) == TRAP_MAGIC && ((s0 & TRAP_FAULT_BIT) || watchdog_caused_reboot())) {
+        for (int i = 0; i < 4; i++)
+            trap_report[i] = watchdog_hw->scratch[i];
+        trap_pending = true;
+    }
+
+    watchdog_hw->scratch[0] = 0;
+}
+
+/**
+ * once the display is up: show a pending report and stop for good (console
+ * still served by the bring-up irq), or arm the watchdog for this run.
+ */
+static void trap_report_or_arm(void)
+{
+    char line[32];
+    uint32_t s0 = trap_report[0];
+
+    if (!trap_pending) {
+        watchdog_enable(TRAP_WDT_MS, true);
+        return;
+    }
+
+    watchdog_disable();
+
+    if (s0 & TRAP_FAULT_BIT) {
+        snprintf(line, sizeof(line), "%-21s", "FAULT");
+        disp_write(0, 0, line);
+        snprintf(line, sizeof(line), "p%08lx l%08lx", (unsigned long)trap_report[1], (unsigned long)trap_report[2]);
+        disp_write(0, 1, line);
+        snprintf(line, sizeof(line), "cfsr %08lx ex %lu   ", (unsigned long)trap_report[3], (unsigned long)(s0 & 0x1ffu));
+        disp_write(0, 2, line);
+    } else {
+        snprintf(line, sizeof(line), "%-21s", "WATCHDOG");
+        disp_write(0, 0, line);
+        snprintf(line, sizeof(line), "%-21s", "irqs stopped");
+        disp_write(0, 1, line);
+        snprintf(line, sizeof(line), "%-21s", "");
+        disp_write(0, 2, line);
+    }
+    snprintf(line, sizeof(line), "stage %-15lu", (unsigned long)((s0 >> 9) & 0xffu));
+    disp_write(0, 3, line);
+
+    ahprintf("[trap] %s s0 %08lx pc %08lx lr %08lx cfsr %08lx\n", (s0 & TRAP_FAULT_BIT) ? "fault" : "watchdog",
+        (unsigned long)s0, (unsigned long)trap_report[1], (unsigned long)trap_report[2], (unsigned long)trap_report[3]);
+
+    for (;;)
+        tight_loop_contents();
+}
+#endif
+
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+/**
+ * BRING-UP ONLY: oled breadcrumb "<stage> <ms since boot> <bring-up timer irqs>".
+ * the first number says whether the timer counts, the second whether alarm
+ * interrupts fire.
+ */
+static void boot_stage(char const *name)
+{
+    char buf[32];
+    uint32_t ticks = usb_device_bringup_ticks();
+
+    // the stage number, for the trap report if this run dies
+    boot_stage_count++;
+    watchdog_hw->scratch[0] = (TRAP_MAGIC << 20) | ((boot_stage_count & 0xffu) << 9);
+
+    snprintf(buf, sizeof(buf), "%-9.9s%5lu %5lu", name,
+        (unsigned long)(time_us_32() / 1000u) % 100000u, (unsigned long)ticks % 100000u);
+    dbgcons_boot_stage(buf);
+}
+#else
+// bring-up breadcrumbs compile away in a normal build
+#define boot_stage(name) do { } while (0)
+#endif
+
 #ifdef HAS_USB_DEVICE
 /**
  * show the usb-c device port's state on the oled whenever it changes: whether
@@ -168,6 +327,10 @@ static void board_controls_task(void)
 // main entry point
 int main(void)
 {
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+    trap_collect();
+#endif
+
 #ifdef HAS_PIO_USB_HOST
     // pio-usb needs clk_sys at a multiple of 12 MHz. first thing, so that every
     // divider computed from clock_get_hz(clk_sys) below (i2c, ws2812, keyboard
@@ -179,6 +342,9 @@ int main(void)
     // no tinyusb bsp here (its board_init() would set its own clock and pio-usb
     // pins); just route stdout into the cdc console buffer
     usb_device_init();
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+    usb_device_bringup_service_start();
+#endif
 #else
     // tinyusb board init; led, uart, button, usb
     board_init();
@@ -207,8 +373,14 @@ int main(void)
     dbgcons_amiga_power(amiga_sense_is_on());
 #endif
 
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+    trap_report_or_arm();
+#endif
+    boot_stage("init");
+
     // initialise the usb host stack on the rhport from tusb_config.h, first
     // pointing the usb mux (on boards with one) at the host port
+    boot_stage("usb host");
 #ifdef HAS_PIO_USB_HOST
     pio_usb_host_configure();
 #endif
@@ -217,6 +389,7 @@ int main(void)
         .role = TUSB_ROLE_HOST,
         .speed = TUH_OPT_HIGH_SPEED ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL,
     };
+    boot_stage("tuh init");
     tusb_init(BOARD_TUH_RHPORT, &rhport_init);
 
     // the device role (boards with HAS_USB_DEVICE) is brought up from the main
@@ -224,6 +397,7 @@ int main(void)
 
     // we're single arch right now, but in future this should hand off to whatever the
     // configured arch is
+    boot_stage("amiga io");
 #ifdef HAS_AMIGA_SENSE
     // claim the lines now, greet the amiga only once it is seen to be on (and
     // again every time it comes back on); the greeting no longer blocks
@@ -236,9 +410,11 @@ int main(void)
     amiga_init();
 #endif
 
+    boot_stage("mouse");
     // start amiga mouse emulation
     amiga_quad_mouse_init();
 
+    boot_stage("kbd in");
 #ifdef HAS_KBD_IN
     // start receiving from a physically attached real amiga keyboard
     amiga_keyboard_recv_init();
@@ -248,13 +424,23 @@ int main(void)
     bt_hid_init();
 #endif
 
+    boot_stage("loop");
+
+    // bring-up breadcrumbs through the first pass of the loop only
+    bool first_pass = true;
+#define LOOP_STAGE(name) do { if (first_pass) boot_stage(name); } while (0)
+
     while (1) {
+        LOOP_STAGE("L tuh");
         // run host mode jobs (hotplug events, packet io callbacks)
         tuh_task();
 
 #ifdef HAS_USB_DEVICE
+        LOOP_STAGE("L usbd");
         // device mode jobs on the usb-c port, which follows its vbus
+#ifndef USB_DEVICE_BRINGUP_SERVICE
         usb_device_task(io_expander_vbus_present());
+#endif
         usb_c_status_task();
 #endif
 
@@ -263,25 +449,35 @@ int main(void)
 #endif
 
 #ifdef HAS_KBD_IN
+        LOOP_STAGE("L kbd");
         // drain + inject any keycodes from the real amiga keyboard
         amiga_keyboard_recv_task();
 #endif
 
 #ifdef HAS_AMIGA_SENSE
+        LOOP_STAGE("L power");
         // greet or forget the amiga as it is switched on and off
         amiga_power_task();
 #endif
 
+        LOOP_STAGE("L kbd svc");
         // amiga keyboard service routine
         amiga_service();
 
 #if defined(HAS_IO_EXPANDER) || defined(HAS_USER_BUTTON)
+        LOOP_STAGE("L ctl");
         // encoder, vbus sense and the BOOT button
         board_controls_task();
 #endif
 
+        LOOP_STAGE("L led");
         // advance the status indicators
         status_led_task();
+
+        if (first_pass) {
+            boot_stage("ok");
+            first_pass = false;
+        }
     }
 
     return 0;

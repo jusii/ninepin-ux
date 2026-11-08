@@ -62,6 +62,22 @@ void usb_device_init(void);
  */
 void usb_device_task(bool vbus_present);
 
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+/**
+ * @brief BRING-UP ONLY: bring the device stack up now, without waiting for
+ *        vbus sense, and run usb_device_task() from a 1 ms high-priority timer
+ *        interrupt instead of the main loop, so the cdc console keeps working
+ *        while main() is stuck in init. The main loop must not also call
+ *        usb_device_task(). Only for a board powered from usb-c alone.
+ */
+void usb_device_bringup_service_start(void);
+
+/**
+ * @return how many times the bring-up timer interrupt has run
+ */
+uint32_t usb_device_bringup_ticks(void);
+#endif
+
 /**
  * @return true whilst a host has the device configured
  */

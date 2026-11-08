@@ -11,6 +11,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "pico/stdlib.h"
+#include "hardware/clocks.h"
+
 #include "config.h"
 #include "debug_cons.h"
 #include "display/disp_ssd.h"
@@ -346,6 +349,25 @@ void dbgcons_amiga_power(bool on)
     dbgcons_status_line();
 #else
     (void)on;
+#endif
+}
+
+void dbgcons_boot_stage(char const *stage)
+{
+    // bring-up breadcrumb on oled line 3: the last one shown is where boot
+    // stopped. the wait lets the frame (~25 ms at 400 kHz) reach the panel
+    // before the next step runs, in case that step never returns
+#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
+    char linebuf[DBGCONS_OLED_COLS + 1] = "";
+
+    snprintf(linebuf, sizeof(linebuf), "%s", stage != NULL ? stage : "?");
+    dbgcons_write_padded_line(3, linebuf);
+    ahprintf("[boot] %s\n", stage != NULL ? stage : "?");
+
+    // a cycle loop, not sleep_ms(): the wait must not depend on timer alarms
+    busy_wait_at_least_cycles(clock_get_hz(clk_sys) / 25);
+#else
+    (void)stage;
 #endif
 }
 

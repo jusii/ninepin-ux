@@ -264,6 +264,50 @@ void usb_device_task(bool vbus_present)
     hid_flush();
 }
 
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+#include "hardware/irq.h"
+#include "hardware/timer.h"
+#include "hardware/watchdog.h"
+#include "pico/time.h"
+
+// above the default 0x80, so the console is served even from under a stuck
+// default-priority handler
+#define BRINGUP_IRQ_PRIORITY 0x40
+
+static alarm_pool_t *bringup_pool;
+static repeating_timer_t bringup_timer;
+
+static volatile uint32_t bringup_ticks;
+
+static bool bringup_service_cb(repeating_timer_t *rt)
+{
+    (void)rt;
+    bringup_ticks++;
+    watchdog_update();
+    usb_device_task(true);
+    return true;
+}
+
+uint32_t usb_device_bringup_ticks(void)
+{
+    return bringup_ticks;
+}
+
+void usb_device_bringup_service_start(void)
+{
+    // stack up from thread context first
+    usb_device_task(true);
+    irq_set_priority(USBCTRL_IRQ, BRINGUP_IRQ_PRIORITY);
+
+    bringup_pool = alarm_pool_create_with_unused_hardware_alarm(2);
+    irq_set_priority(hardware_alarm_get_irq_num(alarm_pool_hardware_alarm_num(bringup_pool)),
+        BRINGUP_IRQ_PRIORITY);
+    alarm_pool_add_repeating_timer_ms(bringup_pool, 1, bringup_service_cb, NULL, &bringup_timer);
+
+    ahprintf("[usbd] bring-up service: console served from a timer irq\n");
+}
+#endif
+
 bool usb_device_mounted(void)
 {
     return stack_up && tud_mounted();
