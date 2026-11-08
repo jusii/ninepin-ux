@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * runtime output mode.
+ * runtime mode: which machine the board serves (see run_mode.h).
  */
 
 #include "config.h"
@@ -21,7 +21,11 @@
 #include "util/output.h"
 #include "util/status_led.h"
 
-static run_mode_t current_mode = RUN_MODE_AMIGA_OUTPUT;
+_Static_assert((RUN_MODE_AMIGA == (int)SETTINGS_MODE_AMIGA) && (RUN_MODE_C64 == (int)SETTINGS_MODE_C64)
+    && (RUN_MODE_USB == (int)SETTINGS_MODE_USB) && (RUN_MODE_COUNT == (int)SETTINGS_MODE_COUNT),
+    "run modes and settings modes must be numbered alike");
+
+static run_mode_t current_mode = RUN_MODE_AMIGA;
 
 run_mode_t run_mode_get(void)
 {
@@ -31,67 +35,80 @@ run_mode_t run_mode_get(void)
 char const *run_mode_name(run_mode_t mode)
 {
     switch (mode) {
-        case RUN_MODE_AMIGA_OUTPUT:             return "amiga";
-        case RUN_MODE_USB_DEVICE_PASSTHROUGH:   return "usb-dev";
-        default:                                return "?";
+        case RUN_MODE_AMIGA:    return "amiga";
+        case RUN_MODE_C64:      return "c64";
+        case RUN_MODE_USB:      return "usb";
+        default:                return "?";
     }
 }
 
-void run_mode_set(run_mode_t mode)
+bool run_mode_keyboard_usb(run_mode_t mode)
 {
-    if ((mode >= RUN_MODE_COUNT) || (mode == current_mode))
-        return;
+    return mode != RUN_MODE_AMIGA;
+}
 
-    // let go of everything on the side we are leaving
-    switch (current_mode) {
-        case RUN_MODE_AMIGA_OUTPUT:
-            input_bridge_release_all();
-            break;
-        case RUN_MODE_USB_DEVICE_PASSTHROUGH:
-            usb_device_release_all();
-            break;
-        default:
-            break;
-    }
+bool run_mode_mouse_usb(run_mode_t mode)
+{
+    // c64 mode moves the mouse to a de9 port once one is set to 1351
+    return mode != RUN_MODE_AMIGA;
+}
 
-    // the real amiga keyboard keeps its own record of what it holds where
-    amiga_keyboard_recv_mode_changed(current_mode, mode);
-
-    current_mode = mode;
-
-    status_led_mode(mode != RUN_MODE_AMIGA_OUTPUT);
-    dbgcons_mode(run_mode_name(mode));
-    ahprintf("[mode] output to %s\n", run_mode_name(mode));
-
-    run_mode_remember(mode);
+bool run_mode_pads_usb(run_mode_t mode)
+{
+    return mode == RUN_MODE_USB;
 }
 
 /**
  * keep the mode across power cycles. a save is a flash write, so it only
  * happens when the stored mode actually differs.
  */
-static enum settings_mode settings_mode_for(run_mode_t mode)
-{
-    return (mode == RUN_MODE_USB_DEVICE_PASSTHROUGH) ? SETTINGS_MODE_USB : SETTINGS_MODE_AMIGA;
-}
-
-void run_mode_remember(run_mode_t mode)
+static void run_mode_remember(run_mode_t mode)
 {
     settings_t settings = *settings_get();
 
-    if (settings.mode == settings_mode_for(mode))
+    if (settings.mode == (uint8_t)mode)
         return;
 
-    settings.mode = (uint8_t)settings_mode_for(mode);
+    settings.mode = (uint8_t)mode;
     if (!settings_save(&settings))
         ahprintf("[mode] could not save the mode\n");
 }
 
+void run_mode_set(run_mode_t mode)
+{
+    run_mode_t old = current_mode;
+
+    if ((mode >= RUN_MODE_COUNT) || (mode == old))
+        return;
+
+    // let go of everything on whatever stops receiving. the amiga side holds
+    // keyboard and mouse state together (input_bridge), so either moving away
+    // releases both; the usb-c side likewise
+    if ((!run_mode_keyboard_usb(old) && run_mode_keyboard_usb(mode))
+        || (!run_mode_mouse_usb(old) && run_mode_mouse_usb(mode)))
+        input_bridge_release_all();
+
+    if ((run_mode_keyboard_usb(old) && !run_mode_keyboard_usb(mode))
+        || (run_mode_mouse_usb(old) && !run_mode_mouse_usb(mode)))
+        usb_device_release_all();
+
+    // the real amiga keyboard keeps its own record of what it holds where
+    amiga_keyboard_recv_mode_changed(old, mode);
+
+    current_mode = mode;
+
+    status_led_mode(mode != RUN_MODE_AMIGA);
+    dbgcons_mode(run_mode_name(mode));
+    ahprintf("[mode] %s\n", run_mode_name(mode));
+
+    run_mode_remember(mode);
+}
+
 void run_mode_restore(void)
 {
-    // c64 is stored as itself; until it exists as a run mode it boots as amiga
-    run_mode_set((settings_get()->mode == SETTINGS_MODE_USB)
-        ? RUN_MODE_USB_DEVICE_PASSTHROUGH : RUN_MODE_AMIGA_OUTPUT);
+    uint8_t stored = settings_get()->mode;
+
+    run_mode_set((stored < RUN_MODE_COUNT) ? (run_mode_t)stored : RUN_MODE_AMIGA);
 }
 
 void run_mode_next(void)

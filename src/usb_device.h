@@ -15,7 +15,7 @@
  *     dtr, so nothing printed before the cable went in is lost (up to the
  *     buffer size).
  *   - hid keyboard, mouse and gamepad interfaces, fed by the input bridge in
- *     RUN_MODE_USB_DEVICE_PASSTHROUGH (util/run_mode.h).
+ *     the modes that route input to usb-c (util/run_mode.h).
  *
  * the D+ pull-up is only ever presented whilst the usb-c port has vbus (the
  * caller passes that in from the i/o expander): the device stack is not even

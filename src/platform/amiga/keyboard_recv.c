@@ -15,7 +15,7 @@
  * back autonomously. in amiga mode, decoded keycodes are pushed into the same
  * output queue the usb/bluetooth path feeds, so the amiga-facing transmitter
  * cannot tell a real keypress from a usb one. on boards with a usb device port,
- * usb-dev mode sends them to the usb host instead, as a hid keyboard merged with
+ * the c64 and usb modes send them to the usb host instead, as a hid keyboard merged with
  * the usb keyboards (see the routing section below).
  *
  * the amiga keyboard frame is the mirror of the transmit path in
@@ -104,7 +104,7 @@ static uint32_t clk_last_poll = 0;
 static bool kbd_reset_held = false;
 static bool kbd_reset_abandoned = false;
 
-// the hold seen in usb-dev mode: the keyboard belongs to the usb host then, so
+// the hold seen in a usb mode (c64, usb): the keyboard belongs to the usb host then, so
 // the amiga is left running and only the receiver and the keys are dealt with
 static bool kbd_reset_local = false;
 
@@ -117,7 +117,7 @@ static uint32_t recv_last_active = 0;
 //--------------------------------------------------------------------+
 // routing. the run mode decides where the real keyboard goes, as it does for
 // the usb keyboards: amiga mode keeps the direct path into amiga_send_rawkey(),
-// usb-dev (boards with a device port) builds a hid report for the keyboard's
+// the c64 and usb modes (boards with a device port) build a hid report for the keyboard's
 // own input slot, which usb_device.c merges with the usb keyboards.
 //--------------------------------------------------------------------+
 
@@ -267,7 +267,7 @@ static const uint8_t mapAmigaToHid[AMIGA_RAMIGA + 1] = {
 
 static inline bool kbdin_to_usb(void)
 {
-    return run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH;
+    return run_mode_keyboard_usb(run_mode_get());
 }
 
 /**
@@ -516,7 +516,7 @@ static void amiga_keyboard_recv_reset_task(void)
 
         if (kbd_reset_held) {
             // keyboard has let go of kclk: bring the amiga back out of reset
-            // (unless the hold was kept from it in usb-dev mode)
+            // (unless the hold was kept from it in a usb mode)
             kbd_reset_held = false;
             kbd_reset_abandoned = false;
             if (!kbd_reset_local) {
@@ -569,14 +569,14 @@ static void amiga_keyboard_recv_reset_task(void)
     kbd_reset_held = true;
 
     if (kbdin_to_usb()) {
-        // usb-dev: the keyboard belongs to the usb host, so the amiga keeps
+        // c64 / usb mode: the keyboard belongs to the usb host, so the amiga keeps
         // running. the keyboard is restarting all the same: let go of its keys
         // there and resynchronise the receiver once the hold is over (no reset
         // assertion edge will arm that)
         kbd_reset_local = true;
         resync_pending = true;
         kbdin_keyboard_restarting(true);
-        ahprintf("[akb] real keyboard held kclk low; usb-dev, amiga left running\n");
+        ahprintf("[akb] real keyboard held kclk low; %s mode, amiga left running\n", run_mode_name(run_mode_get()));
         return;
     }
 
@@ -621,7 +621,7 @@ void amiga_keyboard_recv_task(void)
 
             // ctrl-amiga-amiga: the amiga side has already acted on the key
             // events (amiga_send_rawkey's combo tracking, mirroring the usb
-            // path) and is resetting. in usb-dev the keys went to the usb host
+            // path) and is resetting. in the usb modes the keys went to the usb host
             // instead, which must not be left holding ctrl and both guis while
             // the keyboard restarts
             case AMIGA_RESET:
@@ -648,20 +648,27 @@ void amiga_keyboard_recv_task(void)
 
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to)
 {
+    bool usb_before = run_mode_keyboard_usb(from);
+    bool usb_after = run_mode_keyboard_usb(to);
+
+    // keyboards keep going where they went (c64 <-> usb): nothing to do
+    if (usb_before == usb_after)
+        return;
+
     // let go of the side being left; the new side starts from nothing
-    if (from == RUN_MODE_AMIGA_OUTPUT)
-        kbdin_amiga_release();
-    else
+    if (usb_before)
         kbdin_usb_release();
+    else
+        kbdin_amiga_release();
 
     // no keyboard seen yet: nothing says what its lamp shows, leave caps alone
     if (!kbd_seen)
         return;
 
     // the lamp is the truth; bring the side now receiving into line with it
-    if (to == RUN_MODE_USB_DEVICE_PASSTHROUGH)
+    if (usb_after)
         kbdin_usb_caps_sync(false);
-    else if ((to == RUN_MODE_AMIGA_OUTPUT) && (amiga_caps_lock() != caps_lamp))
+    else if (amiga_caps_lock() != caps_lamp)
         amiga_send_rawkey(AMIGA_CAPSLOCK, !caps_lamp);
 }
 

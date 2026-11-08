@@ -5,29 +5,37 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * runtime output mode: where keyboard and mouse input goes.
+ * runtime mode: which machine the board serves, and so where each kind of
+ * input goes.
  *
- *   RUN_MODE_AMIGA_OUTPUT            - the amiga keyboard and mouse port (default,
- *                                      and the only mode on boards without
- *                                      HAS_USB_DEVICE)
- *   RUN_MODE_USB_DEVICE_PASSTHROUGH  - the usb-c device port, as a usb keyboard
- *                                      and mouse for another host (e.g. a
- *                                      commodore 64 ultimate)
+ *   RUN_MODE_AMIGA  keyboards to the amiga keyboard port, the mouse and pads to
+ *                   the de9 ports (the default, and the only mode on boards
+ *                   without HAS_USB_DEVICE)
+ *   RUN_MODE_C64    keyboards and the mouse to the usb-c device port (a
+ *                   commodore 64 ultimate takes those over usb), pads to the
+ *                   de9 ports as c64 joysticks
+ *   RUN_MODE_USB    everything to the usb-c device port, for a pc or any other
+ *                   usb host
  *
- * switching releases everything held on the side being left, so no key or
- * button stays down on a machine that stops receiving reports. the mode is not
- * persisted; every boot starts in RUN_MODE_AMIGA_OUTPUT.
+ * code asks the routing questions below rather than comparing modes. a switch
+ * releases everything held on whatever stops receiving, so no key, button or
+ * direction stays down on a machine that no longer gets reports. the mode is
+ * kept in the settings and restored at boot.
  */
 
 #ifndef _UTIL_RUN_MODE_H
 #define _UTIL_RUN_MODE_H
 
+#include <stdbool.h>
+
 #include "config.h"
 
+// numbered like enum settings_mode (run_mode.c asserts it)
 typedef enum
 {
-    RUN_MODE_AMIGA_OUTPUT = 0,
-    RUN_MODE_USB_DEVICE_PASSTHROUGH,
+    RUN_MODE_AMIGA = 0,
+    RUN_MODE_C64,
+    RUN_MODE_USB,
     RUN_MODE_COUNT
 } run_mode_t;
 
@@ -39,8 +47,8 @@ typedef enum
 run_mode_t run_mode_get(void);
 
 /**
- * @brief Switch mode, releasing whatever the old destination still holds, and
- *        update the status led and the display.
+ * @brief Switch mode, releasing whatever the old destinations still hold,
+ *        update the status led and the display, and remember the mode.
  */
 void run_mode_set(run_mode_t mode);
 
@@ -55,25 +63,37 @@ void run_mode_next(void);
 char const *run_mode_name(run_mode_t mode);
 
 /**
- * @brief Store the mode in the settings if it differs from the stored one
- *        (run_mode_set() does this itself).
- */
-void run_mode_remember(run_mode_t mode);
-
-/**
  * @brief Switch to the mode the settings remember. Call once at boot, after
  *        settings_init() and once everything a mode switch touches is up.
  */
 void run_mode_restore(void);
 
+/**
+ * @return true if keyboards go to the usb-c port in this mode (else the amiga)
+ */
+bool run_mode_keyboard_usb(run_mode_t mode);
+
+/**
+ * @return true if the mouse goes to the usb-c port in this mode (else a de9
+ *         port)
+ */
+bool run_mode_mouse_usb(run_mode_t mode);
+
+/**
+ * @return true if pads go to the usb-c port in this mode (else the de9 ports)
+ */
+bool run_mode_pads_usb(run_mode_t mode);
+
 #else
 
-static inline run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA_OUTPUT; }
+static inline run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA; }
 static inline void run_mode_set(run_mode_t mode) { (void)mode; }
 static inline void run_mode_next(void) {}
 static inline char const *run_mode_name(run_mode_t mode) { (void)mode; return "amiga"; }
-static inline void run_mode_remember(run_mode_t mode) { (void)mode; }
 static inline void run_mode_restore(void) {}
+static inline bool run_mode_keyboard_usb(run_mode_t mode) { (void)mode; return false; }
+static inline bool run_mode_mouse_usb(run_mode_t mode) { (void)mode; return false; }
+static inline bool run_mode_pads_usb(run_mode_t mode) { (void)mode; return false; }
 
 #endif // HAS_USB_DEVICE
 

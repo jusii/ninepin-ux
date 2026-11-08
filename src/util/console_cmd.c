@@ -44,7 +44,7 @@ static const console_cmd_t commands[] = {
     { "help",     cmd_help,     "this list" },
     { "info",     cmd_info,     "firmware, chip and boot slot" },
     { "settings", cmd_settings, "the settings in effect" },
-    { "mode",     cmd_mode,     "mode amiga|usb: switch and remember the output mode" },
+    { "mode",     cmd_mode,     "mode amiga|c64|usb: switch and remember the mode" },
     { "defaults", cmd_defaults, "store the factory defaults" },
     { "reboot",   cmd_reboot,   "restart the board" },
     { "bootsel",  cmd_bootsel,  "restart into the usb bootloader (BOOTSEL)" },
@@ -95,15 +95,14 @@ static void cmd_settings(char const *arg)
 
 static void cmd_mode(char const *arg)
 {
-    if (strcmp(arg, "amiga") == 0) {
-        run_mode_set(RUN_MODE_AMIGA_OUTPUT);
-    } else if (strcmp(arg, "usb") == 0) {
-        run_mode_set(RUN_MODE_USB_DEVICE_PASSTHROUGH);
-    } else {
-        ahprintf("mode amiga|usb\n");
-        return;
+    for (unsigned mode = 0; mode < RUN_MODE_COUNT; mode++) {
+        if (strcmp(arg, run_mode_name((run_mode_t)mode)) == 0) {
+            run_mode_set((run_mode_t)mode);
+            ahprintf("mode %s, stored %s\n", run_mode_name(run_mode_get()), mode_names[settings_get()->mode]);
+            return;
+        }
     }
-    ahprintf("mode %s, stored %s\n", run_mode_name(run_mode_get()), mode_names[settings_get()->mode]);
+    ahprintf("mode amiga|c64|usb\n");
 }
 
 static void cmd_defaults(char const *arg)

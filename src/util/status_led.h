@@ -84,7 +84,7 @@ void status_led_activity(void);
  *
  * Only a ws2812 board can show it (its red channel); two-led boards ignore it.
  *
- * @param alternate true for any run mode other than RUN_MODE_AMIGA_OUTPUT
+ * @param alternate true for any run mode other than RUN_MODE_AMIGA
  */
 void status_led_mode(bool alternate);
 

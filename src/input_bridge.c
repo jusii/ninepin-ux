@@ -146,7 +146,7 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
 #ifdef HAS_USB_DEVICE
     // passthrough hands the report on untouched; the amiga-side state stays
     // empty, so switching back starts from nothing held
-    if (run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH) {
+    if (run_mode_keyboard_usb(run_mode_get())) {
         usb_device_keyboard(slot, report);
         status_led_activity();
         return;
@@ -178,7 +178,7 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
         return;
 
 #ifdef HAS_USB_DEVICE
-    if (run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH) {
+    if (run_mode_mouse_usb(run_mode_get())) {
         usb_device_mouse(slot, report);
         status_led_activity();
         return;
