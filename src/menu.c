@@ -37,10 +37,14 @@
 #ifdef HAS_USB_DEVICE
 #include "usb_device.h"
 #endif
+#ifdef ENABLE_BLUETOOTH_HID
+#include "bt_hid.h"
+#endif
 
 #define MENU_HOLD_OPEN_MS       1000    // help held this long opens the menu
 #define MENU_DOUBLE_PRESS_MS    500     // two BOOT presses this close open it
 #define MENU_ENCODER_LEAVE_MS   1000    // the encoder switch held this long leaves
+#define MENU_CONFIRM_MS         5000    // a second select this soon confirms
 
 //--------------------------------------------------------------------+
 // the items
@@ -89,6 +93,10 @@ static bool visible_c64(void) { return edited.mode == SETTINGS_MODE_C64; }
 static void action_defaults(void);
 static void action_save(void);
 static void action_cancel(void);
+#ifdef ENABLE_BLUETOOTH_HID
+static void action_bt_pair(void);
+static void action_bt_forget(void);
+#endif
 
 #define CHOICE(label, field, names, visible) \
     { label, ITEM_CHOICE, offsetof(settings_t, field), count_of(names), names, visible, NULL, 0, false }
@@ -128,6 +136,10 @@ static const menu_item_t items[] = {
     CHOICE("Watchdog",          watchdog,       names_watchdog,     NULL),
     CHOICE("Bluetooth",         bt_enabled,     names_off_on,       NULL),
     CHOICE("BT pairing",        bt_pairing,     names_bt_pairing,   NULL),
+#ifdef ENABLE_BLUETOOTH_HID
+    ACTION("BT pair (2 min)",   action_bt_pair),
+    ACTION("Forget BT devices", action_bt_forget),
+#endif
     CHOICE("Wi-Fi",             wifi_mode,      names_wifi,         NULL),
     CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
     ACTION("Factory defaults",  action_defaults),
@@ -153,6 +165,7 @@ static char const *hint = "";
 static unsigned learning;
 static settings_t learn_backup;      // edits as they were before teaching began
 static char const *notice;          // one-off message on the hint line
+static uint32_t confirm_since;      // an action waiting for its second select; 0: none
 
 static void (*real_write)(uint8_t x, uint8_t y, char *message);
 static uint8_t saved_screen[DISP_FRAMEBUFFER_BYTES];
@@ -286,6 +299,7 @@ static void menu_open(char const *how)
     editing = false;
     cursor = 0;
     notice = NULL;
+    confirm_since = 0;
     hint = how;
 
     release_everything();
@@ -358,6 +372,40 @@ static void action_cancel(void)
     menu_close(false);
 }
 
+#ifdef ENABLE_BLUETOOTH_HID
+/**
+ * the bluetooth actions work on the radio as it runs now, not on the edits
+ */
+static void action_bt_pair(void)
+{
+    if (!settings_get()->bt_enabled) {
+        notice = "Bluetooth is off";
+        return;
+    }
+    bt_hid_pair_window();
+    notice = "pairing open 2 min";
+}
+
+static void action_bt_forget(void)
+{
+    uint32_t now = now_ms();
+
+    if (confirm_since && ((uint32_t)(now - confirm_since) < MENU_CONFIRM_MS)) {
+        confirm_since = 0;
+        if (!settings_get()->bt_enabled) {
+            notice = "Bluetooth is off";
+            return;
+        }
+        bt_hid_forget_all();
+        notice = "BT devices forgotten";
+        return;
+    }
+
+    confirm_since = now;
+    notice = "select again: forget";
+}
+#endif
+
 //--------------------------------------------------------------------+
 // inputs
 //--------------------------------------------------------------------+
@@ -407,6 +455,10 @@ void menu_input(menu_input_t input)
 
     notice = NULL;
 
+    // a confirmation is only for the very next select, on the same item
+    if (input != MENU_IN_ENTER)
+        confirm_since = 0;
+
     if (learning) {
         learning = 0;
         edited = learn_backup;
@@ -424,7 +476,9 @@ void menu_input(menu_input_t input)
         case MENU_IN_ENTER:
             if (items[cursor].kind == ITEM_ACTION) {
                 items[cursor].action();
-                return;     // may have closed
+                if (!open)
+                    return;     // it closed the menu
+                break;          // show its notice
             }
             if (items[cursor].kind == ITEM_REMAP) {
                 learn_backup = edited;

@@ -20,6 +20,7 @@ endif ()
 
 if (ENABLE_BLUETOOTH_HID)
   target_sources(amigahid-pico PRIVATE
+    bt_ds4.c
     bt_hid.c
   )
 endif ()

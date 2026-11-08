@@ -61,7 +61,7 @@ static const console_cmd_t commands[] = {
     { "reboot",   cmd_reboot,   "restart the board" },
     { "bootsel",  cmd_bootsel,  "restart into the usb bootloader (BOOTSEL)" },
     { "log",      cmd_log,      "the last 2K of console output, boot messages included" },
-    { "bt",       cmd_bt,       "bluetooth state" },
+    { "bt",       cmd_bt,       "bt [pair|forget]: bluetooth state, bonds; open pairing 2 min; forget all bonds" },
     { "pads",     cmd_pads,     "pads, players and what goes out" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
@@ -215,10 +215,20 @@ static void cmd_log(char const *arg)
 
 static void cmd_bt(char const *arg)
 {
-    (void)arg;
 #ifdef ENABLE_BLUETOOTH_HID
-    ahprintf("bluetooth: %s\n", bt_hid_status());
+    if (strcmp(arg, "pair") == 0) {
+        bt_hid_pair_window();
+        ahprintf("pairing requested\n");
+    } else if (strcmp(arg, "forget") == 0) {
+        bt_hid_forget_all();
+        ahprintf("forgetting all bonds\n");
+    } else if (*arg) {
+        ahprintf("bt [pair|forget]\n");
+    } else {
+        bt_hid_describe();
+    }
 #else
+    (void)arg;
     ahprintf("bluetooth: not in this build\n");
 #endif
 }
