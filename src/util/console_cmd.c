@@ -1,0 +1,165 @@
+/**
+ * this file is part of amigahid-pico, (c) 2021 just nine <nine@aphlor.org>
+ * please locate the full source at https://github.com/borb/amigahid-pico
+ *
+ * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
+ * please find the complete license text at https://spdx.org/licenses/EPL-2.0
+ *
+ * plain-text commands on the usb-c cdc console, for development and tests:
+ * inspect the board, change the mode, reset the settings, reboot. type `help`.
+ */
+
+#include "config.h"
+#include "util/console_cmd.h"
+
+#ifdef HAS_USB_DEVICE
+
+#include <stdio.h>
+#include <string.h>
+
+#include "hardware/watchdog.h"
+#include "pico/bootrom.h"
+#include "pico/platform.h"
+
+#include "settings.h"
+#include "usb_device.h"
+#include "util/output.h"
+#include "util/run_mode.h"
+
+static void cmd_help(char const *arg);
+static void cmd_info(char const *arg);
+static void cmd_settings(char const *arg);
+static void cmd_mode(char const *arg);
+static void cmd_defaults(char const *arg);
+static void cmd_reboot(char const *arg);
+static void cmd_bootsel(char const *arg);
+
+typedef struct {
+    char const *name;
+    void (*run)(char const *arg);
+    char const *help;
+} console_cmd_t;
+
+static const console_cmd_t commands[] = {
+    { "help",     cmd_help,     "this list" },
+    { "info",     cmd_info,     "firmware, chip and boot slot" },
+    { "settings", cmd_settings, "the settings in effect" },
+    { "mode",     cmd_mode,     "mode amiga|usb: switch and remember the output mode" },
+    { "defaults", cmd_defaults, "store the factory defaults" },
+    { "reboot",   cmd_reboot,   "restart the board" },
+    { "bootsel",  cmd_bootsel,  "restart into the usb bootloader (BOOTSEL)" },
+};
+
+static void cmd_help(char const *arg)
+{
+    (void)arg;
+    for (unsigned i = 0; i < count_of(commands); i++)
+        ahprintf("  %-9s %s\n", commands[i].name, commands[i].help);
+}
+
+static void cmd_info(char const *arg)
+{
+    boot_info_t boot;
+
+    (void)arg;
+    ahprintf("firmware built %s %s, board %s\n", __DATE__, __TIME__, PICO_BOARD);
+#if !PICO_RP2040
+    ahprintf("chip rp2350 rev a%u\n", rp2350_chip_version());
+    if (rom_get_boot_info(&boot)) {
+        // partition: 0 = slot A, 1 = slot B, -1 = no partition table
+        ahprintf("boot: type %u, partition %d%s, tbyb/update 0x%02x\n", boot.boot_type, boot.partition,
+            (boot.partition == 0) ? " (slot A)" : (boot.partition == 1) ? " (slot B)" : "",
+            boot.tbyb_and_update_info);
+    } else {
+        ahprintf("boot: no boot info\n");
+    }
+#endif
+    ahprintf("settings: %s\n", settings_source());
+}
+
+static char const *const mode_names[SETTINGS_MODE_COUNT] = { "amiga", "c64", "usb" };
+
+static void cmd_settings(char const *arg)
+{
+    settings_t const *s = settings_get();
+
+    (void)arg;
+    ahprintf("source %s\n", settings_source());
+    ahprintf("mode %s, run mode %s\n", mode_names[s->mode], run_mode_name(run_mode_get()));
+    ahprintf("amiga ports %u/%u, c64 ports %u/%u\n", s->amiga_port[0], s->amiga_port[1], s->c64_port[0], s->c64_port[1]);
+    ahprintf("bluetooth %s (pairing %u), wifi %u, updates need boot %u\n",
+        s->bt_enabled ? "on" : "off", s->bt_pairing, s->wifi_mode, s->ota_needs_boot);
+    ahprintf("wheel %u reverse %u, mouse speed %u, display %u, watchdog %u\n",
+        s->wheel_enabled, s->wheel_reverse, s->mouse_speed, s->display, s->watchdog);
+}
+
+static void cmd_mode(char const *arg)
+{
+    if (strcmp(arg, "amiga") == 0) {
+        run_mode_set(RUN_MODE_AMIGA_OUTPUT);
+    } else if (strcmp(arg, "usb") == 0) {
+        run_mode_set(RUN_MODE_USB_DEVICE_PASSTHROUGH);
+    } else {
+        ahprintf("mode amiga|usb\n");
+        return;
+    }
+    ahprintf("mode %s, stored %s\n", run_mode_name(run_mode_get()), mode_names[settings_get()->mode]);
+}
+
+static void cmd_defaults(char const *arg)
+{
+    settings_t settings;
+
+    (void)arg;
+    settings_defaults(&settings);
+    ahprintf(settings_save(&settings) ? "defaults stored\n" : "could not store the defaults\n");
+}
+
+static void cmd_reboot(char const *arg)
+{
+    (void)arg;
+    ahprintf("rebooting\n");
+    sleep_ms(50);   // let the line reach the host
+    watchdog_reboot(0, 0, 0);
+    for (;;)
+        tight_loop_contents();
+}
+
+static void cmd_bootsel(char const *arg)
+{
+    (void)arg;
+    ahprintf("rebooting into BOOTSEL\n");
+    sleep_ms(50);
+    reset_usb_boot(0, 0);
+}
+
+void console_cmd_task(void)
+{
+    char line[USB_DEVICE_CONSOLE_LINE_MAX];
+    char *arg;
+
+    if (!usb_device_console_line(line, sizeof(line)))
+        return;
+
+    // "name rest-of-line"
+    arg = strchr(line, ' ');
+    if (arg) {
+        *arg++ = 0;
+        while (*arg == ' ')
+            arg++;
+    } else {
+        arg = line + strlen(line);
+    }
+
+    ahprintf("> %s%s%s\n", line, *arg ? " " : "", arg);
+
+    for (unsigned i = 0; i < count_of(commands); i++) {
+        if (strcmp(line, commands[i].name) == 0) {
+            commands[i].run(arg);
+            return;
+        }
+    }
+    ahprintf("unknown command; try help\n");
+}
+
+#endif // HAS_USB_DEVICE

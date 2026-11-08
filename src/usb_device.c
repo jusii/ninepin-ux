@@ -66,6 +66,38 @@ static stdio_driver_t console_driver = {
 #endif
 };
 
+// console input: printable characters gather into a line; return or newline
+// hands it over (usb_device_console_line()). one finished line is held until
+// the main loop takes it, and anything typed meanwhile is dropped
+static char rx_line[USB_DEVICE_CONSOLE_LINE_MAX];
+static uint8_t rx_length;
+static char rx_done[USB_DEVICE_CONSOLE_LINE_MAX];
+static volatile bool rx_ready;
+
+static void console_receive(void)
+{
+    while (tud_cdc_available()) {
+        int32_t c = tud_cdc_read_char();
+
+        if (c < 0)
+            break;
+
+        if ((c == '\r') || (c == '\n')) {
+            if (rx_length && !rx_ready) {
+                memcpy(rx_done, rx_line, rx_length);
+                rx_done[rx_length] = 0;
+                rx_ready = true;
+            }
+            rx_length = 0;
+        } else if ((c == 0x08) || (c == 0x7f)) {
+            if (rx_length)
+                rx_length--;
+        } else if ((c >= 0x20) && (c < 0x7f) && (rx_length < (USB_DEVICE_CONSOLE_LINE_MAX - 1))) {
+            rx_line[rx_length++] = (char)c;
+        }
+    }
+}
+
 /**
  * move whatever fits from the ring buffer into the cdc fifo; only whilst a
  * terminal is listening (dtr), so boot output waits for somebody to read it.
@@ -75,9 +107,7 @@ static void console_drain(void)
     uint8_t chunk[64];
     uint32_t avail, count = 0;
 
-    // nothing is read from the console; keep the rx fifo from backing up
-    if (tud_cdc_available())
-        tud_cdc_read_flush();
+    console_receive();
 
     if (!tud_cdc_connected())
         return;
@@ -402,6 +432,17 @@ void usb_device_gamepad(hid_gamepad_report_t const *report)
         return;
 
     tud_hid_n_report(USB_DEVICE_HID_GAMEPAD, 0, report, sizeof(*report));
+}
+
+bool usb_device_console_line(char *line, size_t size)
+{
+    if (!rx_ready || (size == 0))
+        return false;
+
+    strncpy(line, rx_done, size - 1);
+    line[size - 1] = 0;
+    rx_ready = false;
+    return true;
 }
 
 int usb_device_host_caps_lock(void)

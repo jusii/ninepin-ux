@@ -54,12 +54,26 @@ void run_mode_next(void);
  */
 char const *run_mode_name(run_mode_t mode);
 
+/**
+ * @brief Store the mode in the settings if it differs from the stored one
+ *        (run_mode_set() does this itself).
+ */
+void run_mode_remember(run_mode_t mode);
+
+/**
+ * @brief Switch to the mode the settings remember. Call once at boot, after
+ *        settings_init() and once everything a mode switch touches is up.
+ */
+void run_mode_restore(void);
+
 #else
 
 static inline run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA_OUTPUT; }
 static inline void run_mode_set(run_mode_t mode) { (void)mode; }
 static inline void run_mode_next(void) {}
 static inline char const *run_mode_name(run_mode_t mode) { (void)mode; return "amiga"; }
+static inline void run_mode_remember(run_mode_t mode) { (void)mode; }
+static inline void run_mode_restore(void) {}
 
 #endif // HAS_USB_DEVICE
 

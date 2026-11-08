@@ -15,6 +15,7 @@
 
 #include "input_bridge.h"
 #include "platform/amiga/keyboard_recv.h"
+#include "settings.h"
 #include "usb_device.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -61,6 +62,36 @@ void run_mode_set(run_mode_t mode)
     status_led_mode(mode != RUN_MODE_AMIGA_OUTPUT);
     dbgcons_mode(run_mode_name(mode));
     ahprintf("[mode] output to %s\n", run_mode_name(mode));
+
+    run_mode_remember(mode);
+}
+
+/**
+ * keep the mode across power cycles. a save is a flash write, so it only
+ * happens when the stored mode actually differs.
+ */
+static enum settings_mode settings_mode_for(run_mode_t mode)
+{
+    return (mode == RUN_MODE_USB_DEVICE_PASSTHROUGH) ? SETTINGS_MODE_USB : SETTINGS_MODE_AMIGA;
+}
+
+void run_mode_remember(run_mode_t mode)
+{
+    settings_t settings = *settings_get();
+
+    if (settings.mode == settings_mode_for(mode))
+        return;
+
+    settings.mode = (uint8_t)settings_mode_for(mode);
+    if (!settings_save(&settings))
+        ahprintf("[mode] could not save the mode\n");
+}
+
+void run_mode_restore(void)
+{
+    // c64 is stored as itself; until it exists as a run mode it boots as amiga
+    run_mode_set((settings_get()->mode == SETTINGS_MODE_USB)
+        ? RUN_MODE_USB_DEVICE_PASSTHROUGH : RUN_MODE_AMIGA_OUTPUT);
 }
 
 void run_mode_next(void)

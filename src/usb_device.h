@@ -36,6 +36,7 @@
 #ifdef HAS_USB_DEVICE
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "tusb.h"
@@ -82,6 +83,16 @@ uint32_t usb_device_bringup_ticks(void);
  * @return true whilst a host has the device configured
  */
 bool usb_device_mounted(void);
+
+#define USB_DEVICE_CONSOLE_LINE_MAX 64
+
+/**
+ * @brief Take the last line typed on the cdc console, if one is complete.
+ *        Main loop only (the line may ask for a flash write).
+ *
+ * @return true and the line (no line ending) in line, else false
+ */
+bool usb_device_console_line(char *line, size_t size);
 
 /**
  * @return the host's caps lock from the led report it last sent the keyboard

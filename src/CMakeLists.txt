@@ -1,6 +1,7 @@
 add_executable(amigahid-pico
   input_bridge.c
   main.c
+  settings.c
   usb_hid.c
 )
 
@@ -32,9 +33,11 @@ target_link_libraries(amigahid-pico PUBLIC
   pico_util
   pico_multicore
   hardware_dma
+  hardware_flash
   hardware_gpio
   hardware_i2c
   hardware_pio
+  pico_flash
   tinyusb_host
 )
 

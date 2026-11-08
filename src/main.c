@@ -35,6 +35,8 @@
 #include "util/io_expander.h"
 #include "util/output.h"
 #include "util/run_mode.h"
+#include "util/console_cmd.h"
+#include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
 
@@ -331,6 +333,9 @@ int main(void)
     trap_collect();
 #endif
 
+    // the stored settings, before anything reads one (a flash read only)
+    settings_init();
+
 #ifdef HAS_PIO_USB_HOST
     // pio-usb needs clk_sys at a multiple of 12 MHz. first thing, so that every
     // divider computed from clock_get_hz(clk_sys) below (i2c, ws2812, keyboard
@@ -424,6 +429,9 @@ int main(void)
     bt_hid_init();
 #endif
 
+    // the mode the settings remember, now that everything a switch touches is up
+    run_mode_restore();
+
     boot_stage("loop");
 
     // bring-up breadcrumbs through the first pass of the loop only
@@ -442,6 +450,9 @@ int main(void)
         usb_device_task(io_expander_vbus_present());
 #endif
         usb_c_status_task();
+
+        // commands typed on the usb-c console
+        console_cmd_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID
