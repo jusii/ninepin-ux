@@ -14,4 +14,10 @@
 void bt_hid_init(void);
 void bt_hid_task(void);
 
+/**
+ * @return the bluetooth state as the oled shows it ("bt c1 le:ready"), or why
+ *         there is none
+ */
+char const *bt_hid_status(void);
+
 #endif // _BT_HID_H

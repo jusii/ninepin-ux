@@ -41,9 +41,24 @@ static char console_buf[CONSOLE_BUFSIZE];
 static uint32_t console_head, console_tail; // head: next write, tail: next read
 static critical_section_t console_lock;
 
+// everything printed, kept apart from the drain buffer so the console's log
+// command can replay it (boot messages are gone from the drain buffer the
+// moment anything opens the port)
+#define CONSOLE_HISTORY 2048
+static char console_history[CONSOLE_HISTORY];
+static uint32_t history_head;           // next write
+static bool history_wrapped;
+
 static void console_out_chars(char const *buf, int len)
 {
     critical_section_enter_blocking(&console_lock);
+
+    for (int i = 0; i < len; i++) {
+        console_history[history_head] = buf[i];
+        history_head = (history_head + 1) % CONSOLE_HISTORY;
+        if (history_head == 0)
+            history_wrapped = true;
+    }
 
     for (int i = 0; i < len; i++) {
         uint32_t next = (console_head + 1) % CONSOLE_BUFSIZE;
@@ -434,6 +449,21 @@ void usb_device_gamepad(hid_gamepad_report_t const *report)
         return;
 
     tud_hid_n_report(USB_DEVICE_HID_GAMEPAD, 0, report, sizeof(*report));
+}
+
+size_t usb_device_console_history(char *out, size_t size)
+{
+    size_t length, start, n;
+
+    critical_section_enter_blocking(&console_lock);
+    length = history_wrapped ? CONSOLE_HISTORY : history_head;
+    start = history_wrapped ? history_head : 0;
+    n = (length < size) ? length : size;
+    for (size_t i = 0; i < n; i++)
+        out[i] = console_history[(start + (length - n) + i) % CONSOLE_HISTORY];
+    critical_section_exit(&console_lock);
+
+    return n;
 }
 
 bool usb_device_console_line(char *line, size_t size)

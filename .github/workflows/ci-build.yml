@@ -54,11 +54,12 @@ jobs:
             build-type: Release
             variant: -bt
             cmake-args: -DENABLE_BLUETOOTH_HID=ON
-          # rev7 without the radio stack: must still compile
+          # rev7 without the radio stack (bluetooth is on by default for rev7):
+          # must still compile
           - board: BOARD_HIDPICO_REV7
             build-type: Release
-            variant: ''
-            cmake-args: ''
+            variant: -nobt
+            cmake-args: -DENABLE_BLUETOOTH_HID=OFF
 
     steps:
       - name: Additional dependencies

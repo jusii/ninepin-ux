@@ -95,6 +95,14 @@ bool usb_device_mounted(void);
 bool usb_device_console_line(char *line, size_t size);
 
 /**
+ * @brief Copy the most recent console output (up to size bytes, the last 2K
+ *        kept), oldest first.
+ *
+ * @return bytes copied
+ */
+size_t usb_device_console_history(char *out, size_t size);
+
+/**
  * @return the host's caps lock from the led report it last sent the keyboard
  *         interface: 1 on, 0 off, -1 not known (nothing sent since mount)
  */

@@ -22,6 +22,9 @@
 #include "pico/platform.h"
 
 #include "keyboard_map.h"
+#ifdef ENABLE_BLUETOOTH_HID
+#include "bt_hid.h"
+#endif
 #include "menu.h"
 #include "settings.h"
 #include "usb_device.h"
@@ -36,6 +39,8 @@ static void cmd_defaults(char const *arg);
 static void cmd_reboot(char const *arg);
 static void cmd_bootsel(char const *arg);
 static void cmd_menu(char const *arg);
+static void cmd_log(char const *arg);
+static void cmd_bt(char const *arg);
 
 typedef struct {
     char const *name;
@@ -51,6 +56,8 @@ static const console_cmd_t commands[] = {
     { "defaults", cmd_defaults, "store the factory defaults" },
     { "reboot",   cmd_reboot,   "restart the board" },
     { "bootsel",  cmd_bootsel,  "restart into the usb bootloader (BOOTSEL)" },
+    { "log",      cmd_log,      "the last 2K of console output, boot messages included" },
+    { "bt",       cmd_bt,       "bluetooth state" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };
 
@@ -178,6 +185,36 @@ static void cmd_menu(char const *arg)
     menu_lines(lines);
     for (unsigned i = 0; i < MENU_LINES; i++)
         ahprintf("|%s|\n", lines[i]);
+}
+
+static void cmd_log(char const *arg)
+{
+    static char copy[2048];
+    size_t n;
+
+    (void)arg;
+    n = usb_device_console_history(copy, sizeof(copy));
+    ahprintf("---- last %u bytes ----\n", (unsigned)n);
+    // straight to the cdc buffer in pieces; ahprintf would also re-log it
+    for (size_t i = 0; i < n; i += 128) {
+        char piece[129];
+        size_t len = ((n - i) < 128) ? (n - i) : 128;
+
+        memcpy(piece, copy + i, len);
+        piece[len] = 0;
+        ahprintf("%s", piece);
+    }
+    ahprintf("\n---- end ----\n");
+}
+
+static void cmd_bt(char const *arg)
+{
+    (void)arg;
+#ifdef ENABLE_BLUETOOTH_HID
+    ahprintf("bluetooth: %s\n", bt_hid_status());
+#else
+    ahprintf("bluetooth: not in this build\n");
+#endif
 }
 
 void console_cmd_task(void)

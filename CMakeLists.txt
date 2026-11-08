@@ -102,8 +102,14 @@ if (KBDIN_RESET_HOLD_MAX_MS)
 	add_compile_definitions(KBDIN_RESET_HOLD_MAX_MS=${KBDIN_RESET_HOLD_MAX_MS})
 endif ()
 
-# enable bluetooth hid host support when building for pico w
-option(ENABLE_BLUETOOTH_HID "Enable Bluetooth HID host support on Pico W" OFF)
+# enable bluetooth hid host support when building for pico w. rev7 carries the
+# rm2 radio, so its builds have it unless switched off explicitly
+if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7")
+	set(AHP_BLUETOOTH_DEFAULT ON)
+else ()
+	set(AHP_BLUETOOTH_DEFAULT OFF)
+endif ()
+option(ENABLE_BLUETOOTH_HID "Enable Bluetooth HID host support on Pico W" ${AHP_BLUETOOTH_DEFAULT})
 if (ENABLE_BLUETOOTH_HID)
 	add_compile_definitions(ENABLE_BLUETOOTH_HID=1)
 endif ()

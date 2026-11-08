@@ -161,6 +161,14 @@ static char const *bt_le_state_name(bt_le_state_t state)
     return "?";
 }
 
+// the last status line, for the console's bt command
+static char bt_status_text[32] = "not started";
+
+char const *bt_hid_status(void)
+{
+    return bt_status_text;
+}
+
 static void bt_hid_update_status(void)
 {
     char linebuf[32] = "";
@@ -169,6 +177,7 @@ static void bt_hid_update_status(void)
     snprintf(linebuf, sizeof(linebuf), "bt c%u le:%s",
         bt_classic_connected_count(), bt_le_state_name(bt_le_state));
     dbgcons_bt_status(linebuf);
+    snprintf(bt_status_text, sizeof(bt_status_text), "%s", linebuf);
 
     // a link half way through pairing or service discovery cannot deliver
     // keystrokes yet, so only count devices which are actually reporting
@@ -877,6 +886,7 @@ void bt_hid_init(void)
     if (cyw43_arch_init()) {
         ahprintf("[bt] cyw43 init failed\n");
         dbgcons_bt_status("bt init fail");
+        snprintf(bt_status_text, sizeof(bt_status_text), "cyw43 init failed (no radio?)");
         return;
     }
 
