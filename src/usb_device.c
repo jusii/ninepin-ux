@@ -16,8 +16,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "pico/bootrom.h"
 #include "pico/critical_section.h"
 #include "pico/stdio.h"
+#include "pico/time.h"
 #include "pico/stdio/driver.h"
 #include "tusb.h"
 
@@ -112,6 +114,16 @@ static int32_t mouse_dx, mouse_dy, mouse_wheel, mouse_pan;
 
 static bool stack_up;
 static bool connected;
+
+// the "1200 baud touch": a host that sets the console to this rate asks for a
+// reboot into the bootrom's usb boot mode (BOOTSEL), so new firmware can be
+// copied over without anyone holding the button. the reboot waits a moment so
+// the host's set-line-coding request completes before the device vanishes
+#define USB_DEVICE_BOOTSEL_BAUD     1200
+#define USB_DEVICE_BOOTSEL_DELAY_US 20000
+
+static absolute_time_t bootsel_at;
+static bool bootsel_pending;
 
 // the host's caps lock, from the led output report it sends the keyboard
 // interface: -1 until the host has said, else 0 / 1
@@ -294,6 +306,12 @@ void usb_device_task(bool vbus_present)
 
     tud_task();
 
+    if (bootsel_pending && time_reached(bootsel_at)) {
+        // no return: the bootrom takes over and the board comes back as the
+        // RP2350 BOOTSEL drive; every gpio is released on the way
+        reset_usb_boot(0, 0);
+    }
+
     if (!connected)
         return;
 
@@ -427,6 +445,21 @@ void usb_device_release_all(void)
         usb_device_release_slot(slot);
 
     mouse_dx = mouse_dy = mouse_wheel = mouse_pan = 0;
+}
+
+//--------------------------------------------------------------------+
+// tinyusb cdc device callbacks
+//--------------------------------------------------------------------+
+
+void tud_cdc_line_coding_cb(uint8_t itf, cdc_line_coding_t const *p_line_coding)
+{
+    (void)itf;
+
+    if ((p_line_coding != NULL) && (p_line_coding->bit_rate == USB_DEVICE_BOOTSEL_BAUD)) {
+        ahprintf("[usbd] 1200 baud touch: rebooting into BOOTSEL\n");
+        bootsel_at = make_timeout_time_us(USB_DEVICE_BOOTSEL_DELAY_US);
+        bootsel_pending = true;
+    }
 }
 
 //--------------------------------------------------------------------+
