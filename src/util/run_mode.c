@@ -15,6 +15,7 @@
 
 #include "input_bridge.h"
 #include "platform/amiga/keyboard_recv.h"
+#include "platform/amiga/de9.h"
 #include "settings.h"
 #include "usb_device.h"
 #include "util/debug_cons.h"
@@ -49,7 +50,9 @@ bool run_mode_keyboard_usb(run_mode_t mode)
 
 bool run_mode_mouse_usb(run_mode_t mode)
 {
-    // c64 mode moves the mouse to a de9 port once one is set to 1351
+    // c64 mode: a port set to 1351 takes the mouse, else usb-c does
+    if (mode == RUN_MODE_C64)
+        return !de9_c64_has_1351();
     return mode != RUN_MODE_AMIGA;
 }
 
@@ -100,6 +103,9 @@ void run_mode_set(run_mode_t mode)
     status_led_mode(mode != RUN_MODE_AMIGA);
     dbgcons_mode(run_mode_name(mode));
     ahprintf("[mode] %s\n", run_mode_name(mode));
+
+    // the de9 ports are something else in every mode
+    de9_apply();
 
     run_mode_remember(mode);
 }

@@ -28,6 +28,7 @@
 #include "input_bridge.h"
 #include "keyboard_map.h"
 #include "platform/amiga/keyboard.h"
+#include "platform/amiga/de9.h"
 #include "platform/amiga/keyboard_recv.h"
 #include "settings.h"
 #include "util/debug_cons.h"
@@ -332,9 +333,12 @@ static void menu_close(bool save)
 
     ahprintf("[menu] closed%s\n", (save && dirty) ? ", saved" : "");
 
-    // the new mode last, with the display back for its status line
+    // the new mode last, with the display back for its status line; the de9
+    // ports follow the saved port settings either way
     if (mode_changed)
         run_mode_set((run_mode_t)edited.mode);
+    else if (save)
+        de9_apply();
 }
 
 static void action_defaults(void)

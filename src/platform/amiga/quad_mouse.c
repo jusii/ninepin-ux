@@ -50,6 +50,31 @@ static volatile uint16_t wheel_requests;
 static volatile uint16_t wheel_responses;
 volatile uint8_t motion_divider = 2;
 
+// the de9 port the mouse is on. core0 asks (amiga_quad_mouse_port()); core1
+// moves between quadrature steps and then confirms, so nobody reconfigures pins
+// core1 is still driving. -1: no mouse port, motion and buttons go nowhere.
+typedef struct {
+    uint8_t h, v, hq, vq, b1, b2, b3;
+} aqm_pins_t;
+
+static aqm_pins_t const aqm_port_pins[] = {
+    { QM1_AMIGA_H, QM1_AMIGA_V, QM1_AMIGA_HQ, QM1_AMIGA_VQ, QM1_AMIGA_B1, QM1_AMIGA_B2, QM1_AMIGA_B3 },
+#ifdef QM2_AMIGA_V
+    { QM2_AMIGA_H, QM2_AMIGA_V, QM2_AMIGA_HQ, QM2_AMIGA_VQ, QM2_AMIGA_B1, QM2_AMIGA_B2, QM2_AMIGA_B3 },
+#endif
+};
+#define AQM_PORTS ((int8_t)(sizeof(aqm_port_pins) / sizeof(aqm_port_pins[0])))
+
+static volatile int8_t aqm_port_wanted = 0;
+static volatile int8_t aqm_port_active = 0;
+
+// core1's copy of the pins in use
+static aqm_pins_t cur;
+
+// somewhere else for the mouse (the c64 1351, de9.c); NULL: the quadrature mouse
+static void (*redirect_motion)(int16_t x, int16_t y);
+static void (*redirect_button)(enum amiga_quad_mouse_buttons button, bool pressed);
+
 enum _mouse_pin_state { LOW, HIGH };
 
 static inline int16_t _aqm_add_clamped(int16_t value, int16_t delta)
@@ -215,27 +240,27 @@ static void _aqm_tankmouse_respond(
     uint32_t started_at;
 
     // The TankMouse driver treats left-button high as "no middle button edge".
-    _aqm_gpio_set(QM1_AMIGA_B1, HIGH);
+    _aqm_gpio_set(cur.b1, HIGH);
 
     // The TankMouse driver treats right-button low as the wheel-code valid flag.
-    _aqm_gpio_set(QM1_AMIGA_B2, LOW);
+    _aqm_gpio_set(cur.b2, LOW);
 
-    x_move = _aqm_step_quad_axis_to(QM1_AMIGA_H, QM1_AMIGA_HQ, quad_mx_state, quad_mx_phase, target_x);
-    y_move = _aqm_step_quad_axis_to(QM1_AMIGA_V, QM1_AMIGA_VQ, quad_my_state, quad_my_phase, target_y);
+    x_move = _aqm_step_quad_axis_to(cur.h, cur.hq, quad_mx_state, quad_mx_phase, target_x);
+    y_move = _aqm_step_quad_axis_to(cur.v, cur.vq, quad_my_state, quad_my_phase, target_y);
 
     busy_wait_us_32(AQM_WHEEL_HOLD_US);
 
-    _aqm_undo_quad_axis_move(QM1_AMIGA_V, QM1_AMIGA_VQ, quad_my_state, quad_my_phase, y_move);
-    _aqm_undo_quad_axis_move(QM1_AMIGA_H, QM1_AMIGA_HQ, quad_mx_state, quad_mx_phase, x_move);
+    _aqm_undo_quad_axis_move(cur.v, cur.vq, quad_my_state, quad_my_phase, y_move);
+    _aqm_undo_quad_axis_move(cur.h, cur.hq, quad_mx_state, quad_mx_phase, x_move);
 
     started_at = time_us_32();
-    while (_aqm_gpio_active(QM1_AMIGA_B3)
+    while (_aqm_gpio_active(cur.b3)
         && ((uint32_t)(time_us_32() - started_at) < AQM_WHEEL_RESPONSE_TIMEOUT_US)) {
         tight_loop_contents();
     }
 
-    _aqm_gpio_set(QM1_AMIGA_B1, button_pressed[AQM_LEFT] ? LOW : HIGH);
-    _aqm_gpio_set(QM1_AMIGA_B2, button_pressed[AQM_RIGHT] ? LOW : HIGH);
+    _aqm_gpio_set(cur.b1, button_pressed[AQM_LEFT] ? LOW : HIGH);
+    _aqm_gpio_set(cur.b2, button_pressed[AQM_RIGHT] ? LOW : HIGH);
 }
 
 static void _aqm_handle_tankmouse_request(
@@ -261,6 +286,8 @@ static void _aqm_handle_tankmouse_request(
 
 void amiga_quad_mouse_init()
 {
+    cur = aqm_port_pins[0];
+
     // obtain the pins we want to use
     gpio_init(QM1_AMIGA_H);
     gpio_init(QM1_AMIGA_V);
@@ -303,12 +330,24 @@ void amiga_quad_mouse_button(enum amiga_quad_mouse_buttons button, bool pressed)
     //     pressed ? "down" : "up"
     // );
 
+    int8_t port = aqm_port_active;
+    aqm_pins_t const *pins;
+
     button_pressed[button] = pressed;
 
+    if (redirect_button) {
+        redirect_button(button, pressed);
+        return;
+    }
+
+    if ((port < 0) || (port != aqm_port_wanted))
+        return;
+    pins = &aqm_port_pins[port];
+
     switch (button) {
-        case AQM_LEFT:      _aqm_gpio_set(QM1_AMIGA_B1, pressed ? LOW : HIGH); break;
-        case AQM_MIDDLE:    _aqm_gpio_set(QM1_AMIGA_B3, pressed ? LOW : HIGH); break;
-        case AQM_RIGHT:     _aqm_gpio_set(QM1_AMIGA_B2, pressed ? LOW : HIGH); break;
+        case AQM_LEFT:      _aqm_gpio_set(pins->b1, pressed ? LOW : HIGH); break;
+        case AQM_MIDDLE:    _aqm_gpio_set(pins->b3, pressed ? LOW : HIGH); break;
+        case AQM_RIGHT:     _aqm_gpio_set(pins->b2, pressed ? LOW : HIGH); break;
         // default:            ahprintf("[aqm] unhandled button press!\n");
     }
 }
@@ -334,6 +373,11 @@ void amiga_quad_mouse_wheel(int8_t wheel)
 void amiga_quad_mouse_set_motion(int16_t in_x, int16_t in_y)
 {
     aqm_motion_t motion = { in_x, in_y };
+
+    if (redirect_motion) {
+        redirect_motion(in_x, in_y);
+        return;
+    }
 
     if (!queue_try_add(&motion_queue, &motion)) {
         aqm_motion_t merged;
@@ -366,7 +410,7 @@ void amiga_quad_mouse_motion()
     uint8_t quad_mx_state = 1, quad_my_state = 1;
     uint8_t quad_mx_phase = 0, quad_my_phase = 0;
     uint8_t divider;
-    bool last_mmb_state = _aqm_gpio_active(QM1_AMIGA_B3);
+    bool last_mmb_state = _aqm_gpio_active(cur.b3);
     uint32_t next_motion_at = time_us_32();
 
     /**
@@ -382,7 +426,45 @@ void amiga_quad_mouse_motion()
      */
 
     while (1) {
-        bool mmb_state = _aqm_gpio_active(QM1_AMIGA_B3);
+        int8_t wanted = aqm_port_wanted;
+        bool mmb_state;
+
+        // move to another port (or none) between steps: the old pins are let
+        // go (inputs: idle on the amiga side), the new ones start idle high
+        if (wanted != aqm_port_active) {
+            aqm_pins_t const *next = (wanted >= 0) ? &aqm_port_pins[wanted] : NULL;
+            uint8_t const *release = &cur.h;
+
+            if (aqm_port_active >= 0)
+                for (unsigned i = 0; i < sizeof(cur); i++)
+                    _aqm_gpio_set(release[i], HIGH);
+
+            if (next) {
+                cur = *next;
+                for (unsigned i = 0; i < sizeof(cur); i++) {
+                    gpio_set_function((&cur.h)[i], GPIO_FUNC_SIO);
+                    _aqm_gpio_set((&cur.h)[i], HIGH);
+                }
+                quad_mx_state = quad_my_state = 1;
+                quad_mx_phase = quad_my_phase = 0;
+                last_mmb_state = _aqm_gpio_active(cur.b3);
+            }
+
+            out_x = out_y = 0;
+            x_residue = y_residue = 0;
+            aqm_port_active = wanted;
+        }
+
+        // no mouse port: motion goes nowhere
+        if (aqm_port_active < 0) {
+            while (queue_try_remove(&motion_queue, &motion))
+                ;
+            _aqm_wheel_clear();
+            tight_loop_contents();
+            continue;
+        }
+
+        mmb_state = _aqm_gpio_active(cur.b3);
 
         if (mmb_state && !last_mmb_state)
             _aqm_handle_tankmouse_request(&quad_mx_state, &quad_my_state, &quad_mx_phase, &quad_my_phase);
@@ -415,9 +497,9 @@ void amiga_quad_mouse_motion()
         if (out_x != 0) {
             // handle x-axis motion
             if (out_x < 0)
-                _aqm_step_quad_axis(QM1_AMIGA_H, QM1_AMIGA_HQ, &quad_mx_state, &quad_mx_phase, -1);
+                _aqm_step_quad_axis(cur.h, cur.hq, &quad_mx_state, &quad_mx_phase, -1);
             else if (out_x > 0)
-                _aqm_step_quad_axis(QM1_AMIGA_H, QM1_AMIGA_HQ, &quad_mx_state, &quad_mx_phase, 1);
+                _aqm_step_quad_axis(cur.h, cur.hq, &quad_mx_state, &quad_mx_phase, 1);
         }
 
         if (out_x < 0) out_x++;
@@ -426,9 +508,9 @@ void amiga_quad_mouse_motion()
         if (out_y != 0) {
             // handle y-axis motion
             if (out_y < 0)
-                _aqm_step_quad_axis(QM1_AMIGA_V, QM1_AMIGA_VQ, &quad_my_state, &quad_my_phase, -1);
+                _aqm_step_quad_axis(cur.v, cur.vq, &quad_my_state, &quad_my_phase, -1);
             else if (out_y > 0)
-                _aqm_step_quad_axis(QM1_AMIGA_V, QM1_AMIGA_VQ, &quad_my_state, &quad_my_phase, 1);
+                _aqm_step_quad_axis(cur.v, cur.vq, &quad_my_state, &quad_my_phase, 1);
         }
 
         if (out_y < 0) out_y++;
@@ -436,4 +518,32 @@ void amiga_quad_mouse_motion()
 
         next_motion_at = time_us_32() + AQM_STEP_INTERVAL_US;
     }
+}
+
+bool amiga_quad_mouse_port(int8_t port, uint32_t timeout_us)
+{
+    absolute_time_t until = make_timeout_time_us(timeout_us);
+
+    if ((port < -1) || (port >= AQM_PORTS))
+        port = -1;
+
+    aqm_port_wanted = port;
+    while (aqm_port_active != port) {
+        if (time_reached(until))
+            return false;
+        tight_loop_contents();
+    }
+    return true;
+}
+
+int8_t amiga_quad_mouse_get_port(void)
+{
+    return aqm_port_active;
+}
+
+void amiga_quad_mouse_redirect(void (*motion)(int16_t x, int16_t y),
+    void (*button)(enum amiga_quad_mouse_buttons button, bool pressed))
+{
+    redirect_motion = motion;
+    redirect_button = button;
 }

@@ -141,9 +141,9 @@
 #  define KBD_REAL_CLK  14      // kbin_clk_lo, real keyboard kclk (input)
 #  define KBD_REAL_DAT  15      // kbin_dat_lo, real keyboard kdat (bidirectional)
 
-// controller port 2. nothing drives it yet (PORT2_ROLE=JOYSTICK is a no-op);
-// the pins are named so the pull-ups below cover them and a future driver has
-// nothing to look up. note the order differs from port 1.
+// controller port 2. note the order differs from port 1. both ports are
+// driven by de9.c: mouse, joystick, cd32 pad (amiga), joystick or 1351 (c64)
+#  define HAS_DE9_OUTPUTS
 #  define QM2_AMIGA_V   16      // cont2_v_lo (GPIO16-22: the ADC pins are not 5 V tolerant)
 #  define QM2_AMIGA_B1  17      // cont2_b1_lo
 #  define QM2_AMIGA_H   18      // cont2_h_lo

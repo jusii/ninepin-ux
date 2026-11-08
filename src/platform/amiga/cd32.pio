@@ -1,0 +1,52 @@
+; CD32 button output. SPDX-License-Identifier: EPL-2.0
+; ported unchanged from stefan reinauer's cd32.pio (reinauer/amigahid-pico,
+; features branch, EPL-2.0).
+; jmp pin = DB9 pin 5 (/load), in pin = pin 6 (clock), out pin = pin 9 (data).
+; Normal joystick and fire/clock outputs remain open-drain. During a CD32
+; read only, drive data both HIGH and LOW: weak pull-ups cannot charge the
+; Amiga POT input capacitance between bits. Snapshot at /load falling.
+.program cd32_data
+.wrap_target
+normal:
+    set pindirs, 0      ; release data before restoring the open-drain latch
+    set pins, 0
+normal_data:
+    pull noblock
+    mov x, osr
+    out pindirs, 1
+    jmp pin normal_data
+    mov osr, ~x         ; pressed masks become active-low serial levels
+    out pins, 1         ; Blue is the first bit, before the first clock
+    set pindirs, 1
+clock_low:
+    jmp pin normal
+    mov isr, null
+    in pins, 1
+    mov y, isr
+    jmp !y clock_low
+    jmp !osre next_bit
+    set pins, 0         ; serial input tied LOW after the seven buttons + HIGH ID
+    jmp clock_high
+next_bit:
+    out pins, 1
+clock_high:
+    jmp pin normal
+    mov isr, null
+    in pins, 1
+    mov y, isr
+    jmp !y clock_low
+    jmp clock_high
+.wrap
+
+; In ordinary joystick mode pin 6 is Red/fire. Release it during serial reads
+; so the Amiga owns the clock. This runs independently of software scheduling.
+.program cd32_fire
+.wrap_target
+    pull noblock
+    mov x, osr
+    jmp pin normal_fire
+    set pindirs, 0
+    jmp 0
+normal_fire:
+    out pindirs, 1
+.wrap

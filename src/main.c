@@ -37,6 +37,7 @@
 #include "util/run_mode.h"
 #include "util/console_cmd.h"
 #include "menu.h"
+#include "platform/amiga/de9.h"
 #include "pad.h"
 #include "settings.h"
 #include "util/status_led.h"
@@ -419,6 +420,9 @@ int main(void)
     // start amiga mouse emulation
     amiga_quad_mouse_init();
 
+    // the de9 ports: mouse, joysticks, cd32, c64; claims pio1 before bluetooth
+    de9_init();
+
     boot_stage("kbd in");
 #ifdef HAS_KBD_IN
     // start receiving from a physically attached real amiga keyboard
@@ -462,6 +466,7 @@ int main(void)
         // pads: usb pad start-up and leds, players, outputs
         hid_app_task();
         pads_task();
+        de9_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID

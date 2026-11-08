@@ -1,0 +1,42 @@
+; commodore 1351 mouse emulation, one state machine per pot line (pots x and y).
+; SPDX-License-Identifier: EPL-2.0
+;
+; the sid measures a pot every 512 cycles: it holds the line low for 256
+; cycles to empty its capacitor, then counts until the line charges past its
+; threshold. the board has a 10k pull-up on the line, which on its own would
+; charge it at once; so this holds the line low together with the sid and for
+; x microseconds beyond, then lets go, and the pull-up charges it within a
+; few microseconds: the sid reads about x - 256. the cpu keeps the newest x in
+; the fifo (pull noblock reuses the last one when there is no new value).
+;
+; clocked at 1 MHz: one loop pass per microsecond.
+
+.program c64_pot
+.wrap_target
+    pull noblock            ; osr = the newest x, or the last one again
+    mov x, osr
+    wait 1 pin 0            ; the line is up (charged, or idle)
+    wait 0 pin 0            ; the sid starts its discharge
+    set pindirs, 1          ; hold it low with the sid
+hold:
+    jmp x-- hold            ; x + 1 microseconds
+    set pindirs, 0          ; let go: the pull-up charges it, the sid latches
+.wrap
+
+% c-sdk {
+static inline void c64_pot_program_init(PIO pio, uint sm, uint offset, uint pin, float clkdiv)
+{
+    pio_sm_config c = c64_pot_program_get_default_config(offset);
+
+    sm_config_set_in_pins(&c, pin);
+    sm_config_set_set_pins(&c, pin, 1);
+    sm_config_set_out_shift(&c, true, false, 32);
+    sm_config_set_clkdiv(&c, clkdiv);
+
+    pio_sm_set_pins_with_mask(pio, sm, 0, 1u << pin);       // driven low when driven
+    pio_sm_set_pindirs_with_mask(pio, sm, 0, 1u << pin);    // released to start
+    pio_gpio_init(pio, pin);
+    pio_sm_init(pio, sm, offset, &c);
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
