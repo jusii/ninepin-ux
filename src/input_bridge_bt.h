@@ -17,10 +17,18 @@
 
 #define INPUT_BRIDGE_BT_CLASSIC_SLOTS 2
 #define INPUT_BRIDGE_BT_LE_SLOTS      1
-#define INPUT_BRIDGE_MAX_SLOTS        (CFG_TUH_HID + INPUT_BRIDGE_BT_CLASSIC_SLOTS + INPUT_BRIDGE_BT_LE_SLOTS)
+
+// one slot for a physically attached real amiga keyboard, which keyboard_recv.c
+// fills when it forwards to the usb-c device port. reserved on every board; it
+// just stays empty where there is no keyboard input or no device port
+#define INPUT_BRIDGE_REAL_KBD_SLOTS   1
 
 #define INPUT_BRIDGE_BT_CLASSIC_SLOT_BASE CFG_TUH_HID
 #define INPUT_BRIDGE_BT_LE_SLOT_BASE      (INPUT_BRIDGE_BT_CLASSIC_SLOT_BASE + INPUT_BRIDGE_BT_CLASSIC_SLOTS)
+#define INPUT_BRIDGE_BT_SLOT_END          (INPUT_BRIDGE_BT_LE_SLOT_BASE + INPUT_BRIDGE_BT_LE_SLOTS)
+#define INPUT_BRIDGE_REAL_KBD_SLOT        INPUT_BRIDGE_BT_SLOT_END
+
+#define INPUT_BRIDGE_MAX_SLOTS        (INPUT_BRIDGE_REAL_KBD_SLOT + INPUT_BRIDGE_REAL_KBD_SLOTS)
 
 void input_bridge_reset(uint8_t slot);
 void input_bridge_disconnect(uint8_t slot);

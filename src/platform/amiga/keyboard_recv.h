@@ -11,6 +11,8 @@
 #ifndef _PLATFORM_AMIGA_KEYBOARD_RECV_H
 #define _PLATFORM_AMIGA_KEYBOARD_RECV_H
 
+#include "util/run_mode.h"
+
 /**
  * @brief Set up the PIO receiver for a physically attached real amiga keyboard.
  *
@@ -28,5 +30,12 @@ void amiga_keyboard_recv_init(void);
  * point the USB/BT path feeds). No-op on boards without HAS_KBD_IN.
  */
 void amiga_keyboard_recv_task(void);
+
+/**
+ * @brief Follow a run mode switch (run_mode_set()): release every real-keyboard
+ *        key held on the side being left, and bring the side now receiving to
+ *        the keyboard's caps lamp. No-op on boards without HAS_KBD_IN.
+ */
+void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to);
 
 #endif // _PLATFORM_AMIGA_KEYBOARD_RECV_H

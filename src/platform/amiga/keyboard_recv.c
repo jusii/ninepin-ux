@@ -12,9 +12,11 @@
  * attached amiga keyboard can drive the amiga alongside the usb/bluetooth path.
  * the pico acts as the host: a real keyboard is the clock master and clocks out
  * keycodes; a pio state machine samples them and drives the ~85us handshake
- * back autonomously. decoded keycodes are pushed into the same output queue the
- * usb/bluetooth path feeds, so the amiga-facing transmitter cannot tell a real
- * keypress from a usb one.
+ * back autonomously. in amiga mode, decoded keycodes are pushed into the same
+ * output queue the usb/bluetooth path feeds, so the amiga-facing transmitter
+ * cannot tell a real keypress from a usb one. on boards with a usb device port,
+ * usb-dev mode sends them to the usb host instead, as a hid keyboard merged with
+ * the usb keyboards (see the routing section below).
  *
  * the amiga keyboard frame is the mirror of the transmit path in
  * keyboard_serial_io.c: 8 bits, msb first, active low, with the byte rotated
@@ -41,11 +43,18 @@
 #include "keyboard.h"
 #include "keyboard_serial_io.h"
 #include "keyboard_recv.pio.h" // generated at compile time
+#include "input_bridge_bt.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
+#include "util/run_mode.h"
+#include "util/status_led.h"
+#ifdef HAS_USB_DEVICE
+#include "usb_device.h"
+#endif
 
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
@@ -95,11 +104,338 @@ static uint32_t clk_last_poll = 0;
 static bool kbd_reset_held = false;
 static bool kbd_reset_abandoned = false;
 
+// the hold seen in usb-dev mode: the keyboard belongs to the usb host then, so
+// the amiga is left running and only the receiver and the keys are dealt with
+static bool kbd_reset_local = false;
+
 // resynchronisation tracking: armed when a reset begins, performed once the wire
 // has been quiet for long enough that restarting cannot eat a byte in flight.
 static bool reset_was_active = false;
 static bool resync_pending = false;
 static uint32_t recv_last_active = 0;
+
+//--------------------------------------------------------------------+
+// routing. the run mode decides where the real keyboard goes, as it does for
+// the usb keyboards: amiga mode keeps the direct path into amiga_send_rawkey(),
+// usb-dev (boards with a device port) builds a hid report for the keyboard's
+// own input slot, which usb_device.c merges with the usb keyboards.
+//--------------------------------------------------------------------+
+
+// keys down, per side, one bit per amiga keycode. a release goes to the side
+// that saw the press; a mode switch releases everything on the side being left
+// (amiga_keyboard_recv_mode_changed()), so a key held across the switch has its
+// release dropped. caps lock latches on the keyboard and is not tracked here
+static uint32_t held_amiga[4];
+static uint32_t held_usb[4];
+
+// the keyboard's own caps lamp: on with a caps down code, off with caps up. a
+// keyboard comes out of power-up or a reset with it off
+static bool caps_lamp = false;
+
+// any byte received since boot. until then there may be no keyboard at all, and
+// a mode switch leaves both sides' caps lock alone
+static bool kbd_seen = false;
+
+static inline bool held_get(uint32_t const *set, uint8_t code)
+{
+    return (set[code >> 5] >> (code & 31u)) & 1u;
+}
+
+static inline void held_put(uint32_t *set, uint8_t code, bool down)
+{
+    if (down)
+        set[code >> 5] |= 1u << (code & 31u);
+    else
+        set[code >> 5] &= ~(1u << (code & 31u));
+}
+
+static inline bool held_any(uint32_t const *set)
+{
+    return set[0] | set[1] | set[2] | set[3];
+}
+
+#ifdef HAS_USB_DEVICE
+// hid usage table, keyboard page: "keyboard errorrollover"
+#define KBDIN_HID_ERROR_ROLLOVER 0x01
+
+/**
+ * amiga keycode -> hid keyboard usage, by key position, so the host's own
+ * layout applies as it would to a pc keyboard. the standard keys are the
+ * reverse of mapHidToAmiga. the amiga-only keys: help -> insert (the reverse of
+ * insert -> help), the amiga keys -> gui, numpad ( ) -> keypad ( ) (linux maps
+ * those to parens whatever the layout; windows and macos drop them). usages
+ * 0xe0-0xe7 are the modifiers; 0 is no key (the spare codes). caps lock
+ * latches and is handled on its own.
+ */
+static const uint8_t mapAmigaToHid[AMIGA_RAMIGA + 1] = {
+    [AMIGA_BACKTICK]  = HID_KEY_GRAVE,
+    [AMIGA_ONE]       = HID_KEY_1,
+    [AMIGA_TWO]       = HID_KEY_2,
+    [AMIGA_THREE]     = HID_KEY_3,
+    [AMIGA_FOUR]      = HID_KEY_4,
+    [AMIGA_FIVE]      = HID_KEY_5,
+    [AMIGA_SIX]       = HID_KEY_6,
+    [AMIGA_SEVEN]     = HID_KEY_7,
+    [AMIGA_EIGHT]     = HID_KEY_8,
+    [AMIGA_NINE]      = HID_KEY_9,
+    [AMIGA_ZERO]      = HID_KEY_0,
+    [AMIGA_DASH]      = HID_KEY_MINUS,
+    [AMIGA_EQUALS]    = HID_KEY_EQUAL,
+    [AMIGA_BACKSLASH] = HID_KEY_BACKSLASH,
+    [AMIGA_KPZERO]    = HID_KEY_KEYPAD_0,
+    [AMIGA_Q]         = HID_KEY_Q,
+    [AMIGA_W]         = HID_KEY_W,
+    [AMIGA_E]         = HID_KEY_E,
+    [AMIGA_R]         = HID_KEY_R,
+    [AMIGA_T]         = HID_KEY_T,
+    [AMIGA_Y]         = HID_KEY_Y,
+    [AMIGA_U]         = HID_KEY_U,
+    [AMIGA_I]         = HID_KEY_I,
+    [AMIGA_O]         = HID_KEY_O,
+    [AMIGA_P]         = HID_KEY_P,
+    [AMIGA_OSQPARENS] = HID_KEY_BRACKET_LEFT,
+    [AMIGA_CSQPARENS] = HID_KEY_BRACKET_RIGHT,
+    [AMIGA_KPONE]     = HID_KEY_KEYPAD_1,
+    [AMIGA_KPTWO]     = HID_KEY_KEYPAD_2,
+    [AMIGA_KPTHREE]   = HID_KEY_KEYPAD_3,
+    [AMIGA_A]         = HID_KEY_A,
+    [AMIGA_S]         = HID_KEY_S,
+    [AMIGA_D]         = HID_KEY_D,
+    [AMIGA_F]         = HID_KEY_F,
+    [AMIGA_G]         = HID_KEY_G,
+    [AMIGA_H]         = HID_KEY_H,
+    [AMIGA_J]         = HID_KEY_J,
+    [AMIGA_K]         = HID_KEY_K,
+    [AMIGA_L]         = HID_KEY_L,
+    [AMIGA_SEMICOLON] = HID_KEY_SEMICOLON,
+    [AMIGA_QUOTE]     = HID_KEY_APOSTROPHE,
+    [AMIGA_INTLRET]   = HID_KEY_EUROPE_1,     // left of return on international boards
+    [AMIGA_KPFOUR]    = HID_KEY_KEYPAD_4,
+    [AMIGA_KPFIVE]    = HID_KEY_KEYPAD_5,
+    [AMIGA_KPSIX]     = HID_KEY_KEYPAD_6,
+    [AMIGA_INTLSHIFT] = HID_KEY_EUROPE_2,     // right of left shift on international boards
+    [AMIGA_Z]         = HID_KEY_Z,
+    [AMIGA_X]         = HID_KEY_X,
+    [AMIGA_C]         = HID_KEY_C,
+    [AMIGA_V]         = HID_KEY_V,
+    [AMIGA_B]         = HID_KEY_B,
+    [AMIGA_N]         = HID_KEY_N,
+    [AMIGA_M]         = HID_KEY_M,
+    [AMIGA_COMMA]     = HID_KEY_COMMA,
+    [AMIGA_PERIOD]    = HID_KEY_PERIOD,
+    [AMIGA_SLASH]     = HID_KEY_SLASH,
+    [AMIGA_KPPERIOD]  = HID_KEY_KEYPAD_DECIMAL,
+    [AMIGA_KPSEVEN]   = HID_KEY_KEYPAD_7,
+    [AMIGA_KPEIGHT]   = HID_KEY_KEYPAD_8,
+    [AMIGA_KPNINE]    = HID_KEY_KEYPAD_9,
+    [AMIGA_SPACE]     = HID_KEY_SPACE,
+    [AMIGA_BACKSP]    = HID_KEY_BACKSPACE,
+    [AMIGA_TAB]       = HID_KEY_TAB,
+    [AMIGA_KPENTER]   = HID_KEY_KEYPAD_ENTER,
+    [AMIGA_RETURN]    = HID_KEY_ENTER,
+    [AMIGA_ESC]       = HID_KEY_ESCAPE,
+    [AMIGA_DELETE]    = HID_KEY_DELETE,
+    [AMIGA_KPDASH]    = HID_KEY_KEYPAD_SUBTRACT,
+    [AMIGA_UP]        = HID_KEY_ARROW_UP,
+    [AMIGA_DOWN]      = HID_KEY_ARROW_DOWN,
+    [AMIGA_RIGHT]     = HID_KEY_ARROW_RIGHT,
+    [AMIGA_LEFT]      = HID_KEY_ARROW_LEFT,
+    [AMIGA_F1]        = HID_KEY_F1,
+    [AMIGA_F2]        = HID_KEY_F2,
+    [AMIGA_F3]        = HID_KEY_F3,
+    [AMIGA_F4]        = HID_KEY_F4,
+    [AMIGA_F5]        = HID_KEY_F5,
+    [AMIGA_F6]        = HID_KEY_F6,
+    [AMIGA_F7]        = HID_KEY_F7,
+    [AMIGA_F8]        = HID_KEY_F8,
+    [AMIGA_F9]        = HID_KEY_F9,
+    [AMIGA_F10]       = HID_KEY_F10,
+    [AMIGA_KPOPAREN]  = HID_KEY_KEYPAD_LEFT_PARENTHESIS,
+    [AMIGA_KPCPAREN]  = HID_KEY_KEYPAD_RIGHT_PARENTHESIS,
+    [AMIGA_KPSLASH]   = HID_KEY_KEYPAD_DIVIDE,
+    [AMIGA_KPAST]     = HID_KEY_KEYPAD_MULTIPLY,
+    [AMIGA_KPPLUS]    = HID_KEY_KEYPAD_ADD,
+    [AMIGA_HELP]      = HID_KEY_INSERT,
+    [AMIGA_LSHIFT]    = HID_KEY_SHIFT_LEFT,
+    [AMIGA_RSHIFT]    = HID_KEY_SHIFT_RIGHT,
+    [AMIGA_CTRL]      = HID_KEY_CONTROL_LEFT,
+    [AMIGA_LALT]      = HID_KEY_ALT_LEFT,
+    [AMIGA_RALT]      = HID_KEY_ALT_RIGHT,
+    [AMIGA_LAMIGA]    = HID_KEY_GUI_LEFT,
+    [AMIGA_RAMIGA]    = HID_KEY_GUI_RIGHT,
+};
+
+static inline bool kbdin_to_usb(void)
+{
+    return run_mode_get() == RUN_MODE_USB_DEVICE_PASSTHROUGH;
+}
+
+/**
+ * @return true if the code is a key the usb host gets. not every code a
+ *         keyboard sends is a key: an a4000 keyboard's reset warning has been
+ *         seen arriving as 0x7c, not the documented 0x78, and must not be held
+ *         down on the usb side
+ */
+static inline bool kbdin_usb_maps(uint8_t keycode)
+{
+    return (keycode < sizeof(mapAmigaToHid)) && (mapAmigaToHid[keycode] != 0);
+}
+
+/**
+ * hand the keys held on the usb side to usb_device.c as one boot report.
+ */
+static void kbdin_usb_report(void)
+{
+    hid_keyboard_report_t report;
+    uint8_t keys = 0;
+    bool overflow = false;
+
+    memset(&report, 0, sizeof(report));
+
+    for (uint8_t code = 0; code < sizeof(mapAmigaToHid); code++) {
+        uint8_t usage;
+
+        if (!held_get(held_usb, code))
+            continue;
+
+        usage = mapAmigaToHid[code];
+        if (usage == 0)
+            continue;
+
+        if (usage >= HID_KEY_CONTROL_LEFT)
+            report.modifier |= (uint8_t)(1u << (usage - HID_KEY_CONTROL_LEFT));
+        else if (keys < sizeof(report.keycode))
+            report.keycode[keys++] = usage;
+        else
+            overflow = true;
+    }
+
+    // more than six keys: boot protocol's answer is phantom state
+    if (overflow)
+        memset(report.keycode, KBDIN_HID_ERROR_ROLLOVER, sizeof(report.keycode));
+
+    usb_device_keyboard(INPUT_BRIDGE_REAL_KBD_SLOT, &report);
+}
+
+/**
+ * bring the host's caps lock to the keyboard's lamp, using the led state the
+ * host reports. with nothing reported yet, a caps event just toggles the host
+ * (a tap per lamp change) and anything else leaves it alone.
+ *
+ * @param on_event  true for a caps code from the keyboard, false for a sync on
+ *                  a mode switch or a keyboard restart
+ */
+static void kbdin_usb_caps_sync(bool on_event)
+{
+    int host = usb_device_host_caps_lock();
+    bool host_on;
+
+    if (host < 0) {
+        if (on_event)
+            usb_device_caps_tap();
+        return;
+    }
+
+    // a tap still in flight is about to flip it
+    host_on = (host != 0) != usb_device_caps_tap_pending();
+
+    if (host_on != caps_lamp)
+        usb_device_caps_tap();
+}
+
+static void kbdin_usb_release(void)
+{
+    if (!held_any(held_usb))
+        return;
+
+    memset(held_usb, 0, sizeof(held_usb));
+    kbdin_usb_report();
+}
+#else
+static inline bool kbdin_to_usb(void) { return false; }
+static inline bool kbdin_usb_maps(uint8_t keycode) { (void)keycode; return false; }
+static inline void kbdin_usb_report(void) {}
+static inline void kbdin_usb_caps_sync(bool on_event) { (void)on_event; }
+static inline void kbdin_usb_release(void) { memset(held_usb, 0, sizeof(held_usb)); }
+#endif
+
+/**
+ * let go of every key the amiga holds from the real keyboard.
+ */
+static void kbdin_amiga_release(void)
+{
+    for (uint8_t code = 0; code < 128; code++) {
+        if (held_get(held_amiga, code)) {
+            held_put(held_amiga, code, false);
+            amiga_send_rawkey(code, true);
+        }
+    }
+}
+
+/**
+ * the keyboard is restarting (its reset warning, a kclk hold, or a power-up
+ * stream): it will never send the releases for what it had down, and its caps
+ * lamp comes back off.
+ *
+ * @param tell_amiga  send the amiga up codes for its held keys; false when the
+ *                    amiga is being reset anyway
+ */
+static void kbdin_keyboard_restarting(bool tell_amiga)
+{
+    if (tell_amiga)
+        kbdin_amiga_release();
+    else
+        memset(held_amiga, 0, sizeof(held_amiga));
+
+    kbdin_usb_release();
+
+    caps_lamp = false;
+    if (kbdin_to_usb())
+        kbdin_usb_caps_sync(false);
+}
+
+/**
+ * one key event from the real keyboard, routed by the run mode.
+ */
+static void kbdin_key(uint8_t keycode, bool up)
+{
+    if (keycode == AMIGA_CAPSLOCK) {
+        caps_lamp = !up;
+
+        if (kbdin_to_usb()) {
+            kbdin_usb_caps_sync(true);
+            status_led_activity();
+        } else {
+            amiga_send_rawkey(keycode, up);
+        }
+        return;
+    }
+
+    if (!up) {
+        if (kbdin_to_usb()) {
+            if (!kbdin_usb_maps(keycode))
+                return;
+
+            held_put(held_usb, keycode, true);
+            kbdin_usb_report();
+            status_led_activity();
+        } else {
+            held_put(held_amiga, keycode, true);
+            amiga_send_rawkey(keycode, false);
+        }
+        return;
+    }
+
+    // the release follows the press; a press from before a mode switch was
+    // already released there, so its own release goes nowhere
+    if (held_get(held_amiga, keycode)) {
+        held_put(held_amiga, keycode, false);
+        amiga_send_rawkey(keycode, true);
+    } else if (held_get(held_usb, keycode)) {
+        held_put(held_usb, keycode, false);
+        kbdin_usb_report();
+    }
+}
 
 void amiga_keyboard_recv_init(void)
 {
@@ -180,10 +516,14 @@ static void amiga_keyboard_recv_reset_task(void)
 
         if (kbd_reset_held) {
             // keyboard has let go of kclk: bring the amiga back out of reset
+            // (unless the hold was kept from it in usb-dev mode)
             kbd_reset_held = false;
             kbd_reset_abandoned = false;
-            amiga_kbdin_reset(false);
-            ahprintf("[akb] real keyboard released reset\n");
+            if (!kbd_reset_local) {
+                amiga_kbdin_reset(false);
+                ahprintf("[akb] real keyboard released reset\n");
+            }
+            kbd_reset_local = false;
         }
 
         amiga_keyboard_recv_resync_task(now);
@@ -191,7 +531,7 @@ static void amiga_keyboard_recv_reset_task(void)
     }
 
     if (kbd_reset_held) {
-        if (kbd_reset_abandoned)
+        if (kbd_reset_abandoned || kbd_reset_local)
             return;
 
         // nothing legitimate holds the line down this long; let the amiga run
@@ -227,6 +567,20 @@ static void amiga_keyboard_recv_reset_task(void)
         return;
 
     kbd_reset_held = true;
+
+    if (kbdin_to_usb()) {
+        // usb-dev: the keyboard belongs to the usb host, so the amiga keeps
+        // running. the keyboard is restarting all the same: let go of its keys
+        // there and resynchronise the receiver once the hold is over (no reset
+        // assertion edge will arm that)
+        kbd_reset_local = true;
+        resync_pending = true;
+        kbdin_keyboard_restarting(true);
+        ahprintf("[akb] real keyboard held kclk low; usb-dev, amiga left running\n");
+        return;
+    }
+
+    kbdin_keyboard_restarting(false);
     ahprintf("[akb] real keyboard held kclk low; asserting reset\n");
     amiga_kbdin_reset(true);
 }
@@ -244,6 +598,8 @@ void amiga_keyboard_recv_task(void)
         uint8_t logical = (uint8_t)(~(uint8_t)(word & 0xff));
         uint8_t code = (uint8_t)((logical >> 1) | (logical << 7));
 
+        kbd_seen = true;
+
         switch (code) {
             // keyboard-mcu housekeeping codes: consume, never forward to the
             // amiga (we synthesise our own power-up codes on the output side).
@@ -251,11 +607,26 @@ void amiga_keyboard_recv_task(void)
             case AMIGA_OBOFLOW:
             case AMIGA_CTRFAIL:
             case AMIGA_KBDFAIL:
-            case AMIGA_INITPOWER:
             case AMIGA_TERMPOWER:
             case AMIGA_UNKNOWN:
-            case AMIGA_RESET: // ctrl-amiga-amiga also arrives as key events; see below
                 dbgcons_amiga_key(0, code, "r");
+                break;
+
+            // a power-up stream: the keyboard (re)started, with nothing of
+            // what it had down before still down and its caps lamp off
+            case AMIGA_INITPOWER:
+                dbgcons_amiga_key(0, code, "r");
+                kbdin_keyboard_restarting(true);
+                break;
+
+            // ctrl-amiga-amiga: the amiga side has already acted on the key
+            // events (amiga_send_rawkey's combo tracking, mirroring the usb
+            // path) and is resetting. in usb-dev the keys went to the usb host
+            // instead, which must not be left holding ctrl and both guis while
+            // the keyboard restarts
+            case AMIGA_RESET:
+                dbgcons_amiga_key(0, code, "r");
+                kbdin_keyboard_restarting(kbdin_to_usb());
                 break;
 
             default: {
@@ -263,10 +634,7 @@ void amiga_keyboard_recv_task(void)
                 uint8_t keycode = code & 0x7f;
 
                 dbgcons_amiga_key(0, keycode, up ? "ru" : "rd");
-
-                // ctrl-amiga-amiga reset is recognised from these key events by
-                // amiga_send_rawkey's combo tracking, mirroring the usb path.
-                amiga_send_rawkey(keycode, up);
+                kbdin_key(keycode, up);
                 break;
             }
         }
@@ -278,9 +646,29 @@ void amiga_keyboard_recv_task(void)
     amiga_keyboard_recv_reset_task();
 }
 
+void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to)
+{
+    // let go of the side being left; the new side starts from nothing
+    if (from == RUN_MODE_AMIGA_OUTPUT)
+        kbdin_amiga_release();
+    else
+        kbdin_usb_release();
+
+    // no keyboard seen yet: nothing says what its lamp shows, leave caps alone
+    if (!kbd_seen)
+        return;
+
+    // the lamp is the truth; bring the side now receiving into line with it
+    if (to == RUN_MODE_USB_DEVICE_PASSTHROUGH)
+        kbdin_usb_caps_sync(false);
+    else if ((to == RUN_MODE_AMIGA_OUTPUT) && (amiga_caps_lock() != caps_lamp))
+        amiga_send_rawkey(AMIGA_CAPSLOCK, !caps_lamp);
+}
+
 #else // !HAS_KBD_IN
 
 void amiga_keyboard_recv_init(void) {}
 void amiga_keyboard_recv_task(void) {}
+void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to) { (void)from; (void)to; }
 
 #endif // HAS_KBD_IN

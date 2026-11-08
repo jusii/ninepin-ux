@@ -84,6 +84,23 @@ uint32_t usb_device_bringup_ticks(void);
 bool usb_device_mounted(void);
 
 /**
+ * @return the host's caps lock from the led report it last sent the keyboard
+ *         interface: 1 on, 0 off, -1 not known (nothing sent since mount)
+ */
+int usb_device_host_caps_lock(void);
+
+/**
+ * @brief Press and release caps lock once on the host, as its own two reports
+ *        so the two are never merged away. Ignored whilst a tap is in flight.
+ */
+void usb_device_caps_tap(void);
+
+/**
+ * @return true from usb_device_caps_tap() until its release has gone out
+ */
+bool usb_device_caps_tap_pending(void);
+
+/**
  * @brief Pass a keyboard report from an input slot to the usb-c host.
  *
  * Reports from several slots are merged (modifiers or-ed, up to six keys).

@@ -113,6 +113,16 @@ static int32_t mouse_dx, mouse_dy, mouse_wheel, mouse_pan;
 static bool stack_up;
 static bool connected;
 
+// the host's caps lock, from the led output report it sends the keyboard
+// interface: -1 until the host has said, else 0 / 1
+static int8_t host_caps_lock = -1;
+
+// a caps lock tap in flight: the press goes out in one report and the release in
+// the next, since the slot state above keeps only the newest level and would
+// fold a press and its release into nothing
+typedef enum { CAPS_TAP_NONE = 0, CAPS_TAP_PRESS, CAPS_TAP_RELEASE } caps_tap_t;
+static caps_tap_t caps_tap;
+
 // hid usage table, keyboard page: "keyboard errorrollover"
 #define HID_USAGE_KEYBOARD_ERROR_ROLLOVER 0x01
 
@@ -184,12 +194,39 @@ static int8_t hid_take_axis(int32_t *accum)
 static void hid_flush(void)
 {
     if (!tud_mounted()) {
-        // nobody to send to: levels stay (and go out on mount), motion is stale
+        // nobody to send to: levels stay (and go out on mount), motion is stale,
+        // and a tap or the host's led state means nothing to the next host
         mouse_dx = mouse_dy = mouse_wheel = mouse_pan = 0;
+        caps_tap = CAPS_TAP_NONE;
+        host_caps_lock = -1;
         return;
     }
 
-    if (keyboard_dirty && tud_hid_n_ready(USB_DEVICE_HID_KEYBOARD)) {
+    if ((caps_tap != CAPS_TAP_NONE) && tud_hid_n_ready(USB_DEVICE_HID_KEYBOARD)) {
+        hid_keyboard_report_t merged;
+
+        hid_merge_keyboard(&merged);
+
+        if (caps_tap == CAPS_TAP_PRESS) {
+            // into the first free position; with six keys already down the
+            // last one gives way for this one report
+            uint8_t pos = 0;
+
+            while ((pos < 5) && (merged.keycode[pos] != 0))
+                pos++;
+            merged.keycode[pos] = HID_KEY_CAPS_LOCK;
+
+            if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode))
+                caps_tap = CAPS_TAP_RELEASE;
+        } else if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode)) {
+            // the release report carries the current state, so it also
+            // delivers anything that changed whilst the tap was in flight
+            caps_tap = CAPS_TAP_NONE;
+            keyboard_dirty = false;
+        }
+    }
+
+    if (keyboard_dirty && (caps_tap == CAPS_TAP_NONE) && tud_hid_n_ready(USB_DEVICE_HID_KEYBOARD)) {
         hid_keyboard_report_t merged;
 
         hid_merge_keyboard(&merged);
@@ -349,6 +386,25 @@ void usb_device_gamepad(hid_gamepad_report_t const *report)
     tud_hid_n_report(USB_DEVICE_HID_GAMEPAD, 0, report, sizeof(*report));
 }
 
+int usb_device_host_caps_lock(void)
+{
+    return host_caps_lock;
+}
+
+void usb_device_caps_tap(void)
+{
+    if (caps_tap != CAPS_TAP_NONE)
+        return;
+
+    caps_tap = CAPS_TAP_PRESS;
+    hid_wake_host();
+}
+
+bool usb_device_caps_tap_pending(void)
+{
+    return caps_tap != CAPS_TAP_NONE;
+}
+
 void usb_device_release_slot(uint8_t slot)
 {
     if (slot >= INPUT_BRIDGE_MAX_SLOTS)
@@ -393,14 +449,14 @@ uint16_t tud_hid_get_report_cb(uint8_t instance, uint8_t report_id, hid_report_t
 void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_t report_type,
     uint8_t const *buffer, uint16_t bufsize)
 {
-    // the host's keyboard leds (caps lock etc.) arrive here; the usb-a
-    // keyboards follow the amiga's caps lock, not this host's, so for now
-    // they are ignored
-    (void)instance;
+    // the host's keyboard leds arrive here. the usb-a keyboards follow the
+    // amiga's caps lock, not this host's, so only the caps state is kept: a
+    // real amiga keyboard forwarded to this host syncs its latched caps against
+    // it (keyboard_recv.c)
     (void)report_id;
-    (void)report_type;
-    (void)buffer;
-    (void)bufsize;
+
+    if ((instance == USB_DEVICE_HID_KEYBOARD) && (report_type == HID_REPORT_TYPE_OUTPUT) && (bufsize >= 1))
+        host_caps_lock = (buffer[0] & KEYBOARD_LED_CAPSLOCK) ? 1 : 0;
 }
 
 #endif // HAS_USB_DEVICE

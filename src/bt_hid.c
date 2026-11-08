@@ -869,7 +869,7 @@ void bt_hid_init(void)
 
     dbgcons_bt_status("bt init");
 
-    for (uint8_t slot = INPUT_BRIDGE_BT_CLASSIC_SLOT_BASE; slot < INPUT_BRIDGE_MAX_SLOTS; slot++)
+    for (uint8_t slot = INPUT_BRIDGE_BT_CLASSIC_SLOT_BASE; slot < INPUT_BRIDGE_BT_SLOT_END; slot++)
         input_bridge_reset(slot);
 
     queue_init(&bt_hid_queue, sizeof(bt_hid_queue_entry_t), BT_HID_QUEUE_DEPTH);

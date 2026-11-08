@@ -14,6 +14,7 @@
 #ifdef HAS_USB_DEVICE
 
 #include "input_bridge.h"
+#include "platform/amiga/keyboard_recv.h"
 #include "usb_device.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -51,6 +52,9 @@ void run_mode_set(run_mode_t mode)
         default:
             break;
     }
+
+    // the real amiga keyboard keeps its own record of what it holds where
+    amiga_keyboard_recv_mode_changed(current_mode, mode);
 
     current_mode = mode;
 
