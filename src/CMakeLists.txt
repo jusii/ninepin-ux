@@ -76,3 +76,27 @@ endif ()
 add_compile_definitions(PICO_USE_MALLOC_MUTEX=0)
 
 pico_add_extra_outputs(amigahid-pico)
+
+if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7")
+  # rev7 flash is split into A/B partition slots for over-the-air updates
+  # (partition_table_rev7.json): A at 8K-4M, B at 4M up to 12K short of 8M; the
+  # top 20K of the 16M flash stays unpartitioned for settings, the btstack
+  # pairing bank and the RP2350-E10 block. partition-table.uf2 is a one-time
+  # install: drop it onto the BOOTSEL drive before the first firmware uf2.
+  # after that, every firmware uf2 lands in the free slot and the bootrom
+  # boots it straight away (a "flash update" boot).
+  set(AHP_PT_JSON ${CMAKE_CURRENT_LIST_DIR}/partition_table_rev7.json)
+  set(AHP_PT_UF2 ${CMAKE_CURRENT_BINARY_DIR}/partition-table.uf2)
+  add_custom_command(OUTPUT ${AHP_PT_UF2}
+    COMMAND picotool partition create --quiet ${AHP_PT_JSON} ${AHP_PT_UF2}
+    DEPENDS ${AHP_PT_JSON}
+    COMMENT "Creating the rev7 partition table uf2"
+    VERBATIM)
+  add_custom_target(amigahid-pico-partition-table ALL DEPENDS ${AHP_PT_UF2})
+
+  # the smaller slot (B) bounds the image
+  add_custom_command(TARGET amigahid-pico POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -DIMAGE=$<TARGET_FILE_DIR:amigahid-pico>/amigahid-pico.bin
+      -DLIMIT_KB=4084 -P ${CMAKE_CURRENT_LIST_DIR}/check_image_size.cmake
+    VERBATIM)
+endif ()
