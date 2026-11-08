@@ -23,6 +23,7 @@
 #define _UTIL_IO_EXPANDER_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #include "config.h"
 
@@ -44,11 +45,11 @@ typedef enum
  *
  * Call after disp_ssd_init(), which owns and initialises the shared i2c
  * controller. Leaves P0-P4 as inputs and P5-P7 as outputs driven low. If the
- * expander does not answer, the module stays inert: no events, and
- * io_expander_vbus_present() reports false so nothing is ever presented to the
- * usb-c port on a guess.
+ * expander does not answer, io_expander_task() asks again every 500 ms; until
+ * it answers the module is inert: no events, and io_expander_vbus_present()
+ * reports false so nothing is ever presented to the usb-c port on a guess.
  *
- * @return true if the expander answered
+ * @return true if the expander answered on this first attempt
  */
 bool io_expander_init(void);
 
@@ -68,7 +69,7 @@ void io_expander_task(void);
 io_expander_event_t io_expander_poll_event(void);
 
 /**
- * @return true if the expander answered at init
+ * @return true once the expander has answered (at init or on a retry)
  */
 bool io_expander_present(void);
 
@@ -77,6 +78,12 @@ bool io_expander_present(void);
  */
 bool io_expander_vbus_present(void);
 
+/**
+ * @return configuration attempts so far: 1 if the expander answered at init,
+ *         more if it took retries (or is still not answering)
+ */
+uint32_t io_expander_attempts(void);
+
 #else
 
 static inline bool io_expander_init(void) { return false; }
@@ -84,6 +91,7 @@ static inline void io_expander_task(void) {}
 static inline io_expander_event_t io_expander_poll_event(void) { return IO_EXPANDER_EVENT_NONE; }
 static inline bool io_expander_present(void) { return false; }
 static inline bool io_expander_vbus_present(void) { return false; }
+static inline uint32_t io_expander_attempts(void) { return 0; }
 
 #endif // HAS_IO_EXPANDER
 

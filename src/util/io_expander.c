@@ -58,6 +58,11 @@
 // how long init waits for the display to finish with the bus
 #define IOX_INIT_BUS_WAIT_MS    250
 
+// an expander that did not answer at init is asked again this often. on a cold
+// power-up it can still be coming up when init runs; the cost of asking a part
+// that is not fitted at all is one nacked address byte
+#define IOX_RETRY_MS            500
+
 typedef struct
 {
     bool stable;            // debounced level
@@ -68,6 +73,9 @@ typedef struct
 
 static bool iox_present = false;
 static volatile bool iox_irq_pending = false;
+
+static uint32_t iox_attempts;       // configuration attempts so far
+static uint32_t iox_last_attempt_ms;
 
 static uint8_t enc_state;   // (a << 1) | b
 static int8_t enc_accum;
@@ -217,42 +225,31 @@ static void iox_process(uint8_t inputs, uint32_t now)
         iox_push_event(vbus_db.stable ? IO_EXPANDER_EVENT_VBUS_ON : IO_EXPANDER_EVENT_VBUS_OFF);
 }
 
-bool io_expander_init(void)
+/**
+ * one configuration attempt; the caller holds the bus. outputs go low before
+ * the direction register makes P5-P7 outputs, so they never glitch high;
+ * polarity is left at its non-inverting default.
+ *
+ * @return true if the expander answered every transfer
+ */
+static bool iox_configure(uint8_t *inputs, uint32_t now)
 {
-    uint8_t inputs = 0;
-    uint32_t now = to_ms_since_boot(get_absolute_time());
+    iox_attempts++;
+    iox_last_attempt_ms = now;
 
-    // /INT is open drain with no board pull-up. a change between the first
-    // read below and arming the edge interrupt is not lost: the task also
-    // services the expander whenever it finds /INT held low
-    gpio_init(IO_EXPANDER_INT);
-    gpio_set_dir(IO_EXPANDER_INT, GPIO_IN);
-    gpio_pull_up(IO_EXPANDER_INT);
-
-    // disp_ssd_init() has just queued its init sequence and first frame, which
-    // drain by interrupt; give them time (a full frame is ~25 ms at 400 kHz)
-    absolute_time_t give_up = make_timeout_time_ms(IOX_INIT_BUS_WAIT_MS);
-    while (!disp_i2c_bus_acquire()) {
-        if (time_reached(give_up)) {
-            ahprintf("[iox] i2c still busy at init, expander disabled\n");
-            return false;
-        }
-        sleep_us(500);
-    }
-
-    // outputs low before the direction register makes P5-P7 outputs, so they
-    // never glitch high; polarity left at its non-inverting default
-    iox_present = iox_write_reg(TCA9554_REG_OUTPUT, 0x00)
+    return iox_write_reg(TCA9554_REG_OUTPUT, 0x00)
         && iox_write_reg(TCA9554_REG_POLARITY, 0x00)
         && iox_write_reg(TCA9554_REG_CONFIG, IOX_INPUT_MASK)
-        && iox_read_reg(TCA9554_REG_INPUT, &inputs);
+        && iox_read_reg(TCA9554_REG_INPUT, inputs);
+}
 
-    disp_i2c_bus_release();
-
-    if (!iox_present) {
-        ahprintf("[iox] no tca9554 at 0x%02x\n", IO_EXPANDER_ADDR);
-        return false;
-    }
+/**
+ * the expander answered: seed the decoders from its first reading and arm the
+ * /INT edge. runs once, whether that was at init or on a later retry.
+ */
+static void iox_start(uint8_t inputs, uint32_t now)
+{
+    iox_present = true;
 
     enc_state = (uint8_t)((((inputs >> IO_EXPANDER_P_ENC_A) & 1u) << 1) | ((inputs >> IO_EXPANDER_P_ENC_B) & 1u));
     enc_accum = 0;
@@ -264,7 +261,70 @@ bool io_expander_init(void)
     gpio_set_irq_enabled(IO_EXPANDER_INT, GPIO_IRQ_EDGE_FALL, true);
     irq_set_enabled(IO_IRQ_BANK0, true);
 
-    ahprintf("[iox] tca9554 up, inputs %02x, usb-c vbus %s\n", inputs, vbus_db.stable ? "present" : "absent");
+    ahprintf("[iox] tca9554 up on attempt %lu, inputs %02x, usb-c vbus %s\n",
+        (unsigned long)iox_attempts, inputs, vbus_db.stable ? "present" : "absent");
+}
+
+/**
+ * ask an expander that has not answered yet again, at most every IOX_RETRY_MS
+ * and only when the display is not using the bus.
+ */
+static void iox_retry(uint32_t now)
+{
+    uint8_t inputs = 0;
+    bool ok;
+
+    if ((uint32_t)(now - iox_last_attempt_ms) < IOX_RETRY_MS)
+        return;
+
+    // display frame in flight: try again next pass
+    if (!disp_i2c_bus_acquire())
+        return;
+
+    ok = iox_configure(&inputs, now);
+    disp_i2c_bus_release();
+
+    if (ok)
+        iox_start(inputs, now);
+}
+
+bool io_expander_init(void)
+{
+    uint8_t inputs = 0;
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    bool ok;
+
+    // /INT is open drain with no board pull-up. a change between the first
+    // read and arming the edge interrupt is not lost: the task also services
+    // the expander whenever it finds /INT held low
+    gpio_init(IO_EXPANDER_INT);
+    gpio_set_dir(IO_EXPANDER_INT, GPIO_IN);
+    gpio_pull_up(IO_EXPANDER_INT);
+
+    // first retry no sooner than IOX_RETRY_MS from now, whatever happens here
+    iox_last_attempt_ms = now;
+
+    // disp_ssd_init() has just queued its init sequence and first frame, which
+    // drain by interrupt; give them time (a full frame is ~25 ms at 400 kHz)
+    absolute_time_t give_up = make_timeout_time_ms(IOX_INIT_BUS_WAIT_MS);
+    while (!disp_i2c_bus_acquire()) {
+        if (time_reached(give_up)) {
+            ahprintf("[iox] i2c still busy at init, will retry\n");
+            return false;
+        }
+        sleep_us(500);
+    }
+
+    now = to_ms_since_boot(get_absolute_time());
+    ok = iox_configure(&inputs, now);
+    disp_i2c_bus_release();
+
+    if (!ok) {
+        ahprintf("[iox] no tca9554 at 0x%02x, will retry\n", IO_EXPANDER_ADDR);
+        return false;
+    }
+
+    iox_start(inputs, now);
     return true;
 }
 
@@ -274,10 +334,12 @@ void io_expander_task(void)
     uint8_t inputs;
     bool due;
 
-    if (!iox_present)
-        return;
-
     now = to_ms_since_boot(get_absolute_time());
+
+    if (!iox_present) {
+        iox_retry(now);
+        return;
+    }
 
     // /INT held low means an unread change, whether or not we saw the edge
     due = iox_irq_pending || !gpio_get(IO_EXPANDER_INT)
@@ -326,6 +388,11 @@ bool io_expander_present(void)
 bool io_expander_vbus_present(void)
 {
     return iox_present && vbus_db.stable;
+}
+
+uint32_t io_expander_attempts(void)
+{
+    return iox_attempts;
 }
 
 #endif // HAS_IO_EXPANDER

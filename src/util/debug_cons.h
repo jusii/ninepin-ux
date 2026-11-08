@@ -54,6 +54,13 @@ void dbgcons_mode(char const *mode);
 
 void dbgcons_amiga_power(bool on);
 
+/**
+ * usb-c device port state on oled line 1 (HAS_USB_DEVICE boards without
+ * bluetooth; a no-op elsewhere), with the number of attempts the i/o expander
+ * that senses its vbus took to answer.
+ */
+void dbgcons_usb_c(char const *state, uint32_t iox_attempts);
+
 void dbgcons_bt_status(char const *status);
 
 void dbgcons_bt_passkey(char const *message);

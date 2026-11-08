@@ -96,6 +96,38 @@ static void amiga_power_task(void)
 }
 #endif
 
+#ifdef HAS_USB_DEVICE
+/**
+ * show the usb-c device port's state on the oled whenever it changes: whether
+ * the expander that senses vbus answered, vbus itself, and the host's view.
+ */
+static void usb_c_status_task(void)
+{
+    static char const *shown_state = NULL;
+    static uint32_t shown_attempts = 0;
+    char const *state;
+    uint32_t attempts = io_expander_attempts();
+
+    if (!io_expander_present())
+        state = "no iox";
+    else if (!io_expander_vbus_present())
+        state = "no vbus";
+    else if (!usb_device_mounted())
+        state = "no host";
+    else if (tud_suspended())
+        state = "suspend";
+    else
+        state = "mounted";
+
+    if ((state == shown_state) && (attempts == shown_attempts))
+        return;
+
+    shown_state = state;
+    shown_attempts = attempts;
+    dbgcons_usb_c(state, attempts);
+}
+#endif
+
 #if defined(HAS_IO_EXPANDER) || defined(HAS_USER_BUTTON)
 /**
  * the board's own controls: encoder and switch on the expander, and the BOOT
@@ -223,6 +255,7 @@ int main(void)
 #ifdef HAS_USB_DEVICE
         // device mode jobs on the usb-c port, which follows its vbus
         usb_device_task(io_expander_vbus_present());
+        usb_c_status_task();
 #endif
 
 #ifdef ENABLE_BLUETOOTH_HID

@@ -349,6 +349,22 @@ void dbgcons_amiga_power(bool on)
 #endif
 }
 
+void dbgcons_usb_c(char const *state, uint32_t iox_attempts)
+{
+    // oled line 1 belongs to the bluetooth status on bluetooth builds, and is
+    // borrowed by DEBUG_KEYBOARD's key readout until the next usb-c change
+#if defined(HAS_USB_DEVICE) && !defined(ENABLE_BLUETOOTH_HID)
+    char linebuf[DBGCONS_OLED_COLS + 1] = "";
+
+    snprintf(linebuf, sizeof(linebuf), "usb-c:%-8s try:%lu",
+        state != NULL ? state : "?", (unsigned long)iox_attempts);
+    dbgcons_write_padded_line(1, linebuf);
+#else
+    (void)state;
+    (void)iox_attempts;
+#endif
+}
+
 void dbgcons_bt_status(char const *status)
 {
 #ifdef ENABLE_BLUETOOTH_HID
