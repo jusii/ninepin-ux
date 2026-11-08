@@ -101,8 +101,14 @@ bool usb_device_console_line(char *line, size_t size);
 int usb_device_host_caps_lock(void);
 
 /**
- * @brief Press and release caps lock once on the host, as its own two reports
- *        so the two are never merged away. Ignored whilst a tap is in flight.
+ * @brief Press and release a key with modifiers once on the host, as its own
+ *        two reports so the two are never merged away, on top of whatever the
+ *        keyboards hold. Ignored whilst a tap is in flight.
+ */
+void usb_device_key_tap(uint8_t modifier, uint8_t key);
+
+/**
+ * @brief usb_device_key_tap() for caps lock.
  */
 void usb_device_caps_tap(void);
 

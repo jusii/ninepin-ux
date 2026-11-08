@@ -1,5 +1,6 @@
 add_executable(amigahid-pico
   input_bridge.c
+  keyboard_map.c
   main.c
   menu.c
   settings.c

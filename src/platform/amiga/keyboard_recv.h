@@ -11,6 +11,8 @@
 #ifndef _PLATFORM_AMIGA_KEYBOARD_RECV_H
 #define _PLATFORM_AMIGA_KEYBOARD_RECV_H
 
+#include <stdint.h>
+
 #include "util/run_mode.h"
 
 /**
@@ -43,5 +45,11 @@ void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to);
  *        the keyboards over). Keys still held release nowhere afterwards.
  */
 void amiga_keyboard_recv_release_all(void);
+
+/**
+ * @return the hid usage an amiga key sends to a usb host before any user
+ *         remap (0 for none, and on boards without a usb device port)
+ */
+uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga);
 
 #endif // _PLATFORM_AMIGA_KEYBOARD_RECV_H

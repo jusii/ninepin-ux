@@ -44,6 +44,8 @@
 #include "keyboard_serial_io.h"
 #include "keyboard_recv.pio.h" // generated at compile time
 #include "input_bridge_bt.h"
+#include "keyboard_map.h"
+#include "settings.h"
 #include "menu.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -277,9 +279,52 @@ static inline bool kbdin_to_usb(void)
  *         seen arriving as 0x7c, not the documented 0x78, and must not be held
  *         down on the usb side
  */
+/**
+ * the hid usage an amiga key sends under the current settings: a remap slot
+ * first, then the numpad paren style, then the table above.
+ *
+ * @param shift  set when the usage needs left shift added (paren styles that
+ *               type ( and ) as shifted digits)
+ * @return the usage, or 0 for no key
+ */
+static uint8_t kbdin_usb_usage(uint8_t keycode, bool *shift)
+{
+    settings_t const *s = settings_get();
+
+    *shift = false;
+
+    for (unsigned i = 0; i < SETTINGS_REMAP_SLOTS; i++) {
+        if (s->ak_remap[i].source == (uint8_t)(keycode + 1)) {
+            uint8_t target = s->ak_remap[i].target;
+            return (target == KEYBOARD_MAP_DISABLED) ? 0 : target;
+        }
+    }
+
+    if ((keycode == AMIGA_KPOPAREN) || (keycode == AMIGA_KPCPAREN)) {
+        bool open_paren = keycode == AMIGA_KPOPAREN;
+
+        switch (s->ak_parens) {
+            case SETTINGS_AK_PARENS_US:
+                *shift = true;
+                return open_paren ? HID_KEY_9 : HID_KEY_0;
+            case SETTINGS_AK_PARENS_NORDIC:
+                *shift = true;
+                return open_paren ? HID_KEY_8 : HID_KEY_9;
+            case SETTINGS_AK_PARENS_FRENCH:
+                return open_paren ? HID_KEY_5 : HID_KEY_MINUS;
+            default:
+                break;
+        }
+    }
+
+    return (keycode < sizeof(mapAmigaToHid)) ? mapAmigaToHid[keycode] : 0;
+}
+
 static inline bool kbdin_usb_maps(uint8_t keycode)
 {
-    return (keycode < sizeof(mapAmigaToHid)) && (mapAmigaToHid[keycode] != 0);
+    bool shift;
+
+    return kbdin_usb_usage(keycode, &shift) != 0;
 }
 
 /**
@@ -293,15 +338,19 @@ static void kbdin_usb_report(void)
 
     memset(&report, 0, sizeof(report));
 
-    for (uint8_t code = 0; code < sizeof(mapAmigaToHid); code++) {
+    for (uint8_t code = 0; code < 128; code++) {
         uint8_t usage;
+        bool shift;
 
         if (!held_get(held_usb, code))
             continue;
 
-        usage = mapAmigaToHid[code];
+        usage = kbdin_usb_usage(code, &shift);
         if (usage == 0)
             continue;
+
+        if (shift)
+            report.modifier |= KEYBOARD_MODIFIER_LEFTSHIFT;
 
         if (usage >= HID_KEY_CONTROL_LEFT)
             report.modifier |= (uint8_t)(1u << (usage - HID_KEY_CONTROL_LEFT));
@@ -344,6 +393,28 @@ static void kbdin_usb_caps_sync(bool on_event)
         usb_device_caps_tap();
 }
 
+/**
+ * ctrl-amiga-amiga in a usb mode, if the user asked for it: ctrl-alt-del on
+ * the host, once per keyboard reset.
+ */
+static bool cad_sent;
+
+static void kbdin_usb_ctrl_alt_del(void)
+{
+    if (!settings_get()->ak_cad || cad_sent)
+        return;
+
+    cad_sent = true;
+    usb_device_key_tap(KEYBOARD_MODIFIER_LEFTCTRL | KEYBOARD_MODIFIER_LEFTALT, HID_KEY_DELETE);
+    ahprintf("[akb] ctrl-amiga-amiga: ctrl-alt-del to the usb host\n");
+}
+
+// the keyboard is back up: the next ctrl-amiga-amiga may send it again
+static void kbdin_usb_cad_rearm(void)
+{
+    cad_sent = false;
+}
+
 static void kbdin_usb_release(void)
 {
     if (!held_any(held_usb))
@@ -358,6 +429,8 @@ static inline bool kbdin_usb_maps(uint8_t keycode) { (void)keycode; return false
 static inline void kbdin_usb_report(void) {}
 static inline void kbdin_usb_caps_sync(bool on_event) { (void)on_event; }
 static inline void kbdin_usb_release(void) { memset(held_usb, 0, sizeof(held_usb)); }
+static inline void kbdin_usb_ctrl_alt_del(void) {}
+static inline void kbdin_usb_cad_rearm(void) {}
 #endif
 
 /**
@@ -586,6 +659,7 @@ static void amiga_keyboard_recv_reset_task(void)
         kbd_reset_local = true;
         resync_pending = true;
         kbdin_keyboard_restarting(true);
+        kbdin_usb_ctrl_alt_del();
         ahprintf("[akb] real keyboard held kclk low; %s mode, amiga left running\n", run_mode_name(run_mode_get()));
         return;
     }
@@ -627,6 +701,7 @@ void amiga_keyboard_recv_task(void)
             case AMIGA_INITPOWER:
                 dbgcons_amiga_key(0, code, "r");
                 kbdin_keyboard_restarting(true);
+                kbdin_usb_cad_rearm();
                 break;
 
             // ctrl-amiga-amiga: the amiga side has already acted on the key
@@ -637,6 +712,8 @@ void amiga_keyboard_recv_task(void)
             case AMIGA_RESET:
                 dbgcons_amiga_key(0, code, "r");
                 kbdin_keyboard_restarting(kbdin_to_usb());
+                if (kbdin_to_usb())
+                    kbdin_usb_ctrl_alt_del();
                 break;
 
             default: {
@@ -654,6 +731,16 @@ void amiga_keyboard_recv_task(void)
     // ctrl-amiga-amiga reach the combo tracking before the keyboard's kclk hold
     // is considered, so the two paths agree on who owns the reset
     amiga_keyboard_recv_reset_task();
+}
+
+uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga)
+{
+#ifdef HAS_USB_DEVICE
+    return (amiga < sizeof(mapAmigaToHid)) ? mapAmigaToHid[amiga] : 0;
+#else
+    (void)amiga;
+    return 0;
+#endif
 }
 
 void amiga_keyboard_recv_release_all(void)
@@ -694,5 +781,6 @@ void amiga_keyboard_recv_init(void) {}
 void amiga_keyboard_recv_task(void) {}
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to) { (void)from; (void)to; }
 void amiga_keyboard_recv_release_all(void) {}
+uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga) { (void)amiga; return 0; }
 
 #endif // HAS_KBD_IN

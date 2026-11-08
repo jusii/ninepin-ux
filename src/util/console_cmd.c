@@ -21,6 +21,7 @@
 #include "pico/bootrom.h"
 #include "pico/platform.h"
 
+#include "keyboard_map.h"
 #include "menu.h"
 #include "settings.h"
 #include "usb_device.h"
@@ -94,6 +95,16 @@ static void cmd_settings(char const *arg)
         s->bt_enabled ? "on" : "off", s->bt_pairing, s->wifi_mode, s->ota_needs_boot);
     ahprintf("wheel %u reverse %u, mouse speed %u, display %u, watchdog %u\n",
         s->wheel_enabled, s->wheel_reverse, s->mouse_speed, s->display, s->watchdog);
+    ahprintf("pc kbd: preset %u help %u del %u iso %u; a4000: parens %u, ctrl-amiga-amiga %u\n",
+        s->kb_preset, s->kb_help, s->kb_delete, s->kb_iso, s->ak_parens, s->ak_cad);
+    for (unsigned i = 0; i < SETTINGS_REMAP_SLOTS; i++) {
+        if (s->kb_remap[i].source)
+            ahprintf("pc remap %u: %s > %s\n", i + 1, keyboard_map_hid_name(s->kb_remap[i].source),
+                keyboard_map_amiga_name(s->kb_remap[i].target));
+        if (s->ak_remap[i].source)
+            ahprintf("a4000 remap %u: %s > %s\n", i + 1, keyboard_map_amiga_name((uint8_t)(s->ak_remap[i].source - 1)),
+                keyboard_map_hid_name(s->ak_remap[i].target));
+    }
 }
 
 static void cmd_mode(char const *arg)

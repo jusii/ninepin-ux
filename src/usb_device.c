@@ -159,11 +159,13 @@ static bool bootsel_pending;
 // interface: -1 until the host has said, else 0 / 1
 static int8_t host_caps_lock = -1;
 
-// a caps lock tap in flight: the press goes out in one report and the release in
-// the next, since the slot state above keeps only the newest level and would
-// fold a press and its release into nothing
+// a key tap in flight (caps lock, ctrl-alt-del): the press goes out in one
+// report and the release in the next, since the slot state above keeps only
+// the newest level and would fold a press and its release into nothing
 typedef enum { CAPS_TAP_NONE = 0, CAPS_TAP_PRESS, CAPS_TAP_RELEASE } caps_tap_t;
 static caps_tap_t caps_tap;
+static uint8_t tap_modifier;        // the tap's own modifiers and key
+static uint8_t tap_key;
 
 // hid usage table, keyboard page: "keyboard errorrollover"
 #define HID_USAGE_KEYBOARD_ERROR_ROLLOVER 0x01
@@ -256,9 +258,9 @@ static void hid_flush(void)
 
             while ((pos < 5) && (merged.keycode[pos] != 0))
                 pos++;
-            merged.keycode[pos] = HID_KEY_CAPS_LOCK;
+            merged.keycode[pos] = tap_key;
 
-            if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode))
+            if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier | tap_modifier, merged.keycode))
                 caps_tap = CAPS_TAP_RELEASE;
         } else if (tud_hid_n_keyboard_report(USB_DEVICE_HID_KEYBOARD, 0, merged.modifier, merged.keycode)) {
             // the release report carries the current state, so it also
@@ -450,13 +452,20 @@ int usb_device_host_caps_lock(void)
     return host_caps_lock;
 }
 
-void usb_device_caps_tap(void)
+void usb_device_key_tap(uint8_t modifier, uint8_t key)
 {
     if (caps_tap != CAPS_TAP_NONE)
         return;
 
+    tap_modifier = modifier;
+    tap_key = key;
     caps_tap = CAPS_TAP_PRESS;
     hid_wake_host();
+}
+
+void usb_device_caps_tap(void)
+{
+    usb_device_key_tap(0, HID_KEY_CAPS_LOCK);
 }
 
 bool usb_device_caps_tap_pending(void)

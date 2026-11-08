@@ -25,6 +25,7 @@
 
 #include "display/disp_ssd.h"
 #include "input_bridge.h"
+#include "keyboard_map.h"
 #include "platform/amiga/keyboard.h"
 #include "platform/amiga/keyboard_recv.h"
 #include "settings.h"
@@ -43,7 +44,7 @@
 // the items
 //--------------------------------------------------------------------+
 
-typedef enum { ITEM_CHOICE, ITEM_ACTION } item_kind_t;
+typedef enum { ITEM_CHOICE, ITEM_ACTION, ITEM_REMAP } item_kind_t;
 
 typedef struct {
     char const *label;
@@ -53,6 +54,8 @@ typedef struct {
     char const *const *names;       // ITEM_CHOICE: one per value
     bool (*visible)(void);          // NULL: always
     void (*action)(void);           // ITEM_ACTION
+    uint8_t slot;                   // ITEM_REMAP: slot number
+    bool from_amiga;                // ITEM_REMAP: amiga keyboard -> usb (else usb -> amiga)
 } menu_item_t;
 
 static char const *const names_mode[] = { "amiga", "c64", "usb" };
@@ -69,6 +72,12 @@ static char const *const names_display[] = { "status", "hid diag", "mouse diag",
 static char const *const names_watchdog[] = { "off", "2 s", "5 s" };
 static char const *const names_bt_pairing[] = { "automatic", "paired only" };
 static char const *const names_wifi[] = { "off", "access point", "join network" };
+static char const *const names_kb_preset[] = { "original", "Y<->Z", "A<->Q W<->Z" };
+static char const *const names_kb_help[] = { "insert", "home", "page up", "F11", "none" };
+static char const *const names_kb_delete[] = { "delete", "backspace", "none" };
+static char const *const names_kb_iso[] = { "backslash", "amiga iso key" };
+static char const *const names_ak_parens[] = { "keypad keys", "US/UK", "Nordic/DE", "French" };
+static char const *const names_ak_cad[] = { "nothing", "ctrl-alt-del" };
 
 static settings_t edited;
 
@@ -80,9 +89,13 @@ static void action_save(void);
 static void action_cancel(void);
 
 #define CHOICE(label, field, names, visible) \
-    { label, ITEM_CHOICE, offsetof(settings_t, field), count_of(names), names, visible, NULL }
+    { label, ITEM_CHOICE, offsetof(settings_t, field), count_of(names), names, visible, NULL, 0, false }
 #define ACTION(label, fn) \
-    { label, ITEM_ACTION, 0, 0, NULL, NULL, fn }
+    { label, ITEM_ACTION, 0, 0, NULL, NULL, fn, 0, false }
+#define REMAP_PC(n) \
+    { "PC remap " #n, ITEM_REMAP, offsetof(settings_t, kb_remap), 0, NULL, NULL, NULL, (n) - 1, false }
+#define REMAP_A4000(n) \
+    { "A4000 remap " #n, ITEM_REMAP, offsetof(settings_t, ak_remap), 0, NULL, NULL, NULL, (n) - 1, true }
 
 static const menu_item_t items[] = {
     CHOICE("Mode",              mode,           names_mode,         NULL),
@@ -98,6 +111,16 @@ static const menu_item_t items[] = {
     CHOICE("Touchpad mouse",    pad_touchpad,   names_off_on,       NULL),
     CHOICE("Mouse wheel",       wheel_enabled,  names_off_on,       NULL),
     CHOICE("Wheel direction",   wheel_reverse,  names_wheel_dir,    NULL),
+    CHOICE("Keyboard preset",   kb_preset,      names_kb_preset,    NULL),
+    CHOICE("Help key",          kb_help,        names_kb_help,      NULL),
+    CHOICE("Del key",           kb_delete,      names_kb_delete,    NULL),
+    CHOICE("ISO key",           kb_iso,         names_kb_iso,       NULL),
+    REMAP_PC(1), REMAP_PC(2), REMAP_PC(3), REMAP_PC(4),
+    REMAP_PC(5), REMAP_PC(6), REMAP_PC(7), REMAP_PC(8),
+    CHOICE("A4000 numpad ( )",  ak_parens,      names_ak_parens,    NULL),
+    CHOICE("Ctrl-Amiga-Amiga",  ak_cad,         names_ak_cad,       NULL),
+    REMAP_A4000(1), REMAP_A4000(2), REMAP_A4000(3), REMAP_A4000(4),
+    REMAP_A4000(5), REMAP_A4000(6), REMAP_A4000(7), REMAP_A4000(8),
     CHOICE("Mouse speed",       mouse_speed,    names_mouse_speed,  NULL),
     CHOICE("Display",           display,        names_display,      NULL),
     CHOICE("Watchdog",          watchdog,       names_watchdog,     NULL),
@@ -122,6 +145,11 @@ static bool dirty;                  // edits not saved yet
 static bool editing;                // encoder: a push turned the knob to the value
 static unsigned cursor;
 static char const *hint = "";
+
+// teaching a remap slot: 0 idle, 1 waiting for the key to change, 2 for its
+// new meaning
+static unsigned learning;
+static settings_t learn_backup;      // edits as they were before teaching began
 static char const *notice;          // one-off message on the hint line
 
 static void (*real_write)(uint8_t x, uint8_t y, char *message);
@@ -177,6 +205,21 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
     if (item->kind == ITEM_CHOICE) {
         char const *value = item->names[*item_value(cursor)];
         snprintf(lines[2], MENU_COLS + 1, editing ? " [ %s ]" : " < %s >", value);
+    } else if (item->kind == ITEM_REMAP) {
+        settings_remap_t const *remap = (settings_remap_t const *)item_value(cursor) + item->slot;
+
+        if (learning == 1)
+            snprintf(lines[2], MENU_COLS + 1, item->from_amiga ? " press A4000 key" : " press PC key");
+        else if (learning == 2)
+            snprintf(lines[2], MENU_COLS + 1, " press its new key");
+        else if (!remap->source)
+            snprintf(lines[2], MENU_COLS + 1, " (empty)");
+        else if (item->from_amiga)
+            snprintf(lines[2], MENU_COLS + 1, " %s > %s", keyboard_map_amiga_name((uint8_t)(remap->source - 1)),
+                keyboard_map_hid_name(remap->target));
+        else
+            snprintf(lines[2], MENU_COLS + 1, " %s > %s", keyboard_map_hid_name(remap->source),
+                keyboard_map_amiga_name(remap->target));
     } else {
         snprintf(lines[2], MENU_COLS + 1, " > select to run");
     }
@@ -327,6 +370,17 @@ static void change(int step)
     menu_item_t const *item = &items[cursor];
     uint8_t *value;
 
+    if (item->kind == ITEM_REMAP) {
+        settings_remap_t *remap = (settings_remap_t *)item_value(cursor) + item->slot;
+
+        if (remap->source) {
+            remap->source = remap->target = 0;
+            dirty = true;
+            notice = "slot cleared";
+        }
+        return;
+    }
+
     if (item->kind != ITEM_CHOICE)
         return;
 
@@ -347,6 +401,14 @@ void menu_input(menu_input_t input)
 
     notice = NULL;
 
+    if (learning) {
+        learning = 0;
+        edited = learn_backup;
+        notice = "remap cancelled";
+        draw();
+        return;
+    }
+
     switch (input) {
         case MENU_IN_NEXT:  editing = false; move(+1); break;
         case MENU_IN_PREV:  editing = false; move(-1); break;
@@ -357,6 +419,12 @@ void menu_input(menu_input_t input)
             if (items[cursor].kind == ITEM_ACTION) {
                 items[cursor].action();
                 return;     // may have closed
+            }
+            if (items[cursor].kind == ITEM_REMAP) {
+                learn_backup = edited;
+                learning = 1;
+                notice = "Esc cancels";
+                break;
             }
             change(+1);
             break;
@@ -415,6 +483,112 @@ static bool report_empty(hid_keyboard_report_t const *report)
     return true;
 }
 
+
+//--------------------------------------------------------------------+
+// teaching remap slots
+//--------------------------------------------------------------------+
+
+// what a pc key means on the amiga before any remap (help sits on insert)
+static uint8_t hid_to_amiga_base(uint8_t usage)
+{
+    static uint8_t const modifiers[8] = { AMIGA_CTRL, AMIGA_LSHIFT, AMIGA_LALT, AMIGA_LAMIGA,
+        AMIGA_CTRL, AMIGA_RSHIFT, AMIGA_RALT, AMIGA_RAMIGA };
+
+    if (usage >= HID_KEY_CONTROL_LEFT)
+        return (usage <= HID_KEY_GUI_RIGHT) ? modifiers[usage - HID_KEY_CONTROL_LEFT] : AMIGA_UNKNOWN;
+    return mapHidToAmiga[usage];
+}
+
+static void learn_cancel(void)
+{
+    learning = 0;
+    edited = learn_backup;
+    notice = "remap cancelled";
+    draw();
+}
+
+/**
+ * one key for the slot being taught.
+ *
+ * @param pc_usage      the key as a hid usage, if it came from a pc keyboard
+ * @param amiga_code    the key as an amiga keycode, if it came from the a4000
+ */
+static void learn_key(bool from_pc, uint8_t pc_usage, uint8_t amiga_code)
+{
+    menu_item_t const *item = &items[cursor];
+    settings_remap_t *slots = (settings_remap_t *)item_value(cursor);
+    uint8_t source;
+
+    if (learning == 1) {
+        // the key to change comes from the keyboard the slot belongs to; pc
+        // modifiers never pass through the key map, so they cannot be sources
+        if (from_pc == item->from_amiga)
+            return;
+        if (from_pc && (pc_usage >= HID_KEY_CONTROL_LEFT))
+            return;
+
+        source = from_pc ? pc_usage : (uint8_t)(amiga_code + 1);
+
+        // a key can only be remapped once
+        for (unsigned j = 0; j < SETTINGS_REMAP_SLOTS; j++) {
+            if ((j != item->slot) && (slots[j].source == source))
+                slots[j].source = slots[j].target = 0;
+        }
+
+        slots[item->slot].source = source;
+        slots[item->slot].target = KEYBOARD_MAP_DISABLED;
+        learning = 2;
+        notice = "Esc cancels";
+        draw();
+        return;
+    }
+
+    // its new meaning, pressed on either keyboard
+    if (item->from_amiga)
+        slots[item->slot].target = from_pc ? pc_usage : amiga_keyboard_recv_hid_usage(amiga_code);
+    else
+        slots[item->slot].target = from_pc ? hid_to_amiga_base(pc_usage) : amiga_code;
+
+    if ((item->from_amiga && !slots[item->slot].target)
+        || (!item->from_amiga && (slots[item->slot].target == AMIGA_UNKNOWN))) {
+        slots[item->slot].target = KEYBOARD_MAP_DISABLED;
+        notice = "no such key there";
+        draw();
+        return;
+    }
+
+    learning = 0;
+    dirty = true;
+    notice = "remapped";
+    draw();
+}
+
+static void learn_hid(hid_keyboard_report_t const *report, hid_keyboard_report_t const *previous)
+{
+    uint8_t usage = 0;
+    uint8_t new_modifiers = report->modifier & (uint8_t)~previous->modifier;
+
+    for (unsigned i = 0; i < 6; i++) {
+        uint8_t key = report->keycode[i];
+
+        if (key && !report_has(previous, key)) {
+            usage = key;
+            break;
+        }
+    }
+
+    if (!usage && new_modifiers)
+        usage = (uint8_t)(HID_KEY_CONTROL_LEFT + __builtin_ctz(new_modifiers));
+
+    if (!usage)
+        return;
+
+    if (usage == HID_KEY_ESCAPE)
+        learn_cancel();
+    else
+        learn_key(true, usage, 0);
+}
+
 bool menu_keyboard_hid(uint8_t slot, hid_keyboard_report_t const *report)
 {
     hid_keyboard_report_t previous;
@@ -444,6 +618,11 @@ bool menu_keyboard_hid(uint8_t slot, hid_keyboard_report_t const *report)
     }
 
     hint = "arrows  Enter  Esc";
+
+    if (learning) {
+        learn_hid(report, &previous);
+        return true;
+    }
 
     // act on keys newly down in this report
     for (unsigned i = 0; i < 6; i++) {
@@ -481,6 +660,14 @@ bool menu_keyboard_amiga(uint8_t keycode, bool up)
 
     if (up)
         return true;
+
+    if (learning) {
+        if (keycode == AMIGA_ESC)
+            learn_cancel();
+        else
+            learn_key(false, 0, keycode);
+        return true;
+    }
 
     switch (keycode) {
         case AMIGA_UP:          menu_input(MENU_IN_PREV); break;
