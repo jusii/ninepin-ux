@@ -156,7 +156,7 @@ GND_MIN_VIAS = 15
 REV5_GLOB_PREFIX = "kicad/amigahid-pico."
 REV5_BASELINE_COMMIT = "d159951afc386a7c4ad0004cd801c12b701aa219"
 NETLIST_CHECKER = "tools/check_rev6_netlist.py"
-# re-baselined once, at 84f25982: the netlist checker's F1 rule was
+# re-baselined once, at 219ca634: the netlist checker's F1 rule was
 # RE-TARGETED, not relaxed.  it used to warn when F1's value was *not* 750 mA -
 # which blessed the placeholder the design gates on - and now asserts that while
 # the draft value stands F1 must carry no LCSC code, so the placeholder cannot be
@@ -175,7 +175,7 @@ NETLIST_CHECKER_M2_BLOB = "cbffadae75433c403881a21d921c662f62dea3be"
 # is exactly the sort of thing that survives right up until the once it does
 # not.  J4 catches the rewrite, K1-K3 catch the damage.
 #
-# the file deliberately no longer matches its M2 blob: f5677cb replaced rev5's
+# the file deliberately no longer matches its M2 blob: 4c5ddeb replaced rev5's
 # copied-over settings with jlcpcb's, before any routing, and every constraint
 # it touched moved in the tighter direction (min_copper_edge_clearance
 # 0.025 -> 0.3 being the one the brief names).  reverting to M2 would hand the
