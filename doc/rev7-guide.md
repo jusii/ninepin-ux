@@ -5,12 +5,9 @@ the Wi-Fi settings page and firmware updates. The rev7 board needs an RP2350 wit
 an RM2 radio module for Bluetooth and Wi-Fi. A build without the radio (`-DENABLE_BLUETOOTH_HID=OFF`)
 has everything except Bluetooth, Wi-Fi and updates over Wi-Fi.
 
-> **Status (November 2026):** new firmware, not yet tested on real hardware end to end. These parts
-> are proven on a board: the three modes, the menu, the settings store, the A4000 keyboard to
-> USB-C, USB keyboards and mice, Bluetooth start-up, the watchdog, firmware updates through the
-> BOOTSEL drive with rollback, and the Wi-Fi access point.
-> These parts are still waiting for their test session: game controllers, the CD32 pad, C64
-> joysticks and the 1351 mouse, page uploads over Wi-Fi, and joining a home network.
+> **Status:** tested on hardware: modes, menu, settings, USB and A4000 keyboards, USB mice, Wi-Fi
+> (access point and join), updates from the page and the BOOTSEL drive with rollback. Not yet
+> tested: game controllers, CD32, C64 joystick, 1351 mouse.
 
 ## first install
 
@@ -54,8 +51,8 @@ Every setting is in the menu on the OLED. These controls open and drive it:
 
 Changes are made on a copy. **Save & exit** stores and applies them, and **Cancel** throws them
 away. If you leave with unsaved changes, the menu first moves to Save & exit; leaving again
-discards them. While the menu is open it owns the display and every keyboard, mouse and pad, so
-nothing reaches the Amiga or the host.
+discards them. Enter does not change a value; left / right does. While the menu is open it owns
+the display and every keyboard, mouse and pad, so nothing reaches the Amiga or the host.
 
 ### settings
 
@@ -118,8 +115,12 @@ Where players go:
 Bluetooth is on by default. With pairing set to automatic, the board pairs with any keyboard,
 mouse or pad that is in pairing mode, at any time. With paired only, devices it already knows
 still connect, but a new one pairs only during the 2-minute window that **BT pair (2 min)**
-opens. **Forget BT devices** (select twice)
-removes all bonds. A keyboard that needs a passkey shows it on the OLED.
+opens. **Forget BT devices** (select twice) removes all bonds. A keyboard that needs a passkey
+shows it on the OLED.
+
+Searching for new devices pauses while the Wi-Fi access point is on and during a firmware upload:
+it shares the radio and blocks Wi-Fi. Connected devices keep working; **BT pair (2 min)** searches
+anyway.
 
 ## Wi-Fi and the settings page
 

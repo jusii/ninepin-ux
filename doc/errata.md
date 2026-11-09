@@ -1,5 +1,18 @@
 # errata
 
+## ux rev7
+
+* **cold plug-in may start in BOOTSEL.** RUN has no delay, so the chip can start before the
+  flash is ready. Fix: solder **1 µF** and **820 kΩ** in parallel across **SW2 (RESET) pins 1-2**,
+  on the back. Any small SMD (0805/1206) or through-hole part fits across the switch pins. The
+  cap delays reset release; the resistor drains it after unplug, so a quick replug boots too.
+  RUN reads ~3.2 V while running.
+* **LED1 (WS2812B-2020) is not stocked at Mouser or Digi-Key:**
+  [LCSC C52917434](https://www.lcsc.com/product-detail/C52917434.html), or AliExpress, search
+  "WS2812B-2020".
+* **OLED module listings show wrong dimensions.** The board takes a 26 x 26 mm module with holes
+  22.2 x 22.2 mm; see the [board guide](./ux-rev7.md#oled). Nylon posts and screws only.
+
 ## ux rev 1 (rev6) — fabricated, hand-built
 
 the board as fabricated works. things to know before you build one:

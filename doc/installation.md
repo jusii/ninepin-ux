@@ -2,6 +2,12 @@
 
 ## configuration
 
+### UX rev7
+
+see the [rev7 firmware guide](./rev7-guide.md#first-install): partition table first, then the
+firmware. ci builds `BOARD_HIDPICO_REV7` with and without the radio (`-DENABLE_BLUETOOTH_HID=OFF`).
+
+
 ### UX rev 1 (rev6) — start here
 
 prerequisites and the submodule init are in [building](#building-the-source-code) below. the
