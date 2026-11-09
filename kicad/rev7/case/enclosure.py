@@ -2,8 +2,11 @@
 
 Reads ../floorplan.py (board, connectors, case constants, OLED) and parts.json (every footprint's
 courtyard and height, written by export_parts.py). KiCad x, y_up = -y_kicad, z = 0 at the board
-underside. Two prints: CAP = walls + lid, BASE = plate with the standoffs; four M3 screws from below
-through the base and the board into heat-set inserts in cap pillars on the board's corner holes.
+underside. A clamshell split at Z_SPLIT, so the board drops in with its connectors sticking out on
+three sides: TRAY = plate, standoffs and the walls up to the split (openings open upward), CAP =
+walls above the split + lid + pillars (openings open downward). A lip on the tray's inner wall
+locates the cap. Four M3 screws from below through the tray and the board into heat-set inserts in
+the cap pillars on the board's corner holes.
 Outer wall is the reference: mini-DIN and USB-A faces flush, DE9 flange and USB-C behind thinned
 walls, BOOT/RESET actuators through the east wall, OLED window + encoder + LED hole in the lid.
 
@@ -34,7 +37,8 @@ CONN = {c[0]: c for c in FP["CONNECTORS"]}
 # ---- case parameters ----
 CORNER_R = 3.0
 INSERT_D, INSERT_L, SCREW_D, PILLAR_D = 4.0, 6.0, 3.4, 6.5     # M3 heat-set inserts in the cap pillars
-LIP_H, LIP_CLR = 1.2, 0.2
+Z_SPLIT = 6.0                                                  # tray / cap seam above the board underside
+LIP_UP, LIP_T, LIP_CLR = 1.5, 1.2, 0.2                         # tray lip: height above the seam, thickness, clearance
 FOOT_D, FOOT_H, FOOT_IN = 8.0, 0.6, 7.0                        # rubber-foot recesses under the base
 ENC = (48.0, 28.0)                                             # knob centre (KiCad), from the 2026-10-18 fit scan
 ENC_HOLE, ENC_BODY, ENC_BODY_H, ENC_PINS_H = 7.2, 13.5, 7.0, 10.0   # PEC11R: M7 bushing; body envelope below the lid
@@ -70,12 +74,13 @@ def fillet_along(b, axis, r):
 def cut_ns(x0, x1, z0, z1, y_centre, r=1.0, depth=6): return fillet_along(box(x0, x1, y_centre - depth, y_centre + depth, z0, z1), 1, r)
 def cut_ew(yk0, yk1, z0, z1, x_centre, r=1.0, depth=6): return fillet_along(box(x_centre - depth, x_centre + depth, ky(yk1), ky(yk0), z0, z1), 0, r)
 
-# ---- cap: walls + lid ----
-cap = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_TOP, Z_TOP, CORNER_R)
-cap = cap.cut(box(IN_X0, IN_X1, IN_Y0, IN_Y1, Z_PLATE_TOP - 1, CEIL))
+# ---- the closed box: plate, walls, lid; cut into tray and cap after the openings ----
+cap = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_BOT, Z_TOP, CORNER_R)
+cap = cap.cut(box(IN_X0, IN_X1, IN_Y0, IN_Y1, Z_PLATE_TOP, CEIL))
+pillars = None                                                 # the cap's, fused after the split
 for (cx, cy) in HOLES:
-    cap = cap.fuse(cyl(PILLAR_D, CEIL - Z_BT, cx, ky(cy), Z_BT))
-    cap = cap.cut(cyl(INSERT_D, INSERT_L, cx, ky(cy), Z_BT))
+    pl = cyl(PILLAR_D, CEIL - Z_BT, cx, ky(cy), Z_BT).cut(cyl(INSERT_D, INSERT_L, cx, ky(cy), Z_BT))
+    pillars = pl if pillars is None else pillars.fuse(pl)
 
 NY, SY, EX = (IN_Y1 + OUT_Y1) / 2, (IN_Y0 + OUT_Y0) / 2, (IN_X1 + OUT_X1) / 2
 # north: mini-DIN sockets, face flush, wall thinned to MDIN_WALL over the body
@@ -103,9 +108,14 @@ cap = cap.cut(cut_ns(x + 3.5 - 7.2, x + 3.5 + 7.2, Z_BT + 0.3, Z_BT + 7.6, SY, 1
 yc = FP["USBC_Y"]
 cap = cap.cut(kbox(IN_X1 - 0.01, OUT_X1 - DE9_WALL, yc - 5.5, yc + 5.5, Z_BT + 0.2, Z_BT + 3.6))
 cap = cap.cut(fillet_along(kbox(OUT_X1 - DE9_WALL - 1, OUT_X1 + 1, yc - 4.8, yc + 4.8, Z_BT - 0.2, Z_BT + 3.4), 0, 1.4))
+# the receptacle drops into the tray: its pocket opens up to the seam and through the tray lip
+# (the face stays behind the wall)
+cap = cap.cut(kbox(IN_X1 - 0.01, OUT_X1 - DE9_WALL, yc - 5.5, yc + 5.5, Z_BT + 0.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
 # east: BOOT / RESET actuators
 for sy in FP["SW_Y"]:
     cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), Z_BT + 3.2, V(-1, 0, 0)))
+    # the stem passes the tray lip on the way down: a notch in the lip above the hole
+    cap = cap.cut(kbox(IN_X1 - 0.01, IN_X1 + LIP_T + LIP_CLR + 0.01, sy - 2.0, sy + 2.0, Z_BT + 3.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
 # lid: OLED window on the lit area, LED hole, encoder bushing hole
 wx, wy, ww, wh = FP["OLED_WINDOW"]
 win = kbox(wx - WIN_CLR, wx + ww + WIN_CLR, wy - WIN_CLR, wy + wh + WIN_CLR, CEIL - 1, Z_TOP + 1)
@@ -141,16 +151,27 @@ labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("5V", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
 for l in labels: cap = cap.cut(l)
 
-# ---- base plate ----
-base = rbox(OUT_X0, OUT_X1, OUT_Y0, OUT_Y1, Z_PLATE_BOT, Z_PLATE_TOP, CORNER_R)
-base = base.fuse(box(IN_X0 + LIP_CLR, IN_X1 - LIP_CLR, IN_Y0 + LIP_CLR, IN_Y1 - LIP_CLR, Z_PLATE_TOP, Z_PLATE_TOP + LIP_H))
+# ---- standoffs, screw holes, foot recesses ----
 for (cx, cy) in HOLES:
-    base = base.fuse(cyl(7.0, STAND, cx, ky(cy), Z_PLATE_TOP))
-    base = base.cut(cyl(SCREW_D, 20, cx, ky(cy), Z_PLATE_BOT - 1))
-    base = base.cut(Part.makeCone(3.4, 6.4, 1.7, V(cx, ky(cy), Z_PLATE_BOT - 0.01), V(0, 0, -1)).mirror(V(cx, ky(cy), Z_PLATE_BOT), V(0, 0, 1)))
+    cap = cap.fuse(cyl(7.0, STAND, cx, ky(cy), Z_PLATE_TOP))
+    cap = cap.cut(cyl(SCREW_D, STAND + BASE_T + 1.1, cx, ky(cy), Z_PLATE_BOT - 1))
+    cap = cap.cut(Part.makeCone(3.4, 6.4, 1.7, V(cx, ky(cy), Z_PLATE_BOT - 0.01), V(0, 0, -1)).mirror(V(cx, ky(cy), Z_PLATE_BOT), V(0, 0, 1)))
 for fx in (OUT_X0 + FOOT_IN, OUT_X1 - FOOT_IN):
     for fy in (OUT_Y0 + FOOT_IN, OUT_Y1 - FOOT_IN):
-        base = base.cut(cyl(FOOT_D, FOOT_H + 1, fx, fy, Z_PLATE_BOT - 1))
+        cap = cap.cut(cyl(FOOT_D, FOOT_H + 1, fx, fy, Z_PLATE_BOT - 1))
+
+# ---- the split: tray below Z_SPLIT plus a lip on the inner wall, cap the rest ----
+shell = cap
+assert OVH - GAP - LIP_T - LIP_CLR >= 1.0, "cap wall outside the lip groove under 1 mm"
+def lip_ring(grow, z0, z1):
+    """the inner LIP_T of the wall (+ grow outward), corners following the outer radius"""
+    off = OVH - GAP - LIP_T - grow                             # wall left outside the ring
+    return rbox(OUT_X0 + off, OUT_X1 - off, OUT_Y0 + off, OUT_Y1 - off, z0, z1, CORNER_R - off).cut(
+        box(IN_X0, IN_X1, IN_Y0, IN_Y1, z0 - 1, z1 + 1))
+low = box(OUT_X0 - 1, OUT_X1 + 1, OUT_Y0 - 1, OUT_Y1 + 1, Z_PLATE_BOT - 1, Z_SPLIT)
+tray = shell.common(low.fuse(lip_ring(0, Z_SPLIT - 0.01, Z_SPLIT + LIP_UP)))
+cap = shell.cut(low.fuse(lip_ring(LIP_CLR, Z_SPLIT - 0.01, Z_SPLIT + LIP_UP + LIP_CLR))).fuse(pillars)
+tray = tray.removeSplitter(); cap = cap.removeSplitter()
 
 # ---- fit check: every footprint from the board, plus the bodies the footprints do not describe ----
 THROUGH_WALL = {"J10", "J12", "P1", "P2", "J4", "J13", "SW1", "SW2"}      # modelled explicitly below
@@ -178,13 +199,30 @@ for i, (hx, hy) in enumerate(FP["OLED_HOLES"]): checks.append(("OLED post %d" % 
 checks.append(("encoder body", kbox(ENC[0] - ENC_BODY / 2, ENC[0] + ENC_BODY / 2, ENC[1] - ENC_BODY / 2, ENC[1] + ENC_BODY / 2, CEIL - ENC_BODY_H, CEIL - 0.01)))
 checks.append(("encoder pins", kbox(ENC[0] - ENC_BODY / 2, ENC[0] + ENC_BODY / 2, ENC[1] - ENC_BODY / 2, ENC[1] + ENC_BODY / 2, CEIL - ENC_PINS_H, CEIL - ENC_BODY_H)))
 
-report = ["outer %.1f x %.1f x %.1f mm (cap %.1f + base %.1f); lid underside %.2f above the board underside, glass top %.2f, gap %.2f"
-          % (OUT_X1 - OUT_X0, OUT_Y1 - OUT_Y0, Z_TOP - Z_PLATE_BOT, Z_TOP - Z_PLATE_TOP, BASE_T, CEIL, FP["OLED_Z_TOP"], CEIL - FP["OLED_Z_TOP"]),
-          "cap valid %s, base valid %s" % (cap.isValid(), base.isValid())]
+report = ["outer %.1f x %.1f x %.1f mm (tray %.1f to the seam + cap %.1f); lid underside %.2f above the board underside, glass top %.2f, gap %.2f"
+          % (OUT_X1 - OUT_X0, OUT_Y1 - OUT_Y0, Z_TOP - Z_PLATE_BOT, Z_SPLIT - Z_PLATE_BOT, Z_TOP - Z_SPLIT, CEIL, FP["OLED_Z_TOP"], CEIL - FP["OLED_Z_TOP"]),
+          "tray valid %s (%d solid), cap valid %s (%d solid)" % (tray.isValid(), len(tray.Solids), cap.isValid(), len(cap.Solids))]
 hits = []
 for name, shape in checks:
-    v = cap.common(shape).Volume
-    if v > 1e-3: hits.append("%s %.2f mm3" % (name, v))
+    for half, hs in (("cap", cap), ("tray", tray)):
+        v = hs.common(shape).Volume
+        if v > 1e-3: hits.append("%s vs %s %.2f mm3" % (name, half, v))
+# assembly: the board and its parts drop straight down into the tray, then the cap comes down over
+# them. a part's path is its box swept up (relative to the tray) or down (relative to the cap)
+board_parts = [(n, s) for n, s in checks if not n.startswith("encoder")] + [("board", box(0, W, ky(H), 0, 0, BOARD_T))]
+sweep_hits = []
+for name, shape in board_parts:
+    bb = shape.BoundBox
+    up = box(bb.XMin, bb.XMax, bb.YMin, bb.YMax, bb.ZMin, Z_TOP + 10)
+    down = box(bb.XMin, bb.XMax, bb.YMin, bb.YMax, Z_PLATE_BOT - 10, bb.ZMax)
+    v = tray.common(up).Volume
+    if v > 1e-3: sweep_hits.append("%s into the tray %.2f mm3" % (name, v))
+    v = cap.common(down).Volume
+    if v > 1e-3: sweep_hits.append("cap over %s %.2f mm3" % (name, v))
+CORNER = 0.5     # mm3: a square stand-in box touching a rounded opening corner, not a real clash
+real = [h for h in sweep_hits if float(h.split()[-2]) >= CORNER]
+report.append("assembly: " + (", ".join(real) if real else "board drops into the tray, cap goes on: clear")
+              + ("; corner contacts under %.1f mm3: %d" % (CORNER, len(sweep_hits) - len(real)) if len(sweep_hits) > len(real) else ""))
 # the encoder body against every board part (it hangs 7 mm below the lid, parts up to 3.9 mm are fine)
 enc = checks[-2][1].fuse(checks[-1][1])
 for p in PARTS:
@@ -201,14 +239,14 @@ def add(name, shape, color):
     try: o.ViewObject.ShapeColor = color
     except Exception: pass
     return o
-add("Cap", cap, (0.85, 0.85, 0.9)); add("Base", base, (0.6, 0.6, 0.65))
+add("Cap", cap, (0.85, 0.85, 0.9)); add("Tray", tray, (0.6, 0.6, 0.65))
 add("Board", box(0, W, ky(H), 0, 0, BOARD_T), (0.1, 0.45, 0.2))
 add("Parts", Part.makeCompound([s for _, s in checks]), (0.8, 0.7, 0.2))
 doc.recompute()
 import MeshPart
-for name, shape in (("cap", cap), ("base", base)):
+for name, shape in (("cap", cap), ("tray", tray)):
     MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.05, AngularDeflection=0.3).write(os.path.join(OUT_DIR, "amigahid-pico-rev7-%s.stl" % name))
-Part.export([doc.getObject("Cap"), doc.getObject("Base")], os.path.join(OUT_DIR, "amigahid-pico-rev7-case.step"))
+Part.export([doc.getObject("Cap"), doc.getObject("Tray")], os.path.join(OUT_DIR, "amigahid-pico-rev7-case.step"))
 doc.saveAs(os.path.join(OUT_DIR, "amigahid-pico-rev7-case.FCStd"))
 open(os.path.join(OUT_DIR, "fit-report.txt"), "w").write("\n".join(report) + "\n")
 print("exported to", OUT_DIR)
