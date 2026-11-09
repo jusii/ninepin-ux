@@ -91,7 +91,13 @@ static queue_t keyboard_event_queue;
 
 // the amiga's acknowledgement of a key code (amiga_send_immediate())
 #define AKB_HANDSHAKE_TIMEOUT_MS    143
+#define AKB_NO_ACK_TIMEOUT_MS       5       // after AKB_NO_ACK_RUN misses: the old fixed wait
+#define AKB_NO_ACK_RUN              3       // a board that cannot read KDAT back never sees an ack
 #define AKB_AFTER_HANDSHAKE_US      200
+#ifndef AKB_WAIT_HANDSHAKE
+#  define AKB_WAIT_HANDSHAKE        1       // 0: the old fixed 5 ms (for comparison builds)
+#endif
+static uint8_t misses_in_row;
 #define AKB_ACK_MIN_US              40
 static volatile uint32_t handshake_missed;
 
@@ -205,12 +211,19 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
     // amiga can take milliseconds), so wait for both edges, as a real
     // keyboard does, giving up after its 143 ms
     _keyboard_gpio_set(KBD_AMIGA_DAT, HIGH);
+#if !AKB_WAIT_HANDSHAKE
+    sleep_ms(5);
+    return;
+#endif
     {
         // the ack (>= 85 us low) often starts while the last bit is still
         // out, so the line can be low from the amiga the moment we let go; a
         // low that ends within a few microseconds is only the pull-up rising.
         // a low lasting AKB_ACK_MIN_US is the ack: wait for it to end
-        absolute_time_t until = make_timeout_time_ms(AKB_HANDSHAKE_TIMEOUT_MS);
+        // where KDAT cannot be read back no ack ever shows: after a few misses
+        // in a row wait only as long as the old fixed delay, still watching
+        absolute_time_t until = make_timeout_time_ms((misses_in_row >= AKB_NO_ACK_RUN)
+            ? AKB_NO_ACK_TIMEOUT_MS : AKB_HANDSHAKE_TIMEOUT_MS);
         bool acked = false;
 
         while (!acked && !time_reached(until)) {
@@ -224,8 +237,13 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
                     acked = true;
             }
         }
-        if (!acked)
+        if (!acked) {
             handshake_missed++;
+            if (misses_in_row < 255)
+                misses_in_row++;
+        } else {
+            misses_in_row = 0;
+        }
     }
     // a little air before the next code
     sleep_us(AKB_AFTER_HANDSHAKE_US);

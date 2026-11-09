@@ -52,8 +52,12 @@
 // the amiga acknowledges every key code but drops events when they come faster
 // than amigaos takes them (measured on an a4000 with a busy rtg screen: full
 // speed lost keys and key-ups, 30 ms a character none in six lines)
-#define KVMD_AMIGA_CHAR_MS      30
-#define KVMD_AMIGA_KEY_MS       15
+#ifndef KVMD_AMIGA_CHAR_MS
+#  define KVMD_AMIGA_CHAR_MS 30
+#endif
+#ifndef KVMD_AMIGA_KEY_MS
+#  define KVMD_AMIGA_KEY_MS 15
+#endif
 
 typedef enum {
     EV_KEY = 1,         // a: usage, b: down
