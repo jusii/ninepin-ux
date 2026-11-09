@@ -21,6 +21,7 @@
  *                   (insert on a pc kbd)              enter on actions
  *   BOOT button     double-press          press       release after   hold 3 s
  *                                                     a 1 s hold
+ *                                                     (next value)
  *   encoder         push                  turn        push, turn,     hold push
  *                                                     push
  *   console         menu open             menu next   menu inc/dec    menu leave
@@ -48,6 +49,7 @@ typedef enum {
     MENU_IN_DEC,
     MENU_IN_ENTER,
     MENU_IN_LEAVE,
+    MENU_IN_CYCLE,      // the BOOT button's one "change": the next value, or enter
 } menu_input_t;
 
 // what the four oled lines show, also for the console

@@ -509,7 +509,7 @@ void menu_input(menu_input_t input)
     notice = NULL;
 
     // a confirmation is only for the very next select, on the same item
-    if (input != MENU_IN_ENTER)
+    if ((input != MENU_IN_ENTER) && (input != MENU_IN_CYCLE))
         confirm_since = 0;
 
     if (learning) {
@@ -539,8 +539,18 @@ void menu_input(menu_input_t input)
                 notice = "Esc cancels";
                 break;
             }
-            change(+1);
+            // enter does not change a value: right after left/right it would
+            // undo the change
+            notice = "Save & exit stores";
             break;
+
+        case MENU_IN_CYCLE:
+            if (items[cursor].kind == ITEM_CHOICE) {
+                change(+1);
+                break;
+            }
+            menu_input(MENU_IN_ENTER);
+            return;
 
         case MENU_IN_LEAVE:
             if (!dirty) {
@@ -818,7 +828,7 @@ bool menu_button(user_button_event_t event)
 
     switch (event) {
         case USER_BUTTON_EVENT_PRESS:           menu_input(MENU_IN_NEXT); break;
-        case USER_BUTTON_EVENT_LONG_RELEASE:    menu_input(MENU_IN_ENTER); break;
+        case USER_BUTTON_EVENT_LONG_RELEASE:    menu_input(MENU_IN_CYCLE); break;
         case USER_BUTTON_EVENT_HOLD:            menu_input(MENU_IN_LEAVE); break;
         default:                                break;
     }
