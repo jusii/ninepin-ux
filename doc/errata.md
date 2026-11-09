@@ -7,6 +7,7 @@
   on the back. Any small SMD (0805/1206) or through-hole part fits across the switch pins. The
   cap delays reset release; the resistor drains it after unplug, so a quick replug boots too.
   RUN reads ~3.2 V while running.
+  **Fixed in rev7.1** by a TLV803S reset supervisor (U11) on RUN; see `kicad/rev7.1/README.md`.
 * **LED1 (WS2812B-2020) is not stocked at Mouser or Digi-Key:**
   [LCSC C52917434](https://www.lcsc.com/product-detail/C52917434.html), or AliExpress, search
   "WS2812B-2020".

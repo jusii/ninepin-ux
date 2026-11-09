@@ -15,6 +15,7 @@ A fork of [borb/amigahid-pico](https://github.com/borb/amigahid-pico) with its o
 | board | what | state |
 |---|---|---|
 | **UX rev7** (`kicad/rev7/`) | RP2350A + RM2 radio chip-down, 4 layers, 100 x 62 mm | prototypes built, firmware in test |
+| **UX rev7.1** (`kicad/rev7.1/`) | rev7 + RUN reset supervisor (cold-plug fix) | designed, not yet ordered |
 | UX rev 1 (`kicad/rev6/`, branch `board-rev6`) | carrier for a Pico W / Pico 2 W, 2 layers | built, works |
 | rev 2-5 (`kicad/`) | upstream boards | frozen |
 
