@@ -55,11 +55,11 @@
 #define UF2_BLOCK               512u
 #define UF2_PAYLOAD             256u
 
-#define OTA_RING                16384u
+#define OTA_RING                32768u  // more than a tcp window (http_server.c)
 #define OTA_MAX_BLOCKS          (4096u * 1024u / UF2_PAYLOAD)
 #define OTA_CONFIRM_MS          30000u
 #define OTA_INSTALL_DELAY_MS    1500u   // the page's answer goes out first
-#define OTA_STALL_MS            15000u  // a dropped upload
+#define OTA_STALL_MS            30000u  // a dropped upload
 #ifndef OTA_BUY_AFTER_MS                // a test build may never accept itself
 #  define OTA_BUY_AFTER_MS      10000u
 #endif
@@ -102,7 +102,11 @@ static volatile uint32_t last_data_ms;
 static uint32_t target_slot, target_start, target_size;
 static uint32_t blocks_expected, blocks_seen;
 static uint8_t block_seen[OTA_MAX_BLOCKS / 8];
-static uint8_t sector_erased[OTA_MAX_BLOCKS * UF2_PAYLOAD / FLASH_SECTOR_SIZE / 8];
+static uint8_t sector_written[OTA_MAX_BLOCKS * UF2_PAYLOAD / FLASH_SECTOR_SIZE / 8];
+// the sector being filled: written out whole, one erase and program at a time
+static uint8_t __aligned(4) sector_buf[FLASH_SECTOR_SIZE];
+static int32_t buf_sector = -1;
+static uint32_t taken_bytes, started_ms, next_report;
 static uint32_t since_ms;       // OTA_CONFIRM, OTA_INSTALL: when it began
 static uint32_t shown_seconds;
 
@@ -156,23 +160,34 @@ static int running_slot(void)
 
 typedef struct {
     uint32_t offset;
-    uint8_t const *data;        // NULL: erase one sector
+    uint8_t const *data;        // NULL: erase one sector only
     size_t length;
+    bool erase;                 // with data: erase its sector first
 } flash_job_t;
 
 static void flash_job(void *context)
 {
     flash_job_t const *job = context;
 
+    if (!job->data || job->erase)
+        flash_range_erase(job->offset, FLASH_SECTOR_SIZE);
     if (job->data)
         flash_range_program(job->offset, job->data, job->length);
-    else
-        flash_range_erase(job->offset, FLASH_SECTOR_SIZE);
 }
 
 static bool flash_do(uint32_t offset, uint8_t const *data, size_t length)
 {
-    flash_job_t job = { offset, data, length };
+    flash_job_t job = { offset, data, length, false };
+
+    return flash_safe_execute(flash_job, &job, 500) == PICO_OK;
+}
+
+/**
+ * one sector erased and programmed in a single flash operation
+ */
+static bool flash_sector(uint32_t offset, uint8_t const *data)
+{
+    flash_job_t job = { offset, data, FLASH_SECTOR_SIZE, true };
 
     return flash_safe_execute(flash_job, &job, 500) == PICO_OK;
 }
@@ -260,7 +275,7 @@ bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
         refusal = NULL;
         switch (state) {
             case OTA_RECEIVING:
-                refusal = "busy: an earlier upload is still open; try again in 15 s";
+                refusal = "busy: an earlier upload is still open; try again in 30 s";
                 return false;
             case OTA_CONFIRM:
                 refusal = "an update is already waiting for BOOT on the board";
@@ -342,9 +357,51 @@ static void start_receiving(void)
     }
     blocks_expected = blocks_seen = 0;
     memset(block_seen, 0, sizeof(block_seen));
-    memset(sector_erased, 0, sizeof(sector_erased));
+    memset(sector_written, 0, sizeof(sector_written));
+    buf_sector = -1;
+    taken_bytes = 0;
+    next_report = 128u * 1024u;
+    started_ms = now_ms();
     ahprintf("[ota] receiving an update into slot %c\n", target_slot ? 'B' : 'A');
     oled("update: receiving");
+}
+
+/**
+ * write the buffered sector out
+ */
+static bool sector_flush(void)
+{
+    uint32_t sector = (uint32_t)buf_sector;
+    uint32_t at;
+
+    if (buf_sector < 0)
+        return true;
+    buf_sector = -1;
+    at = target_start + sector * FLASH_SECTOR_SIZE;
+    if (!flash_sector(at, sector_buf) || (memcmp(flash_read(at), sector_buf, FLASH_SECTOR_SIZE) != 0)) {
+        fail("flash write");
+        return false;
+    }
+    sector_written[sector / 8] |= (uint8_t)(1u << (sector % 8));
+    return true;
+}
+
+/**
+ * make a sector the buffered one: what it holds so far (blocks may come in
+ * any order), or blank
+ */
+static bool sector_load(uint32_t sector)
+{
+    if (buf_sector == (int32_t)sector)
+        return true;
+    if (!sector_flush())
+        return false;
+    if (sector_written[sector / 8] & (1u << (sector % 8)))
+        memcpy(sector_buf, flash_read(target_start + sector * FLASH_SECTOR_SIZE), FLASH_SECTOR_SIZE);
+    else
+        memset(sector_buf, 0xff, FLASH_SECTOR_SIZE);
+    buf_sector = (int32_t)sector;
+    return true;
 }
 
 static void take_block(uint8_t const *b)
@@ -379,19 +436,9 @@ static void take_block(uint8_t const *b)
     }
 
     sector = offset / FLASH_SECTOR_SIZE;
-    if (!(sector_erased[sector / 8] & (1u << (sector % 8)))) {
-        if (!flash_do(target_start + sector * FLASH_SECTOR_SIZE, NULL, 0)) {
-            fail("flash erase");
-            return;
-        }
-        sector_erased[sector / 8] |= (uint8_t)(1u << (sector % 8));
-    }
-
-    if (!flash_do(target_start + offset, b + 32, UF2_PAYLOAD)
-        || (memcmp(flash_read(target_start + offset), b + 32, UF2_PAYLOAD) != 0)) {
-        fail("flash write");
+    if (!sector_load(sector))
         return;
-    }
+    memcpy(sector_buf + (offset % FLASH_SECTOR_SIZE), b + 32, UF2_PAYLOAD);
 
     if (!(block_seen[w[5] / 8] & (1u << (w[5] % 8)))) {
         block_seen[w[5] / 8] |= (uint8_t)(1u << (w[5] % 8));
@@ -402,6 +449,7 @@ static void take_block(uint8_t const *b)
 static void invalidate_target(void)
 {
     // the first sector erased: a half-written or unconfirmed image never boots
+    buf_sector = -1;
     if (target_size)
         flash_do(target_start, NULL, 0);
 }
@@ -499,6 +547,14 @@ static void receive_task(void)
             ring_tail = (ring_tail + 1u) % OTA_RING;
         }
         take_block(block);
+        taken_bytes += UF2_BLOCK;
+        if (taken_bytes >= next_report) {
+            uint32_t ms = now_ms() - started_ms;
+
+            next_report += 128u * 1024u;
+            ahprintf("[ota] %lu KB in, %lu KB/s\n", (unsigned long)(taken_bytes / 1024u),
+                (unsigned long)(ms ? taken_bytes / ms : 0));
+        }
     }
     if (state != OTA_RECEIVING) {
         invalidate_target();
@@ -513,6 +569,8 @@ static void receive_task(void)
         return;
     }
     if (ring_used() >= UF2_BLOCK)
+        return;
+    if (!sector_flush())
         return;
 
     if (!blocks_seen) {

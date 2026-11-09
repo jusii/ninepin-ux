@@ -29,7 +29,10 @@
 #define MEM_SIZE                    24000
 #define MEMP_NUM_TCP_SEG            32
 #define MEMP_NUM_ARP_QUEUE          10
-#define PBUF_POOL_SIZE              24
+// receive buffers for the radio driver: a full tcp window plus out-of-order
+// segments after a loss, with room to spare (when they run out, the driver
+// drops every frame, retransmissions too)
+#define PBUF_POOL_SIZE              32
 #define MEMP_NUM_TCP_PCB            8
 #define MEMP_NUM_TCP_PCB_LISTEN     2
 #define MEMP_NUM_UDP_PCB            6

@@ -74,7 +74,7 @@ typedef struct {
     size_t tail_len;
     uint32_t offset;                        // passed on so far
     bool refused;                           // ota_receive() said no
-    struct pbuf *held;                      // waiting for ota_space(), window shut
+    uint32_t owed;                          // read, not yet given back to the tcp window
 
     // the response: the head in small[], the body there too or in page[]
     char small[HTTP_SMALL_MAX];
@@ -283,10 +283,7 @@ static void conn_release(http_conn_t *c)
         page_owner = NULL;
     if (upload_owner == c)
         upload_owner = NULL;
-    if (c->held) {
-        pbuf_free(c->held);
-        c->held = NULL;
-    }
+    c->owed = 0;
     c->pcb = NULL;
     c->phase = CONN_FREE;
 }
@@ -306,6 +303,14 @@ static void conn_detach(http_conn_t *c)
 static bool conn_close(http_conn_t *c)
 {
     struct tcp_pcb *pcb = c->pcb;
+
+    // a close with bytes read but not given back to the window is a reset
+    while (c->owed) {
+        u16_t step = (c->owed > 0xffffu) ? 0xffffu : (u16_t)c->owed;
+
+        tcp_recved(pcb, step);
+        c->owed -= step;
+    }
 
     conn_detach(c);
     conn_release(c);
@@ -859,22 +864,53 @@ static bool feed(http_conn_t *c, uint8_t const *data, size_t len)
 // lwip callbacks
 //--------------------------------------------------------------------+
 
-static bool must_wait(http_conn_t const *c, struct pbuf const *p)
+/**
+ * give read bytes back to the tcp window. an upload is copied out of lwip's
+ * buffers at once (holding on to them starves the radio driver of receive
+ * buffers, and then it drops everything, retransmissions too); it goes no
+ * faster than the flash takes it because the window only reopens as far as
+ * the update side has room for whatever the sender may then send
+ */
+static void credit(http_conn_t *c)
 {
-    return (c->phase == CONN_UPLOAD) && !c->refused && (ota_space() < p->tot_len);
+    uint32_t give = c->owed;
+
+    if (!give || !c->pcb)
+        return;
+
+    if ((c->phase == CONN_UPLOAD) && !c->refused) {
+        // the window after giving x back is TCP_WND - owed + x; that much may
+        // arrive, plus the multipart tail held in the connection
+        uint32_t room = (uint32_t)ota_space();
+        uint32_t need = TCP_WND + sizeof(c->tail);
+
+        if (room + c->owed <= need)
+            return;
+        if (room + c->owed - need < give)
+            give = room + c->owed - need;
+    }
+
+    while (give) {
+        u16_t step = (give > 0xffffu) ? 0xffffu : (u16_t)give;
+
+        tcp_recved(c->pcb, step);
+        c->owed -= step;
+        give -= step;
+    }
 }
 
 /**
- * a chunk read: the window reopens chunk by chunk, so an upload streams and
- * never piles up. first, though: a close with data not yet taken would be a
- * reset
+ * a chunk read: copied on (to the update side, the form buffer, or nowhere)
+ * and freed straight away
  *
  * @return false if the connection is gone
  */
 static bool take(http_conn_t *c, struct pbuf *p)
 {
     c->idle_polls = 0;
-    tcp_recved(c->pcb, p->tot_len);
+    // a close with data not yet given back would be a reset: everything read
+    // is owed until credit() hands it back
+    c->owed += p->tot_len;
 
     for (struct pbuf *q = p; q; q = q->next) {
         if (!feed(c, q->payload, q->len)) {
@@ -886,6 +922,8 @@ static bool take(http_conn_t *c, struct pbuf *p)
     }
 
     pbuf_free(p);
+    if (c->phase != CONN_FREE)
+        credit(c);
     return true;
 }
 
@@ -915,19 +953,6 @@ static err_t on_recv(void *arg, struct tcp_pcb *pcb, struct pbuf *p, err_t err)
         return err;
     }
 
-    c->idle_polls = 0;
-
-    // an upload goes no faster than the flash takes it: a chunk that does not
-    // fit yet waits here, unacknowledged, which keeps the tcp window shut
-    // until http_server_task() hands it on. anything later queues behind it
-    if (c->held) {
-        pbuf_cat(c->held, p);
-        return ERR_OK;
-    }
-    if (must_wait(c, p)) {
-        c->held = p;
-        return ERR_OK;
-    }
     return take(c, p) ? ERR_OK : ERR_ABRT;
 }
 
@@ -1020,24 +1045,18 @@ static err_t on_accept(void *arg, struct tcp_pcb *pcb, err_t err)
 
 void http_server_task(void)
 {
-    bool waiting = false;
+    bool owing = false;
 
     for (unsigned i = 0; i < HTTP_CONNECTIONS; i++)
-        if (conns[i].held)
-            waiting = true;
-    if (!waiting)
+        if (conns[i].owed)
+            owing = true;
+    if (!owing)
         return;
 
     cyw43_arch_lwip_begin();
-    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
-        http_conn_t *c = &conns[i];
-        struct pbuf *p = c->held;
-
-        if (!p || must_wait(c, p))
-            continue;
-        c->held = NULL;
-        take(c, p);
-    }
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++)
+        if (conns[i].phase != CONN_FREE)
+            credit(&conns[i]);
     cyw43_arch_lwip_end();
 }
 
