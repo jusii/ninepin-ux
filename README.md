@@ -31,9 +31,9 @@ working. Both inputs are merged on the board; nothing on the Amiga changes.
   the Wi-Fi settings page and firmware updates on the rev7 board.
 * [installation](./doc/installation.md) — building and flashing (pick the image for *your* Pico).
 * [errata](./doc/errata.md) — the short list of gotchas, read before building.
-* Fabrication: [`kicad/rev6/fab/`](./kicad/rev6/fab/) (gerbers + JLCPCB order checklist + 1:1
-  fit-check template), parts: [`kicad/rev6/rev6-mouser-bom.md`](./kicad/rev6/rev6-mouser-bom.md),
-  case work: [`kicad/rev6/mech/`](./kicad/rev6/mech/) (STEP/STL, bare board and full assembly).
+* Fabrication: [`kicad/rev6/fab/`](./kicad/rev6/fab/) (gerbers, 1:1 fit-check template), parts:
+  [`kicad/rev6/rev6-mouser-bom.csv`](./kicad/rev6/rev6-mouser-bom.csv) (Mouser import), case
+  work: [`kicad/rev6/mech/`](./kicad/rev6/mech/) (STEP, STL).
 
 ## credits
 

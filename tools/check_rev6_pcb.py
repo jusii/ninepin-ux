@@ -141,7 +141,7 @@ USB_MAX_SKEW = 5.0
 # H: silkscreen
 SILK_STRINGS = ["TO AMIGA", "FROM KEYBOARD", "ONE Amiga", "JLCJLCJLCJLC"]
 # the board's product name is "UX" (rev 1); "rev6" remains the internal engineering
-# codename only and no longer appears on the silkscreen (renamed at the user's request).
+# codename only and no longer appears on the silkscreen.
 SILK_REVISION_RE = re.compile(r"\bUX\s+rev\s*\d+\b", re.IGNORECASE)
 REFDES_MUST_SHOW = SOUTH_CONNECTORS + NORTH_CONNECTORS + [
     "J1", "J2", "J3", "J4", "J7", "J8", "J13", "JP1", "U1",
