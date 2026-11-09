@@ -18,19 +18,22 @@ A fork of [borb/amigahid-pico](https://github.com/borb/amigahid-pico) with its o
 
 ## features (rev7)
 
-* **Keyboard out** to the Amiga: mini-DIN6 (A4000) or the A500 header.
+* **Keyboard out** to the Amiga: mini-DIN6 (A4000D); DIN5 machines (A2000, A3000, A4000T) with a
+  plain DIN5-to-mini-DIN6 adapter cable; A500 header.
 * **Real Amiga keyboard in** (mini-DIN6 or A500 header), merged with USB and Bluetooth input.
   Ctrl-Amiga-Amiga resets the Amiga for as long as it is held.
 * **USB host** (USB-A, hubs): keyboards, mice, game controllers.
 * **Bluetooth** (RM2 / CYW43439): Classic and LE keyboards, mice and controllers. Pairing
   automatic or paired-only with a 2-minute window; forget all.
-* **Game controllers:** DualSense (USB, Bluetooth), DualShock 4 (Bluetooth), DualShock 3 (USB),
-  generic HID pads. Two players, 30 s seat hold on replug, swap, merge, deadzone, d-pad / stick
-  choice, triangle as up or autofire, DualSense touchpad as mouse, PS button opens the menu.
+* **Game controllers:** PS5 DualSense (USB, Bluetooth), PS4 DualShock 4 (Bluetooth), PS3
+  DualShock 3 (USB), generic HID pads. Two players, 30 s seat hold on replug, swap, merge,
+  deadzone, d-pad / stick choice, triangle as up or autofire, DualSense touchpad as mouse, PS
+  button opens the menu.
 * **Three modes**, remembered across power cycles:
   * `amiga`: keyboards to the Amiga, mouse and pads to the DE9 ports.
   * `c64`: keyboard and mouse to USB-C (e.g. C64 Ultimate), pads to the DE9 ports.
-  * `usb`: everything to USB-C, pads as two USB gamepads.
+  * `usb`: the board is a USB adapter for a PC or Mac: the Amiga keyboard, USB / Bluetooth
+    keyboards and mice, and pads as two USB gamepads, all on USB-C.
 * **DE9 ports, Amiga:** mouse on either port (TankMouse/Cocolino wheel, speed setting),
   joystick (3 fire buttons), CD32 pad (7 buttons).
 * **DE9 ports, C64:** joystick with 2nd/3rd fire on the POT lines, 1351 mouse (untuned).
@@ -51,7 +54,7 @@ A fork of [borb/amigahid-pico](https://github.com/borb/amigahid-pico) with its o
 
 ## start here
 
-* [rev7 firmware guide](./doc/rev7-guide.md): first install, modes, menu, pairing, updates.
+* [rev7 instructions](./doc/rev7-guide.md): first install, modes, menu map, pads, pairing, Wi-Fi, updates.
 * [rev7 board guide](./doc/ux-rev7.md): connectors, headers, power, parts.
 * [errata](./doc/errata.md): read before building.
 * [UX rev 1 board guide](./doc/ux-rev1.md), [installation](./doc/installation.md) (older boards).

@@ -1,7 +1,7 @@
 # UX rev7 board guide
 
 RP2350A and RM2 (CYW43439) radio chip-down, 16 MB flash, 4 layers, 100 x 62 mm, four M3 holes.
-KiCad project and generator scripts in `kicad/rev7/`. Firmware: [rev7 guide](./rev7-guide.md).
+KiCad project and generator scripts in `kicad/rev7/`. Firmware: [rev7 instructions](./rev7-guide.md).
 Read the [errata](./errata.md) first.
 
 ![UX rev7](./images/ux-rev7-photo.jpg)

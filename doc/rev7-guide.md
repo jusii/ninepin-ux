@@ -1,183 +1,143 @@
-# rev7 firmware guide
+# UX rev7 instructions
 
-What the rev7 firmware does and how to drive it: modes, the menu, game controllers, Bluetooth,
-the Wi-Fi settings page and firmware updates. The rev7 board needs an RP2350 with 16 MB flash and
-an RM2 radio module for Bluetooth and Wi-Fi. A build without the radio (`-DENABLE_BLUETOOTH_HID=OFF`)
-has everything except Bluetooth, Wi-Fi and updates over Wi-Fi.
+Firmware for the [UX rev7 board](./ux-rev7.md). Read the [errata](./errata.md) first.
 
-> **Status:** tested on hardware: modes, menu, settings, USB and A4000 keyboards, USB mice, Wi-Fi
-> (access point and join), updates from the page and the BOOTSEL drive with rollback. Not yet
-> tested: game controllers, CD32, C64 joystick, 1351 mouse.
+> **Status:** tested on hardware: modes, menu, settings, USB and A4000 keyboards, mice, joystick
+> and CD32 with a DualSense, USB-C gamepads, Wi-Fi (access point and join), updates with rollback.
+> Not yet tested: Bluetooth pads and keyboards, PS3 pad, C64 joystick, 1351 mouse.
 
 ## first install
 
-The flash is split into two firmware slots, A and B, so that an update can never leave the board
-without a working firmware. The layout is a partition table, installed once:
+1. Hold BOOT, plug in USB-C. An `RP2350` drive appears.
+2. Copy `partition-table.uf2`. The board restarts into BOOTSEL by itself.
+3. Copy `amigahid-pico.uf2`.
 
-1. Hold BOOT while plugging in USB-C (or while pressing reset). An `RP2350` drive appears.
-2. Copy `partition-table.uf2` onto it. The board restarts into BOOTSEL by itself.
-3. Copy `amigahid-pico.uf2` onto the drive.
-
-Both files are in the build directory under `src/`. After this first time, a firmware `.uf2`
-always goes into the slot that is not running.
-
-Once the firmware runs, it can be put back into BOOTSEL without the button: open the USB-C serial
-port at 1200 baud (`stty -F /dev/ttyACM0 1200` on Linux), and the drive appears.
+The flash holds two firmware slots; every later update goes into the free one.
 
 ## modes
 
-The board has three modes. A 1 s hold of BOOT steps to the next mode (amiga → c64 → usb). The
-OLED shows the mode, and the board remembers it across power cycles.
+BOOT held 1 s steps the mode; the board remembers it.
 
-| mode | keyboards | mice | game controllers | real A4000 keyboard |
+| mode | keyboards | mice | pads | A4000 keyboard |
 |---|---|---|---|---|
-| **amiga** | Amiga keyboard port | DE9 port set to mouse | DE9 ports (joystick / CD32) | Amiga |
-| **c64** | USB-C (e.g. a C64 Ultimate) | USB-C, or a DE9 port set to 1351 | DE9 ports (C64 joystick) | USB-C |
-| **usb** | USB-C | USB-C | USB-C, as two gamepads | USB-C |
+| `amiga` | Amiga keyboard port | DE9 port set to mouse | DE9 ports | Amiga |
+| `c64` | USB-C | USB-C, or a DE9 port set to 1351 | DE9 ports | USB-C |
+| `usb` | USB-C | USB-C | USB-C, two gamepads | USB-C |
 
-USB-C is a composite device: keyboard, mouse, two gamepads ("amigahid gamepad 1/2") and a serial
-console.
+`usb` turns the board into a USB adapter for a PC or Mac: the Amiga keyboard works as a USB
+keyboard (see the A4000 settings below).
 
 ## the menu
 
-Every setting is in the menu on the OLED. These controls open and drive it:
-
-| control | open | move | change | leave |
+| control | open | move | change / select | leave |
 |---|---|---|---|---|
-| keyboard | hold Help 1 s (Insert on a PC keyboard) | up / down | left / right, Enter on actions | Esc |
-| BOOT button | double-press | press | release after a 1 s hold | hold 3 s |
-| PlayStation pad | hold PS 1 s | d-pad up / down | d-pad left / right, ✕ on actions | ○ |
-| encoder (if fitted) | push | turn | push, turn, push | hold push |
+| keyboard | hold Help 1 s (Insert on a PC) | up / down | left / right; Enter on actions | Esc |
+| BOOT | double-press | press | hold 1 s, release | hold 3 s |
+| encoder | push | turn | push, turn, push; push on actions | hold push |
+| PlayStation pad | hold PS 1 s | d-pad up / down | d-pad left / right; ✕ on actions | ○ |
 
-Changes are made on a copy. **Save & exit** stores and applies them, and **Cancel** throws them
-away. If you leave with unsaved changes, the menu first moves to Save & exit; leaving again
-discards them. Enter does not change a value; left / right does. While the menu is open it owns
-the display and every keyboard, mouse and pad, so nothing reaches the Amiga or the host.
+Changes take effect on **Save & exit**. Leaving with changes jumps to Save & exit; leaving again
+discards them. While the menu is open, input goes nowhere else.
 
-### settings
+## menu map
 
-| setting | values | default |
-|---|---|---|
-| Mode | amiga, c64, usb | amiga |
-| Port 1 / Port 2 (amiga) | mouse, joystick, cd32 pad, off | mouse / joystick |
-| Port 1 / Port 2 (c64) | joystick, 1351 mouse, off | joystick / joystick |
-| Swap players | no, yes | no |
-| Merge all pads | no, yes: every pad drives player 1 | no |
-| Pad directions | d-pad + stick, d-pad, stick | d-pad + stick |
-| Stick deadzone | 25%, 50%, 75% | 50% |
-| Triangle button | up (jump), autofire, off | up |
-| Touchpad mouse | off, on: the DualSense touchpad moves the pointer | on |
-| Mouse wheel / Wheel direction | off, on / normal, reversed | on / normal |
-| Keyboard preset | original, Y<->Z, A<->Q W<->Z | original |
-| Help key | insert, home, page up, F11, none | insert |
-| Del key | delete, backspace, none | delete |
-| ISO key | backslash, amiga iso key | backslash |
-| PC remap 1–8 | your own key swaps, PC keyboard → Amiga | empty |
-| A4000 numpad ( ) | keypad keys, US/UK, Nordic/DE, French | keypad keys |
-| Ctrl-Amiga-Amiga | nothing, ctrl-alt-del (sent once to USB-C) | nothing |
-| A4000 remap 1–8 | your own key swaps, A4000 → USB-C | empty |
-| Mouse speed | 300, 200, 150, 100 µs per step | 300 µs |
-| Display | status, hid diag, mouse diag, off | status |
-| Watchdog | off, 2 s, 5 s | 5 s |
-| Bluetooth / BT pairing | off, on / automatic, paired only | on / automatic |
-| Wi-Fi | off, access point, join network | off |
-| Updates need BOOT | no, yes | yes |
+Defaults in **bold**.
 
-The menu also has these actions: BT pair (2 min), Forget BT devices, Show page password, New page
-password, Previous firmware and Factory defaults.
+**Mode**
+* Mode: **amiga**, c64, usb
 
-**Remaps.** Select a remap slot with Enter, press the key you want to change, then press what it
-should become. The second key can come from either keyboard. Left or right on a slot clears it,
-and Esc cancels while it waits for a key. "A4000 numpad ( )" decides how the A4000's numpad
-brackets reach a computer. Keypad keys works on Linux with any layout. The other styles send the
-shifted digits of that national layout.
+**Ports** (shown for the current mode)
+* amiga, Port 1 / Port 2: mouse, joystick, cd32 pad, off (**port 1 mouse, port 2 joystick**)
+* c64, Port 1 / Port 2: **joystick**, 1351 mouse, off
 
-## game controllers
+**Pads**
+* Swap players: **no**, yes. Player 1 is on port 2, player 2 on port 1.
+* Merge all pads: **no**, yes (every pad drives player 1)
+* Pad directions: **d-pad + stick**, d-pad, stick
+* Stick deadzone: 25%, **50%**, 75%
+* Triangle button: **up (jump)**, autofire, off
+* Touchpad mouse: off, **on** (DualSense touchpad moves the pointer, left / right half clicks)
 
-Pads can be plugged into USB-A (directly or through a hub) or connected over Bluetooth:
-- DualSense (PS5), USB and Bluetooth
-- DualShock 3 (PS3), USB
-- DualShock 4 (PS4), Bluetooth
-- generic USB HID gamepads
+**Mouse**
+* Mouse wheel: off, **on** (TankMouse / Cocolino protocol)
+* Wheel direction: **normal**, reversed
 
-The first pad becomes player 1 and the next one player 2. A pad that drops out keeps its player
-for 30 s, so a replug comes back as the same player.
+**PC keyboard to the Amiga**
+* Keyboard preset: **original**, Y<->Z, A<->Q W<->Z
+* Help key (the PC key that gives Amiga Help): **insert**, home, page up, F11, none
+* Del key: **delete**, backspace, none
+* ISO key (the key next to left shift): **backslash**, amiga iso key
+* PC remap 1-8: Enter, press the key, press its new meaning. Left / right clears.
 
-Where players go:
-- **amiga:** player 1 drives port 2 and player 2 drives port 1, for each port set to joystick or
-  cd32 pad. ✕ ○ □ are fire 1–3, and △ is up or autofire (the Triangle setting).
-- **c64:** the same ports, as C64 joysticks. The 2nd and 3rd fire buttons appear on the POT
-  lines for games that read them.
-- **usb:** players 1 and 2 are the two USB-C gamepads, with analog sticks.
+**A4000 keyboard to USB-C**
+* A4000 numpad ( ): **keypad keys** (Linux, any layout), US/UK, Nordic/DE, French
+* Ctrl-Amiga-Amiga: **nothing**, ctrl-alt-del
+* A4000 remap 1-8: as PC remap
+
+**Board**
+* Mouse speed: **300 us**, 200 us, 150 us, 100 us
+* Display: **status**, hid diag, mouse diag, off
+* Watchdog: off, 2 s, **5 s**
+
+**Bluetooth**
+* Bluetooth: off, **on**
+* BT pairing: **automatic** (any device in pairing mode), paired only
+* BT pair (2 min): opens a pairing window
+* Forget BT devices: select twice
+
+**Wi-Fi**
+* Wi-Fi: **off**, access point, join network
+* Show page password, New page password
+
+**Updates**
+* Updates need BOOT: no, **yes**
+* Previous firmware: select twice; restarts into the one before the last update
+
+**End**
+* Factory defaults, Save & exit, Cancel
+
+## pads
+
+PS5 DualSense (USB, Bluetooth), PS4 DualShock 4 (Bluetooth), PS3 DualShock 3 (USB), generic HID
+pads.
+
+* Joystick: d-pad / left stick; ✕ fire 1, ○ fire 2, □ fire 3, △ per Triangle button.
+* CD32: ✕ red, ○ blue, □ green, △ yellow, L1 / R1 shoulders, Options play.
+* C64: ✕ fire; ○ / □ 2nd / 3rd fire on the POT lines.
+* The first pad is player 1, the next player 2. A pad that drops out keeps its player for 30 s.
+* Hold PS 1 s: menu.
 
 ## Bluetooth
 
-Bluetooth is on by default. With pairing set to automatic, the board pairs with any keyboard,
-mouse or pad that is in pairing mode, at any time. With paired only, devices it already knows
-still connect, but a new one pairs only during the 2-minute window that **BT pair (2 min)**
-opens. **Forget BT devices** (select twice) removes all bonds. A keyboard that needs a passkey
-shows it on the OLED.
+PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share +
+PS.
+Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED. Paired devices
+reconnect by themselves.
 
-Searching for new devices pauses while the Wi-Fi access point is on and during a firmware upload:
-it shares the radio and blocks Wi-Fi. Connected devices keep working; **BT pair (2 min)** searches
-anyway.
+Searching for new devices pauses while the Wi-Fi access point is on and during an upload (shared
+radio). Connected devices keep working; BT pair (2 min) searches anyway.
 
-## Wi-Fi and the settings page
+## Wi-Fi
 
-Wi-Fi is off by default.
-- **Access point.** The board opens an open network called `amigahid-xxxx` (xxxx comes from the
-  board's ID). Join it and browse to `http://192.168.4.1/`. The access point switches itself off
-  after 15 minutes without a client. Saving any setting or a restart brings it back.
-- **Join network.** Enter your network's name and password on the page, then set Wi-Fi to join
-  network. The board shows its address on the OLED and answers at `http://amigahid-xxxx.local/`.
-  On your own network the page asks for the **page password**: any user name, and the password
-  from the menu (Show page password). New page password makes a fresh one.
+* **Access point:** open network `amigahid-xxxx`, page at `http://192.168.4.1/`. Off after 15 min
+  without a client; any save or a restart brings it back.
+* **Join network:** set the network on the page, then Wi-Fi = join network. Page at
+  `http://amigahid-xxxx.local/`; any user name, password from Show page password.
 
-The page shows the board's state and every setting from the menu, except "Updates need BOOT",
-which can only be changed on the board. It also takes firmware uploads.
+The page shows the status and every menu setting except Updates need BOOT (remaps read-only).
 
-## updating the firmware
+## updates
 
-Every rev7 firmware is installed **on trial**. After an update, the new firmware runs once and
-keeps itself only after 10 s of clean running. If it hangs or crashes before then, the board
-returns to the previous firmware. A firmware that is not this one never confirms itself, so it
-is dropped the same way.
+Copy `amigahid-pico.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
+= yes, press BOOT within 30 s when the OLED shows `BOOT: install`.
 
-There are two ways to update:
-- **BOOTSEL drive:** copy the new `amigahid-pico.uf2` onto it, as above.
-- **Settings page:** choose the `.uf2` under firmware update and send it. The board checks the
-  file, then shows `BOOT: install (30s)`. Press BOOT within 30 s to install, or nothing happens.
-  With "Updates need BOOT" set to no, the page alone installs it, so keep that setting on unless
-  only you can reach the page.
+A new firmware runs on trial and keeps itself after 10 s; if it hangs, the previous one boots.
+Previous firmware in the menu goes back one update. A running board enters BOOTSEL on a 1200 baud
+touch of its serial port (`stty -F /dev/ttyACM0 1200`).
 
-**Previous firmware** in the menu (select twice), or `ota previous` on the console, goes back to
-the firmware that ran before the last update.
+## console
 
-## the console
-
-USB-C also carries a serial console (any terminal, any baud rate except 1200). Type `help` for
-the list. The commands are:
-
-| command | what it does |
-|---|---|
-| `info` | firmware, chip, boot slot |
-| `settings` | every setting in effect |
-| `mode amiga\|c64\|usb` | switches mode and remembers it |
-| `menu open\|next\|prev\|inc\|dec\|enter\|leave` | drives the menu |
-| `bt [pair\|forget]` | Bluetooth state, pairing window, forget bonds |
-| `wifi [off\|ap\|join <ssid> [password]]` | Wi-Fi state and page password, set the mode |
-| `pads` | pads and players |
-| `ports` | what the DE9 ports are and what they send |
-| `ota [previous]` | update state, previous firmware |
-| `log` | the last 2K of console output, boot included |
-| `defaults` | stores the factory defaults |
-| `reboot` | restarts the board |
-| `bootsel` | restarts into the USB bootloader |
-
-## credits
-
-The settings store, the menu input handling, the gamepad parser, PS3, DualShock 4, CD32 and the
-Bluetooth host are ported from Stefan Reinauer's
-[reinauer/amigahid-pico](https://github.com/reinauer/amigahid-pico) (features branch, EPL-2.0).
-The DualSense support, the player manager, the C64 outputs, the USB-C gamepads, Wi-Fi and the
-updates are this tree's own.
+USB-C serial, any baud rate except 1200. `help` lists the commands: `info`, `settings`,
+`mode amiga|c64|usb`, `menu open|next|prev|inc|dec|enter|leave`, `bt [pair|forget]`,
+`wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `ota [previous]`, `log`, `defaults`,
+`reboot`, `bootsel`.
