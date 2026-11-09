@@ -540,8 +540,12 @@ void amiga_kbdin_reset(bool asserted)
     amiga_queue_event(&event, true);
 }
 
+// when the reset currently held began; the release reports how long it was
+static uint32_t reset_since_ms;
+
 void amiga_assert_reset()
 {
+    reset_since_ms = to_ms_since_boot(get_absolute_time());
     // ahprintf("[akb] *** RESET BEING ASSERTED ***\n");
     _keyboard_gpio_set(KBD_AMIGA_RST, LOW);
 
@@ -557,6 +561,8 @@ void amiga_release_reset()
     // ahprintf("[akb] *** RESET BEING RELEASED ***\n");
     _keyboard_gpio_set(KBD_AMIGA_RST, HIGH);
     _keyboard_gpio_set(KBD_AMIGA_CLK, HIGH);
+    ahprintf("[akb] amiga reset released after %lu ms\n",
+        (unsigned long)(to_ms_since_boot(get_absolute_time()) - reset_since_ms));
 }
 
 void amiga_service()

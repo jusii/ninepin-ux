@@ -70,12 +70,15 @@
 #  define KBDIN_RESET_HOLD_MS 250
 #endif
 
-// a keyboard which never lets go of kclk is unplugged, unpowered or broken
-// rather than asking for a reset. give up after this long: a reset also mutes
-// the usb and bluetooth paths, so an unbounded hold would take the whole adapter
-// down until it was power cycled.
+// a real keyboard holds kclk low for as long as ctrl-amiga-amiga is held, and
+// some expansions act on that: an accelerator that switches its configuration
+// on a reset held for several seconds, for one. the hold is passed through for
+// as long as the keyboard keeps it. only a keyboard which never lets go of kclk
+// (unplugged, unpowered or broken) is given up on, after this long: a reset also
+// mutes the usb and bluetooth paths, so an unbounded hold would take the whole
+// adapter down until it was power cycled.
 #ifndef KBDIN_RESET_HOLD_MAX_MS
-#  define KBDIN_RESET_HOLD_MAX_MS 3000
+#  define KBDIN_RESET_HOLD_MAX_MS 30000
 #endif
 
 // the poll below runs from the main loop, which blocks for milliseconds at a
