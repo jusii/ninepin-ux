@@ -136,6 +136,11 @@ static const menu_item_t items[] = {
     ACTION("Show page password", action_page_password_show),
     ACTION("New page password", action_page_password_new),
 #endif
+#ifdef HAS_WIFI
+    CHOICE("Network control",   net_control,    names_off_on,       NULL),
+    CHOICE("Net screen",        net_screen,     names_net_screen,   NULL),
+    CHOICE("Net mouse scale",   net_scale,      names_net_scale,    NULL),
+#endif
     CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
 #ifdef HAS_OTA
     ACTION("Previous firmware", action_previous_firmware),

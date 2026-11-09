@@ -33,6 +33,8 @@ extern const settings_names_t settings_names_display;
 extern const settings_names_t settings_names_watchdog;
 extern const settings_names_t settings_names_bt_pairing;
 extern const settings_names_t settings_names_wifi;
+extern const settings_names_t settings_names_net_screen;
+extern const settings_names_t settings_names_net_scale;
 extern const settings_names_t settings_names_kb_preset;
 extern const settings_names_t settings_names_kb_help;
 extern const settings_names_t settings_names_kb_delete;

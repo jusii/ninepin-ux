@@ -23,6 +23,13 @@ void amiga_quad_mouse_set_motion(int16_t in_x, int16_t in_y);
 void amiga_quad_mouse_wheel(int8_t wheel);
 
 /**
+ * @return true when every queued movement has gone out as quadrature steps.
+ *         Core1 updates this between steps: trust it after two checks a few
+ *         milliseconds apart.
+ */
+bool amiga_quad_mouse_idle(void);
+
+/**
  * @brief Put the mouse on de9 port 0 (port 1) or 1 (port 2), or -1 for none.
  *        Core1 moves between quadrature steps; this waits until it has.
  *

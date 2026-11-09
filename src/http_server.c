@@ -23,6 +23,7 @@
 
 #include "lwip/tcp.h"
 
+#include "kvmd_api.h"
 #include "ota.h"
 #include "settings.h"
 #include "util/output.h"
@@ -30,7 +31,7 @@
 #include "wifi.h"
 
 #define HTTP_PORT               80
-#define HTTP_CONNECTIONS        3
+#define HTTP_CONNECTIONS        4
 #define HTTP_REQUEST_MAX        3072    // the request head and a settings form
 #define HTTP_SMALL_MAX          1536    // a response head and a short page
 #define HTTP_PAGE_MAX           16384   // the settings page
@@ -46,6 +47,8 @@ typedef enum {
     CONN_FORM,          // reading a settings form into the request buffer
     CONN_UPLOAD,        // streaming a body to ota_receive()
     CONN_DRAIN,         // reading a body to drop it, then the response
+    CONN_API,           // reading an api request's body (kvmd_api.c)
+    CONN_API_WAIT,      // an api answer comes later (a print being typed)
     CONN_SEND,          // sending the response; anything read is dropped
 } conn_phase_t;
 
@@ -53,6 +56,10 @@ typedef struct {
     struct tcp_pcb *pcb;
     conn_phase_t phase;
     uint8_t idle_polls;
+
+    // an api request (kvmd_api.c): where its parts are in request[]
+    char const *api_method, *api_path, *api_query;
+    uint32_t wait_id;                       // CONN_API_WAIT: the answer's ticket
 
     // the request
     char request[HTTP_REQUEST_MAX + 1];
@@ -94,6 +101,7 @@ static http_conn_t *page_owner;
 static http_conn_t *upload_owner;
 static char token[17];
 static char text[256];                      // a response's text, built before the page
+static uint32_t next_wait_id = 1;
 
 //--------------------------------------------------------------------+
 // firmware update hooks: refuse until the ota code exists
@@ -379,7 +387,8 @@ static bool conn_send(http_conn_t *c)
 /**
  * respond: a head, then body (in small[] or page[], already filled in)
  */
-static bool respond_with(http_conn_t *c, int status, char const *body, size_t body_len, char const *extra_head)
+static bool respond_typed(http_conn_t *c, int status, char const *type, char const *body, size_t body_len,
+    char const *extra_head)
 {
     // the head goes after a body in small[], or at its start for page[]
     char *head = (body == c->small) ? c->small + body_len : c->small;
@@ -388,13 +397,13 @@ static bool respond_with(http_conn_t *c, int status, char const *body, size_t bo
 
     n = snprintf(head, room,
         "HTTP/1.1 %d %s\r\n"
-        "Content-Type: text/html; charset=utf-8\r\n"
+        "Content-Type: %s\r\n"
         "Content-Length: %u\r\n"
         "Cache-Control: no-store\r\n"
         "Connection: close\r\n"
         "%s"
         "\r\n",
-        status, status_text(status), (unsigned)body_len, extra_head ? extra_head : "");
+        status, status_text(status), type, (unsigned)body_len, extra_head ? extra_head : "");
     if (n < 0 || (size_t)n >= room)
         n = 0;
 
@@ -406,6 +415,11 @@ static bool respond_with(http_conn_t *c, int status, char const *body, size_t bo
     c->part_pos = 0;
     c->phase = CONN_SEND;
     return conn_send(c);
+}
+
+static bool respond_with(http_conn_t *c, int status, char const *body, size_t body_len, char const *extra_head)
+{
+    return respond_typed(c, status, "text/html; charset=utf-8", body, body_len, extra_head);
 }
 
 /**
@@ -689,6 +703,89 @@ static bool upload_begin(http_conn_t *c, char const *query)
 }
 
 //--------------------------------------------------------------------+
+// the kvmd-compatible api (kvmd_api.c)
+//--------------------------------------------------------------------+
+
+static char const *api_header(void *ctx, char const *name, size_t *length)
+{
+    return header_value((http_conn_t const *)ctx, name, length);
+}
+
+static bool api_answer(http_conn_t *c, int status, size_t length, char const *extra_head)
+{
+    return respond_typed(c, status, "application/json", c->small, length, extra_head);
+}
+
+/**
+ * the request (and its body) is in: hand it to the api
+ */
+static bool api_dispatch(http_conn_t *c)
+{
+    kvmd_request_t req;
+    kvmd_response_t resp;
+    char *body = c->request + c->head_len;
+    size_t length;
+    char const *auth = header_value(c, "Authorization", &length);
+
+    body[c->content_length] = 0;
+    memset(&req, 0, sizeof(req));
+    req.method = c->api_method;
+    req.path = c->api_path;
+    req.query = c->api_query;
+    req.body = body;
+    req.body_len = c->content_length;
+    req.basic_ok = auth && authorised(auth, length);
+    req.header = api_header;
+    req.ctx = c;
+    req.remote_ip = ip_addr_get_ip4_u32(&c->pcb->remote_ip);
+    req.wait_id = next_wait_id++;
+
+    memset(&resp, 0, sizeof(resp));
+    resp.json = c->small;
+    resp.size = sizeof(c->small) - 320;     // the head goes after the body
+    kvmd_api_handle(&req, &resp);
+
+    if (resp.deferred) {
+        c->wait_id = req.wait_id;
+        c->phase = CONN_API_WAIT;
+        return true;
+    }
+    return api_answer(c, resp.status, resp.len, resp.extra_head[0] ? resp.extra_head : NULL);
+}
+
+static bool api_begin(http_conn_t *c, char const *method, char const *path, char const *query)
+{
+    c->api_method = method;
+    c->api_path = path;
+    c->api_query = query;
+    if (c->content_length > HTTP_REQUEST_MAX - c->head_len)
+        return respond_after_body(c, 413, "Too big", "That request body is too large.", NULL);
+    if (!c->content_length)
+        return api_dispatch(c);
+    c->phase = CONN_API;
+    return true;
+}
+
+void http_server_api_complete(uint32_t wait_id, int status, char const *json)
+{
+    cyw43_arch_lwip_begin();
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
+        http_conn_t *c = &conns[i];
+        size_t n;
+
+        if (c->phase != CONN_API_WAIT || c->wait_id != wait_id)
+            continue;
+        n = strlen(json);
+        if (n > sizeof(c->small) - 320)
+            n = sizeof(c->small) - 320;
+        memcpy(c->small, json, n);
+        api_answer(c, status, n, NULL);
+        break;
+    }
+    cyw43_arch_lwip_end();
+}
+
+//--------------------------------------------------------------------+
 // requests
 //--------------------------------------------------------------------+
 
@@ -716,7 +813,8 @@ static bool handle_head(http_conn_t *c)
     if (query)
         *query++ = 0;
 
-    ahprintf("[web] %s %s from %s\n", method, target, ipaddr_ntoa(&c->pcb->remote_ip));
+    if (strncmp(target, "/api/hid/events/", 16) != 0)
+        ahprintf("[web] %s %s from %s\n", method, target, ipaddr_ntoa(&c->pcb->remote_ip));
 
     c->content_length = 0;
     value = header_value(c, "Content-Length", &length);
@@ -735,6 +833,10 @@ static bool handle_head(http_conn_t *c)
     } else if (header_value(c, "Transfer-Encoding", &length)) {
         return respond_message(c, 411, "Length required", "Send the body with a Content-Length.", NULL);
     }
+
+    // the api does its own authentication (kvmd's headers, basic, a cookie)
+    if (!strncmp(target, "/api/", 5) || !strcmp(target, "/api"))
+        return api_begin(c, method, target, query);
 
     if (wifi_page_needs_password()) {
         value = header_value(c, "Authorization", &length);
@@ -774,7 +876,8 @@ static bool handle_head(http_conn_t *c)
 
 static bool in_body(http_conn_t const *c)
 {
-    return (c->phase == CONN_FORM) || (c->phase == CONN_UPLOAD) || (c->phase == CONN_DRAIN);
+    return (c->phase == CONN_FORM) || (c->phase == CONN_UPLOAD) || (c->phase == CONN_DRAIN)
+        || (c->phase == CONN_API);
 }
 
 /**
@@ -791,6 +894,14 @@ static bool feed_body(http_conn_t *c, uint8_t const *data, size_t len)
     c->body_seen += len;
 
     switch (c->phase) {
+        case CONN_API:
+            if (len)
+                memmove(c->request + c->request_len, data, len);
+            c->request_len += len;
+            if (c->body_seen >= c->content_length)
+                return api_dispatch(c);
+            return true;
+
         case CONN_FORM:
             // the head's leftovers are already in place: memmove
             if (len)
@@ -987,6 +1098,10 @@ static err_t on_poll(void *arg, struct tcp_pcb *pcb)
         tcp_abort(pcb);
         return ERR_ABRT;
     }
+
+    // a print being typed answers when it is done (kvmd_api.c ends it)
+    if (c->phase == CONN_API_WAIT)
+        c->idle_polls = 0;
 
     if (++c->idle_polls >= HTTP_IDLE_POLLS) {
         if (c->phase == CONN_UPLOAD)

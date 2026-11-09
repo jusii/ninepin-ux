@@ -124,6 +124,8 @@ enum settings_display {
 };
 
 #define SETTINGS_MOUSE_SPEED_COUNT  4   // 300, 200, 150, 100 us
+#define SETTINGS_NET_SCREEN_COUNT   8   // 640x256 ... 1920x1080 (settings_names.c)
+#define SETTINGS_NET_SCALE_COUNT    5   // 50, 75, 100, 150, 200 % counts per pixel
 #define SETTINGS_WATCHDOG_COUNT     3   // off, 2 s, 5 s
 #define SETTINGS_DEADZONE_COUNT     3   // 25, 50, 75 %
 #define SETTINGS_PAD_BUTTONS        7   // fire 1-3 / cd32 red blue green yellow l r play
@@ -177,7 +179,11 @@ typedef struct {
     char wifi_password[SETTINGS_WIFI_PASSWORD_LEN];
     char page_password[SETTINGS_PAGE_PASSWORD_LEN];
 
-    uint8_t reserved[45];                           // zero; pads the struct to 224 bytes
+    uint8_t net_control;                            // 0/1: kvmd-compatible keyboard / mouse api
+    uint8_t net_screen;                             // target screen, for absolute moves on de9
+    uint8_t net_scale;                              // mouse counts per screen pixel
+
+    uint8_t reserved[42];                           // zero; pads the struct to 224 bytes
 } settings_t;
 
 /**

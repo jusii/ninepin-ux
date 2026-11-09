@@ -32,6 +32,8 @@ if (ENABLE_BLUETOOTH_HID)
     target_sources(amigahid-pico PRIVATE
       dhcp_server.c
       http_server.c
+      kvmd_api.c
+      kvmd_keys.c
       web_page.c
       wifi.c
     )

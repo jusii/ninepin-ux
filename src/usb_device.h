@@ -46,6 +46,7 @@
 #define USB_DEVICE_HID_MOUSE    1
 #define USB_DEVICE_HID_GAMEPAD  2
 #define USB_DEVICE_HID_GAMEPAD2 3   // player 2
+#define USB_DEVICE_HID_ABS      4   // absolute pointer, network control
 
 /**
  * @brief Hook stdout into the cdc console buffer.
@@ -84,6 +85,18 @@ uint32_t usb_device_bringup_ticks(void);
  * @return true whilst a host has the device configured
  */
 bool usb_device_mounted(void);
+
+/**
+ * @return true when the last keyboard change has gone out to the host (a
+ *         change made before that would merge into the same report)
+ */
+bool usb_device_keyboard_idle(void);
+
+/**
+ * @brief Put the absolute pointer at x, y (0..32767 each) with these buttons
+ *        (network control, kvmd_api.c).
+ */
+void usb_device_mouse_abs(uint8_t buttons, uint16_t x, uint16_t y);
 
 #define USB_DEVICE_CONSOLE_LINE_MAX 64
 

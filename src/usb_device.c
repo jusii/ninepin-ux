@@ -163,6 +163,9 @@ static bool connected;
 
 // the two gamepads' latest reports, sent when their endpoints are free
 static hid_gamepad_report_t gamepad_report[2];
+static uint16_t abs_x, abs_y;
+static uint8_t abs_buttons;
+static bool abs_dirty;
 static bool gamepad_dirty[2];
 
 // the "1200 baud touch": a host that sets the console to this rate asks for a
@@ -306,6 +309,10 @@ static void hid_flush(void)
             gamepad_dirty[player] = false;
     }
 
+    if (abs_dirty && tud_hid_n_ready(USB_DEVICE_HID_ABS)
+        && tud_hid_n_abs_mouse_report(USB_DEVICE_HID_ABS, 0, abs_buttons, (int16_t)abs_x, (int16_t)abs_y, 0, 0))
+        abs_dirty = false;
+
     if ((mouse_buttons_dirty || mouse_dx || mouse_dy || mouse_wheel || mouse_pan)
         && tud_hid_n_ready(USB_DEVICE_HID_MOUSE)) {
         int32_t dx = mouse_dx, dy = mouse_dy, wheel = mouse_wheel, pan = mouse_pan;
@@ -423,6 +430,11 @@ void usb_device_bringup_service_start(void)
 }
 #endif
 
+bool usb_device_keyboard_idle(void)
+{
+    return !keyboard_dirty && (caps_tap == CAPS_TAP_NONE);
+}
+
 bool usb_device_mounted(void)
 {
     return stack_up && tud_mounted();
@@ -435,6 +447,15 @@ void usb_device_keyboard(uint8_t slot, hid_keyboard_report_t const *report)
 
     slot_keyboard[slot] = *report;
     keyboard_dirty = true;
+    hid_wake_host();
+}
+
+void usb_device_mouse_abs(uint8_t buttons, uint16_t x, uint16_t y)
+{
+    abs_x = (x > 32767) ? 32767 : x;
+    abs_y = (y > 32767) ? 32767 : y;
+    abs_buttons = buttons;
+    abs_dirty = true;
     hid_wake_host();
 }
 

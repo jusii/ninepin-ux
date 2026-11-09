@@ -93,4 +93,10 @@ void dbgcons_wifi(char const *text);
  */
 void dbgcons_ota(char const *text);
 
+/**
+ * @brief "net ctl active" on oled line 3 while network control is in use
+ *        (under an update's text and a bluetooth prompt). Main loop.
+ */
+void dbgcons_net(bool active);
+
 #endif // _PLATFORM_COMMON_DEBUG_CONS_H

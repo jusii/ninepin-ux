@@ -35,10 +35,13 @@ static bool bt_passkey_active;
 // wi-fi state (wifi.c)
 static char wifi_text[DBGCONS_OLED_COLS + 1];
 static char ota_text[DBGCONS_OLED_COLS + 1];
+static bool net_active;
 
 static char const *line3_text(void)
 {
-    return ota_text[0] ? ota_text : wifi_text;
+    if (ota_text[0])
+        return ota_text;
+    return net_active ? "net ctl active" : wifi_text;
 }
 #endif
 
@@ -458,6 +461,17 @@ void dbgcons_wifi(char const *text)
         dbgcons_write_padded_line(3, line3_text());
 #else
     (void)text;
+#endif
+}
+
+void dbgcons_net(bool active)
+{
+#ifdef ENABLE_BLUETOOTH_HID
+    net_active = active;
+    if (!bt_passkey_active)
+        dbgcons_write_padded_line(3, line3_text());
+#else
+    (void)active;
 #endif
 }
 

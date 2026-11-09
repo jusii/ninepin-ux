@@ -32,6 +32,7 @@
 #include "bt_hid.h"
 #include "dhcp_server.h"
 #include "http_server.h"
+#include "kvmd_api.h"
 #include "radio.h"
 #include "settings_names.h"
 #include "util/debug_cons.h"
@@ -565,6 +566,8 @@ void wifi_task(void)
     page_save_task();
     // an upload waiting for the flash to catch up
     http_server_task();
+    // network keyboard / mouse to the outputs
+    kvmd_api_task();
 
     // a page password exists from the first boot on (and again after the
     // factory defaults cleared it)

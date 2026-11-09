@@ -28,7 +28,11 @@
 #define INPUT_BRIDGE_BT_SLOT_END          (INPUT_BRIDGE_BT_LE_SLOT_BASE + INPUT_BRIDGE_BT_LE_SLOTS)
 #define INPUT_BRIDGE_REAL_KBD_SLOT        INPUT_BRIDGE_BT_SLOT_END
 
-#define INPUT_BRIDGE_MAX_SLOTS        (INPUT_BRIDGE_REAL_KBD_SLOT + INPUT_BRIDGE_REAL_KBD_SLOTS)
+// one slot for network input (kvmd_api.c: a keyboard and a mouse driven over
+// wi-fi); reserved on every board, empty without wi-fi
+#define INPUT_BRIDGE_NET_SLOTS        1
+#define INPUT_BRIDGE_NET_SLOT         (INPUT_BRIDGE_REAL_KBD_SLOT + INPUT_BRIDGE_REAL_KBD_SLOTS)
+#define INPUT_BRIDGE_MAX_SLOTS        (INPUT_BRIDGE_NET_SLOT + INPUT_BRIDGE_NET_SLOTS)
 
 void input_bridge_reset(uint8_t slot);
 void input_bridge_disconnect(uint8_t slot);

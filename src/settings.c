@@ -93,6 +93,7 @@ void settings_defaults(settings_t *settings)
     settings->wheel_enabled = 1;
     settings->display = SETTINGS_DISPLAY_STATUS;
     settings->watchdog = 2;                             // 5 s
+    settings->net_scale = 2;                            // 100 %
 }
 
 static bool string_ok(char const *s, size_t size)
@@ -144,6 +145,8 @@ bool settings_valid(settings_t const *s)
         && (s->wheel_enabled <= 1) && (s->wheel_reverse <= 1)
         && (s->mouse_speed < SETTINGS_MOUSE_SPEED_COUNT)
         && (s->display < SETTINGS_DISPLAY_COUNT) && (s->watchdog < SETTINGS_WATCHDOG_COUNT)
+        && (s->net_control <= 1) && (s->net_screen < SETTINGS_NET_SCREEN_COUNT)
+        && (s->net_scale < SETTINGS_NET_SCALE_COUNT)
         && string_ok(s->wifi_ssid, sizeof(s->wifi_ssid))
         && string_ok(s->wifi_password, sizeof(s->wifi_password))
         && string_ok(s->page_password, sizeof(s->page_password));

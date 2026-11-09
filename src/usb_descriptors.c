@@ -63,12 +63,15 @@ uint8_t const *tud_descriptor_device_cb(void)
 static uint8_t const desc_hid_keyboard[] = { TUD_HID_REPORT_DESC_KEYBOARD() };
 static uint8_t const desc_hid_mouse[] = { TUD_HID_REPORT_DESC_MOUSE() };
 static uint8_t const desc_hid_gamepad[] = { TUD_HID_REPORT_DESC_GAMEPAD() };
+// absolute pointer for network control (kvmd_api.c): x / y 0..32767
+static uint8_t const desc_hid_abs[] = { TUD_HID_REPORT_DESC_ABSMOUSE() };
 
 uint8_t const *tud_hid_descriptor_report_cb(uint8_t instance)
 {
     switch (instance) {
         case USB_DEVICE_HID_KEYBOARD:   return desc_hid_keyboard;
         case USB_DEVICE_HID_MOUSE:      return desc_hid_mouse;
+        case USB_DEVICE_HID_ABS:        return desc_hid_abs;
         default:                        return desc_hid_gamepad;
     }
 }
@@ -85,6 +88,7 @@ enum
     ITF_NUM_HID_MOUSE,
     ITF_NUM_HID_GAMEPAD,
     ITF_NUM_HID_GAMEPAD2,
+    ITF_NUM_HID_ABS,
     ITF_NUM_TOTAL
 };
 
@@ -95,11 +99,12 @@ enum
 #define EPNUM_HID_MOUSE     0x84
 #define EPNUM_HID_GAMEPAD   0x85
 #define EPNUM_HID_GAMEPAD2  0x86
+#define EPNUM_HID_ABS       0x87
 
 // 1 ms polling for all of them; the hosts this talks to are not short of bandwidth
 #define HID_POLL_MS         1
 
-#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + (4 * TUD_HID_DESC_LEN))
+#define CONFIG_TOTAL_LEN    (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + (5 * TUD_HID_DESC_LEN))
 
 static uint8_t const desc_configuration[] = {
     // config number, interface count, string index, total length, attribute, power in ma.
@@ -120,6 +125,8 @@ static uint8_t const desc_configuration[] = {
     // player 2: a second, separate controller to the host
     TUD_HID_DESCRIPTOR(ITF_NUM_HID_GAMEPAD2, 8, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_gamepad),
         EPNUM_HID_GAMEPAD2, CFG_TUD_HID_EP_BUFSIZE, HID_POLL_MS),
+    TUD_HID_DESCRIPTOR(ITF_NUM_HID_ABS, 9, HID_ITF_PROTOCOL_NONE, sizeof(desc_hid_abs),
+        EPNUM_HID_ABS, CFG_TUD_HID_EP_BUFSIZE, HID_POLL_MS),
 };
 
 _Static_assert(sizeof(desc_configuration) == CONFIG_TOTAL_LEN, "configuration descriptor length");
@@ -144,6 +151,7 @@ static char const *const string_desc_arr[] = {
     "amigahid mouse",           // 6: hid mouse
     "amigahid gamepad 1",       // 7: hid gamepad, player 1
     "amigahid gamepad 2",       // 8: hid gamepad, player 2
+    "amigahid pointer",         // 9: hid absolute pointer (network control)
 };
 
 #define USB_STRING_MAX_CHARS 32

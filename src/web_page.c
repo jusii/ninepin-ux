@@ -72,6 +72,9 @@ static const web_choice_t choices[] = {
     CHOICE("Board", "display", "Display", display, display),
     CHOICE(NULL, "watchdog", "Watchdog", watchdog, watchdog),
     CHOICE("Wi-Fi", "wifi_mode", "Wi-Fi", wifi_mode, wifi),
+    CHOICE("Network control", "net_control", "Network control", net_control, off_on),
+    CHOICE(NULL, "net_screen", "Target screen (DE9 mouse)", net_screen, net_screen),
+    CHOICE(NULL, "net_scale", "Mouse counts per pixel", net_scale, net_scale),
 };
 
 #define CHOICE_COUNT (sizeof(choices) / sizeof(choices[0]))

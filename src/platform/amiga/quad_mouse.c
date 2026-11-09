@@ -43,6 +43,8 @@ typedef struct
 } aqm_axis_move_t;
 
 static queue_t motion_queue;
+// core1 still has quadrature steps to put out (amiga_quad_mouse_idle())
+static volatile bool aqm_busy;
 static queue_t wheel_queue;
 static volatile bool button_pressed[3];
 static volatile uint16_t wheel_queued;
@@ -461,6 +463,7 @@ void amiga_quad_mouse_motion()
         if (aqm_port_active < 0) {
             while (queue_try_remove(&motion_queue, &motion))
                 ;
+            aqm_busy = false;
             _aqm_wheel_clear();
             tight_loop_contents();
             continue;
@@ -485,6 +488,7 @@ void amiga_quad_mouse_motion()
         out_y = _aqm_add_clamped(out_y, y_residue / divider);
         x_residue %= divider;
         y_residue %= divider;
+        aqm_busy = (out_x != 0) || (out_y != 0);
 
         if ((out_x == 0) && (out_y == 0)) {
             tight_loop_contents();
@@ -517,9 +521,15 @@ void amiga_quad_mouse_motion()
 
         if (out_y < 0) out_y++;
         if (out_y > 0) out_y--;
+        aqm_busy = (out_x != 0) || (out_y != 0);
 
         next_motion_at = time_us_32() + aqm_step_us;
     }
+}
+
+bool amiga_quad_mouse_idle(void)
+{
+    return !aqm_busy && queue_is_empty(&motion_queue);
 }
 
 bool amiga_quad_mouse_port(int8_t port, uint32_t timeout_us)

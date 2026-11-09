@@ -32,6 +32,9 @@ NAMES(display,      SETTINGS_DISPLAY_COUNT,     "status", "hid diag", "mouse dia
 NAMES(watchdog,     SETTINGS_WATCHDOG_COUNT,    "off", "2 s", "5 s");
 NAMES(bt_pairing,   SETTINGS_BT_PAIRING_COUNT,  "automatic", "paired only");
 NAMES(wifi,         SETTINGS_WIFI_COUNT,        "off", "access point", "join network");
+NAMES(net_screen,   SETTINGS_NET_SCREEN_COUNT,  "640x256", "640x512", "640x200", "640x400",
+                                                "800x600", "1024x768", "1280x1024", "1920x1080");
+NAMES(net_scale,    SETTINGS_NET_SCALE_COUNT,   "50%", "75%", "100%", "150%", "200%");
 NAMES(kb_preset,    SETTINGS_KB_PRESET_COUNT,   "original", "Y<->Z", "A<->Q W<->Z");
 NAMES(kb_help,      SETTINGS_KB_HELP_COUNT,     "insert", "home", "page up", "F11", "none");
 NAMES(kb_delete,    SETTINGS_KB_DELETE_COUNT,   "delete", "backspace", "none");
