@@ -89,6 +89,12 @@ typedef struct
 
 static queue_t keyboard_event_queue;
 
+// the amiga's acknowledgement of a key code (amiga_send_immediate())
+#define AKB_HANDSHAKE_TIMEOUT_MS    143
+#define AKB_AFTER_HANDSHAKE_US      200
+#define AKB_ACK_MIN_US              40
+static volatile uint32_t handshake_missed;
+
 static inline void amiga_reset_stateful_flags(void)
 {
     if (caps_lock) {
@@ -194,9 +200,40 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
         bit_mask >>= 1;
     }
 
-    // set /dat to input for 5ms to signal end of key
+    // let go of /dat; the amiga acknowledges the code by pulling it low for
+    // at least 85 us, then lets go. a code sent before that is lost (a busy
+    // amiga can take milliseconds), so wait for both edges, as a real
+    // keyboard does, giving up after its 143 ms
     _keyboard_gpio_set(KBD_AMIGA_DAT, HIGH);
-    sleep_ms(5);
+    {
+        // the ack (>= 85 us low) often starts while the last bit is still
+        // out, so the line can be low from the amiga the moment we let go; a
+        // low that ends within a few microseconds is only the pull-up rising.
+        // a low lasting AKB_ACK_MIN_US is the ack: wait for it to end
+        absolute_time_t until = make_timeout_time_ms(AKB_HANDSHAKE_TIMEOUT_MS);
+        bool acked = false;
+
+        while (!acked && !time_reached(until)) {
+            uint32_t low_since;
+
+            if (gpio_get(KBD_AMIGA_DAT))
+                continue;
+            low_since = time_us_32();
+            while (!gpio_get(KBD_AMIGA_DAT) && !time_reached(until)) {
+                if ((uint32_t)(time_us_32() - low_since) >= AKB_ACK_MIN_US)
+                    acked = true;
+            }
+        }
+        if (!acked)
+            handshake_missed++;
+    }
+    // a little air before the next code
+    sleep_us(AKB_AFTER_HANDSHAKE_US);
+}
+
+uint32_t amiga_keyboard_missed_handshakes(void)
+{
+    return handshake_missed;
 }
 
 void amiga_init_io(void)
@@ -462,6 +499,11 @@ void amiga_send_rawkey(uint8_t keycode, bool up)
 
     if (!in_reset)
         amiga_queue_event(&event, false);
+}
+
+bool amiga_keyboard_idle(void)
+{
+    return queue_is_empty(&keyboard_event_queue);
 }
 
 bool amiga_in_reset(void)

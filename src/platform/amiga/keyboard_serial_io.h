@@ -108,6 +108,16 @@ void amiga_send_rawkey(uint8_t keycode, bool up);
 bool amiga_in_reset(void);
 
 /**
+ * @return true when every queued key event has gone out to the amiga
+ */
+bool amiga_keyboard_idle(void);
+
+/**
+ * @return key codes the amiga did not acknowledge within 143 ms since boot
+ */
+uint32_t amiga_keyboard_missed_handshakes(void);
+
+/**
  * @brief Note that the real keyboard's receiver has been resynchronised
  *
  * Called once per reset, after keyboard_recv.c restarts its state machine. The

@@ -30,6 +30,7 @@
 #include "ota.h"
 #include "pad.h"
 #include "platform/amiga/de9.h"
+#include "platform/amiga/keyboard_serial_io.h"
 #include "settings.h"
 #include "usb_device.h"
 #include "util/output.h"
@@ -103,6 +104,9 @@ static void cmd_info(char const *arg)
     }
 #endif
     ahprintf("settings: %s\n", settings_source());
+#ifdef HAS_DE9_OUTPUTS
+    ahprintf("amiga keyboard: %lu key codes not acknowledged\n", (unsigned long)amiga_keyboard_missed_handshakes());
+#endif
 }
 
 static char const *const mode_names[SETTINGS_MODE_COUNT] = { "amiga", "c64", "usb" };
