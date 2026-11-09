@@ -1,3 +1,0 @@
-outer 106.0 x 68.0 x 25.0 mm (cap 22.5 + base 2.5); lid underside 16.00 above the board underside, glass top 15.31, gap 0.69
-cap valid True, base valid True
-interference: J10 0.31 mm3, J12 0.31 mm3, P1 shell 0.02 mm3, P2 shell 0.02 mm3, J4 0.48 mm3
