@@ -5,6 +5,10 @@ and host tests of the Wi-Fi page and firmware updates. Not part of the build.
 
 ## On the board (USB-C to this machine)
 
+/nas is mounted noexec: run the scripts through the interpreter from the repo,
+`bash tools/rev7-bench/con.sh ...`, `bash tools/rev7-bench/flash.sh`,
+`python3 -I tools/rev7-bench/keytest.py ...`.
+
 - `flash.sh` - flash a UF2 without the BOOT button: a running firmware is sent
   into BOOTSEL with the 1200 baud touch, then the UF2 is copied onto the drive
   and the console is captured for a few seconds.
