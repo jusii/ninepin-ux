@@ -88,6 +88,9 @@ Defaults in **bold**.
 **Wi-Fi**
 * Wi-Fi: **off**, access point, join network
 * Show page password, New page password
+* Network control: **off**, on (see below)
+* Net screen: the target's screen size for absolute moves on DE9: **640x256** ... 1920x1080
+* Net mouse scale: mouse counts per screen pixel on DE9: 50%, 75%, **100%**, 150%, 200%
 
 **Updates**
 * Updates need BOOT: no, **yes**
@@ -125,6 +128,37 @@ radio). Connected devices keep working; BT pair (2 min) searches anyway.
   `http://amigahid-xxxx.local/`; any user name, password from Show page password.
 
 The page shows the status and every menu setting except Updates need BOOT (remaps read-only).
+
+## network control
+
+Keyboard and mouse over Wi-Fi, through a subset of the [PiKVM API](https://docs.pikvm.org/api/).
+PiKVM and GL.iNet KVM clients and their MCP servers work with it. The screen has to come from a
+capture device or an IP KVM; the board has no video.
+
+1. Wi-Fi = join network, Network control = on. Not available in access point mode.
+2. Base URL `http://amigahid-xxxx.local/api/`. Auth: any user name and the page password, as
+   `X-KVMD-User` / `X-KVMD-Passwd` headers, HTTP Basic, or `POST /api/auth/login`.
+3. Plain HTTP only.
+
+```shell
+curl -u admin:PASSWORD http://amigahid-xxxx.local/api/hid
+curl -u admin:PASSWORD -X POST --data-binary 'Hello' 'http://amigahid-xxxx.local/api/hid/print?keymap=en-us'
+curl -u admin:PASSWORD -X POST 'http://amigahid-xxxx.local/api/hid/events/send_key?key=Enter&finish=true'
+curl -u admin:PASSWORD -X POST 'http://amigahid-xxxx.local/api/hid/events/send_mouse_relative?delta_x=20&delta_y=0'
+```
+
+* Calls: `info`, `hid`, `hid/keymaps`, `hid/print` (`keymap`, `slow`, `delay`, `limit`),
+  `hid/events/send_key` (`state`, `finish`), `send_shortcut`, `send_mouse_button`,
+  `send_mouse_move`, `send_mouse_relative`, `send_mouse_wheel`, `hid/reset`, `auth/*`.
+* Keys are web `KeyboardEvent.code` names (`KeyA`, `ShiftLeft`, `MetaLeft` = Left Amiga).
+* `keymap` is the target's layout: `en-us`, `en-gb`, `fi`, `sv`, `de`, `fr`.
+* Input follows the mode, like any keyboard and mouse; the menu blocks it while open.
+* Typing is paced so the target loses nothing: the Amiga gets at most about 30 characters a second.
+* Mouse on DE9 is relative (`/api/hid` reports `absolute: false`). An absolute move pushes into
+  the top-left corner first, then moves by Net screen and Net mouse scale; turn off mouse
+  acceleration in Amiga Input prefs. USB-C has a true absolute pointer.
+* Safety: 5 wrong passwords lock that address out for 30 s; held keys and buttons are released
+  after 60 s without a request; "net ctl active" shows on the OLED.
 
 ## updates
 

@@ -1,8 +1,10 @@
 # amigahid-pico-UX
 
 USB and Bluetooth keyboards, mice and game controllers on a Commodore Amiga (and C64), with the
-real Amiga keyboard passed through alongside them. RP2040 / RP2350 firmware and carrier boards
-that plug into the Amiga's keyboard and controller ports.
+real Amiga keyboard passed through alongside them. **Network control:** keyboard and mouse over
+Wi-Fi through a PiKVM-compatible API, so scripts and LLM agents can drive the machine. Over USB-C
+the Amiga keyboard and everything else also work on a PC or Mac. RP2040 / RP2350 firmware and
+carrier boards that plug into the Amiga's keyboard and controller ports.
 
 A fork of [borb/amigahid-pico](https://github.com/borb/amigahid-pico) with its own boards.
 
@@ -46,6 +48,9 @@ A fork of [borb/amigahid-pico](https://github.com/borb/amigahid-pico) with its o
   pad or the console.
 * **Wi-Fi:** access point (`amigahid-xxxx`, 192.168.4.1) or joins a network (mDNS
   `amigahid-xxxx.local`, page password). Settings page with every menu setting.
+* **Network control:** a subset of the PiKVM `kvmd` HTTP API (keys, text in six keymaps, mouse),
+  so PiKVM / GL.iNet KVM clients and MCP servers work with it. Input follows the mode: to the
+  Amiga, a C64 Ultimate or a PC. Typing is paced to what the target accepts.
 * **Firmware updates:** A/B slots; every image runs on trial and keeps itself only after 10 s of
   clean running, otherwise the previous one boots. Upload from the settings page (BOOT press
   optional), "previous firmware" in the menu. A running board enters BOOTSEL on a 1200 baud
