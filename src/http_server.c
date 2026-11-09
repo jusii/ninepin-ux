@@ -104,6 +104,11 @@ __attribute__((weak)) size_t ota_space(void)
     return SIZE_MAX;
 }
 
+__attribute__((weak)) bool ota_hold_window(void)
+{
+    return false;
+}
+
 __attribute__((weak)) bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
 {
     (void)offset;
@@ -879,6 +884,10 @@ static void credit(http_conn_t *c)
         return;
 
     if ((c->phase == CONN_UPLOAD) && !c->refused) {
+        // the update side is about to write flash: nothing more until then
+        if (ota_hold_window())
+            return;
+
         // the window after giving x back is TCP_WND - owed + x; that much may
         // arrive, plus the multipart tail held in the connection
         uint32_t room = (uint32_t)ota_space();
@@ -1041,6 +1050,22 @@ static err_t on_accept(void *arg, struct tcp_pcb *pcb, err_t err)
     tcp_poll(pcb, on_poll, HTTP_POLL_INTERVAL);
     tcp_setprio(pcb, TCP_PRIO_MIN);
     return ERR_OK;
+}
+
+bool http_server_upload_quiet(void)
+{
+    bool quiet = true;
+
+    cyw43_arch_lwip_begin();
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
+        http_conn_t const *c = &conns[i];
+
+        // the sender may still send up to the window it was last told of
+        if ((c->phase == CONN_UPLOAD) && !c->refused && c->pcb && c->pcb->rcv_ann_wnd)
+            quiet = false;
+    }
+    cyw43_arch_lwip_end();
+    return quiet;
 }
 
 void http_server_task(void)

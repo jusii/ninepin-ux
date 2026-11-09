@@ -338,6 +338,11 @@ static void sta_start(settings_t const *s)
     }
     sta_up = true;
 
+    // no power save: the default (pm2, sleeping between beacons) loses bursts
+    // of incoming segments, and a tcp upload then stalls behind retransmit
+    // back-offs. the board runs off the amiga or usb, not a battery
+    cyw43_wifi_pm(&cyw43_state, CYW43_NONE_PM);
+
     // the name for the router's dhcp and for mdns; the netif keeps the pointer
     cyw43_arch_lwip_begin();
     netif_set_hostname(sta_netif(), name);

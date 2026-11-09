@@ -58,6 +58,18 @@ bool ota_receive(uint32_t offset, uint8_t const *data, size_t len);
  */
 bool ota_finish(char *message, size_t size);
 
+/**
+ * @return true whilst the update side wants the upload's tcp window kept shut,
+ *         so that it can write flash with nothing on its way. Any context.
+ */
+bool ota_hold_window(void);
+
+/**
+ * @return true if nothing more can arrive for an upload until its window is
+ *         reopened (http_server.c; true when there is no upload)
+ */
+bool http_server_upload_quiet(void);
+
 #ifdef HAS_OTA
 
 /**

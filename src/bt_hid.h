@@ -11,6 +11,8 @@
 #ifndef _BT_HID_H
 #define _BT_HID_H
 
+#include <stdbool.h>
+
 void bt_hid_init(void);
 
 /**
@@ -24,6 +26,13 @@ void bt_hid_task(void);
  *        look for a classic pad right away. Main loop.
  */
 void bt_hid_pair_window(void);
+
+/**
+ * @brief Stop (true) or resume (false) searching for new devices, classic
+ *        inquiry and le scanning, keeping the links that are up. For a
+ *        firmware upload over wi-fi, which shares the radio. Main loop.
+ */
+void bt_hid_pause_scanning(bool pause);
 
 /**
  * @brief Drop every connection, forget all classic and le bonds, and bring

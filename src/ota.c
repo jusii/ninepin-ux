@@ -43,6 +43,9 @@
 #include "pico/flash.h"
 
 #include "apply.h"
+#ifdef ENABLE_BLUETOOTH_HID
+#include "bt_hid.h"
+#endif
 #include "settings.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -106,6 +109,35 @@ static uint8_t sector_written[OTA_MAX_BLOCKS * UF2_PAYLOAD / FLASH_SECTOR_SIZE /
 // the sector being filled: written out whole, one erase and program at a time
 static uint8_t __aligned(4) sector_buf[FLASH_SECTOR_SIZE];
 static int32_t buf_sector = -1;
+// the image's whole range is erased before the first sector is written, a 64K
+// block per main loop pass, while the upload waits in the ring and the tcp
+// window: an erase keeps interrupts off for tens of milliseconds a sector, and
+// a burst arriving at the radio meanwhile is lost (and resent after a back-off
+// that grows with every repeat). programming a pre-erased sector takes ~7 ms
+static uint32_t erase_next, erase_end;     // slot offsets
+
+// and even programming a sector (~7 ms with interrupts off) loses a burst now
+// and then. so flash is only touched whilst nothing can be on its way: once
+// half the ring is waiting, the window stays shut (ota_hold_window()) until
+// the sender has filled it, the ring is written out, and the window reopens.
+// one round trip per 16K, and no flash pause ever overlaps incoming data
+#define OTA_QUIET_WAIT_MS       300u    // the sender sent less than a window: go anyway
+static volatile bool flash_wanted;
+static uint32_t wanted_since;
+
+/**
+ * the http server's view (http_server.c): nothing more can arrive for the
+ * upload until its window is reopened; true when there is no upload
+ */
+__attribute__((weak)) bool http_server_upload_quiet(void)
+{
+    return true;
+}
+
+bool ota_hold_window(void)
+{
+    return flash_wanted;
+}
 static uint32_t taken_bytes, started_ms, next_report;
 static uint32_t since_ms;       // OTA_CONFIRM, OTA_INSTALL: when it began
 static uint32_t shown_seconds;
@@ -160,36 +192,34 @@ static int running_slot(void)
 
 typedef struct {
     uint32_t offset;
-    uint8_t const *data;        // NULL: erase one sector only
+    uint32_t erase_length;      // erased first (whole sectors), 0: none
+    uint8_t const *data;        // then programmed, NULL: nothing
     size_t length;
-    bool erase;                 // with data: erase its sector first
 } flash_job_t;
 
 static void flash_job(void *context)
 {
     flash_job_t const *job = context;
 
-    if (!job->data || job->erase)
-        flash_range_erase(job->offset, FLASH_SECTOR_SIZE);
+    if (job->erase_length)
+        flash_range_erase(job->offset, job->erase_length);
     if (job->data)
         flash_range_program(job->offset, job->data, job->length);
 }
 
-static bool flash_do(uint32_t offset, uint8_t const *data, size_t length)
+static bool flash_run(uint32_t offset, uint32_t erase_length, uint8_t const *data, size_t length)
 {
-    flash_job_t job = { offset, data, length, false };
+    flash_job_t job = { offset, erase_length, data, length };
 
     return flash_safe_execute(flash_job, &job, 500) == PICO_OK;
 }
 
 /**
- * one sector erased and programmed in a single flash operation
+ * NULL data: erase the sector at offset; else program
  */
-static bool flash_sector(uint32_t offset, uint8_t const *data)
+static bool flash_do(uint32_t offset, uint8_t const *data, size_t length)
 {
-    flash_job_t job = { offset, data, FLASH_SECTOR_SIZE, true };
-
-    return flash_safe_execute(flash_job, &job, 500) == PICO_OK;
+    return data ? flash_run(offset, 0, data, length) : flash_run(offset, FLASH_SECTOR_SIZE, NULL, 0);
 }
 
 static uint32_t crc32(uint8_t const *data, size_t length)
@@ -336,8 +366,24 @@ static void oled(char const *text)
     dbgcons_ota(text);
 }
 
+/**
+ * bluetooth stops searching for new devices whilst an upload comes in: its
+ * scanning holds the shared radio most of the time, and wi-fi loses bursts
+ * meanwhile (an upload that takes 7 s with it paused stalls for minutes)
+ */
+static void radio_for_upload(bool upload)
+{
+#ifdef ENABLE_BLUETOOTH_HID
+    bt_hid_pause_scanning(upload);
+#else
+    (void)upload;
+#endif
+}
+
 static void fail(char const *why)
 {
+    flash_wanted = false;
+    radio_for_upload(false);
     state = OTA_FAILED;
     snprintf(status_text, sizeof(status_text), "failed: %s", why);
     ahprintf("[ota] update %s\n", status_text);
@@ -359,10 +405,13 @@ static void start_receiving(void)
     memset(block_seen, 0, sizeof(block_seen));
     memset(sector_written, 0, sizeof(sector_written));
     buf_sector = -1;
+    erase_next = erase_end = 0;
+    flash_wanted = false;
     taken_bytes = 0;
     next_report = 128u * 1024u;
     started_ms = now_ms();
     ahprintf("[ota] receiving an update into slot %c\n", target_slot ? 'B' : 'A');
+    radio_for_upload(true);
     oled("update: receiving");
 }
 
@@ -374,11 +423,16 @@ static bool sector_flush(void)
     uint32_t sector = (uint32_t)buf_sector;
     uint32_t at;
 
+    bool erased;
+
     if (buf_sector < 0)
         return true;
     buf_sector = -1;
     at = target_start + sector * FLASH_SECTOR_SIZE;
-    if (!flash_sector(at, sector_buf) || (memcmp(flash_read(at), sector_buf, FLASH_SECTOR_SIZE) != 0)) {
+    // erased ahead and not written since: program only
+    erased = (sector * FLASH_SECTOR_SIZE < erase_next) && !(sector_written[sector / 8] & (1u << (sector % 8)));
+    if (!flash_run(at, erased ? 0 : FLASH_SECTOR_SIZE, sector_buf, FLASH_SECTOR_SIZE)
+        || (memcmp(flash_read(at), sector_buf, FLASH_SECTOR_SIZE) != 0)) {
         fail("flash write");
         return false;
     }
@@ -426,6 +480,10 @@ static void take_block(uint8_t const *b)
             return;
         }
         blocks_expected = w[6];
+        erase_next = 0;
+        erase_end = (blocks_expected * UF2_PAYLOAD + FLASH_SECTOR_SIZE - 1u) & ~(FLASH_SECTOR_SIZE - 1u);
+        if (erase_end > target_size)
+            erase_end = target_size;
     }
 
     offset = w[3] - XIP_BASE;
@@ -532,6 +590,70 @@ static void buy_if_on_trial(void)
     apply_watchdog();
 }
 
+/**
+ * the next piece of the image's range erased: up to the next 64K boundary of
+ * the flash, where the bootrom erases a whole block at once
+ *
+ * @return false if it failed
+ */
+static bool erase_step(void)
+{
+    uint32_t at = target_start + erase_next;
+    uint32_t length = 0x10000u - (at & 0xffffu);
+
+    if (length > erase_end - erase_next)
+        length = erase_end - erase_next;
+    if (!flash_run(at, length, NULL, 0)) {
+        fail("flash erase");
+        return false;
+    }
+    erase_next += length;
+    return true;
+}
+
+static uint32_t ring_peek_word(uint32_t at)
+{
+    uint32_t word = 0;
+
+    for (unsigned i = 0; i < 4; i++)
+        word |= (uint32_t)ring[(ring_tail + at + i) % OTA_RING] << (8 * i);
+    return word;
+}
+
+/**
+ * @return true if taking the next block in the ring writes flash: the range
+ *         still to erase, or a block for another sector than the buffered one
+ */
+static bool next_needs_flash(void)
+{
+    uint32_t address;
+
+    if (erase_next < erase_end)
+        return true;
+    if (buf_sector < 0)
+        return false;
+    if ((ring_peek_word(0) != UF2_MAGIC_START0) || !(ring_peek_word(8) & UF2_FLAG_FAMILY)
+        || (ring_peek_word(28) != UF2_FAMILY_RP2350_ARM_S))
+        return false;   // take_block() turns it down or passes it over
+    address = ring_peek_word(12);
+    return (address < XIP_BASE) || ((address - XIP_BASE) / FLASH_SECTOR_SIZE != (uint32_t)buf_sector);
+}
+
+/**
+ * @return true if flash may be written now
+ */
+static bool flash_allowed(void)
+{
+    if (!flash_wanted) {
+        if (!upload_done && (ring_used() < OTA_RING / 2))
+            return false;
+        flash_wanted = true;
+        wanted_since = now_ms();
+    }
+    return upload_done || http_server_upload_quiet()
+        || ((uint32_t)(now_ms() - wanted_since) >= OTA_QUIET_WAIT_MS);
+}
+
 static void receive_task(void)
 {
     absolute_time_t until = make_timeout_time_us(OTA_TASK_BUDGET_US);
@@ -541,6 +663,15 @@ static void receive_task(void)
 
     while ((state == OTA_RECEIVING) && (ring_used() >= UF2_BLOCK) && !time_reached(until)) {
         uint8_t block[UF2_BLOCK];
+
+        if (next_needs_flash() && !flash_allowed())
+            break;
+
+        // the rest waits in the ring until the range is erased
+        if (erase_next < erase_end) {
+            erase_step();
+            break;
+        }
 
         for (unsigned i = 0; i < UF2_BLOCK; i++) {
             block[i] = ring[ring_tail];
@@ -560,9 +691,14 @@ static void receive_task(void)
         invalidate_target();
         return;
     }
+    // written out: the window reopens
+    if (flash_wanted && (ring_used() < UF2_BLOCK))
+        flash_wanted = false;
 
     if (!upload_done) {
-        if ((uint32_t)(now_ms() - last_data_ms) >= OTA_STALL_MS) {
+        // signed: a chunk may arrive (and stamp a newer time) between the
+        // clock read and the compare, and that is no stall
+        if ((int32_t)(now_ms() - last_data_ms) >= (int32_t)OTA_STALL_MS) {
             invalidate_target();
             fail("the upload stopped");
         }
@@ -570,6 +706,11 @@ static void receive_task(void)
     }
     if (ring_used() >= UF2_BLOCK)
         return;
+    if (erase_next < erase_end) {
+        if (erase_step() && (erase_next >= erase_end))
+            sector_flush();
+        return;
+    }
     if (!sector_flush())
         return;
 
@@ -579,6 +720,7 @@ static void receive_task(void)
         invalidate_target();
         fail("the image is incomplete");
     } else if (settings_get()->ota_needs_boot) {
+        radio_for_upload(false);
         state = OTA_CONFIRM;
         since_ms = now_ms();
         shown_seconds = 0;
@@ -586,6 +728,7 @@ static void receive_task(void)
         ahprintf("[ota] %lu KB checked; press BOOT within %u s to install\n",
             (unsigned long)(blocks_seen * UF2_PAYLOAD / 1024u), OTA_CONFIRM_MS / 1000u);
     } else {
+        radio_for_upload(false);
         state = OTA_INSTALL;
         since_ms = now_ms();
         snprintf(status_text, sizeof(status_text), "installing");
