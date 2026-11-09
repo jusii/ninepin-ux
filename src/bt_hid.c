@@ -232,9 +232,13 @@ static bt_le_state_t bt_le_state = BT_LE_STATE_OFF;
 
 // searching for new devices paused (bt_hid_pause_scanning()): classic inquiry
 // and le scanning hold the shared radio most of the time, and wi-fi loses
-// bursts meanwhile, which stalls a firmware upload. links already up stay
-static volatile bool bt_scan_pause_wanted;
+// frames meanwhile - a firmware upload stalls, and the access point never
+// answers a client's association request. links already up stay; a pairing
+// window (BT pair) searches regardless
+static volatile uint8_t bt_scan_pause_reasons;   // BT_HID_PAUSE_* bits
 static bool bt_scan_paused;
+
+static bool bt_scan_pause_effective(void);
 static bd_addr_t bt_le_addr;
 static bd_addr_type_t bt_le_addr_type;
 static hci_con_handle_t bt_le_connection_handle = HCI_CON_HANDLE_INVALID;
@@ -2013,9 +2017,17 @@ void bt_hid_init(void)
     hci_power_control(HCI_POWER_ON);
 }
 
-void bt_hid_pause_scanning(bool pause)
+static bool bt_scan_pause_effective(void)
 {
-    bt_scan_pause_wanted = pause;
+    return bt_scan_pause_reasons && !bt_pair_window;
+}
+
+void bt_hid_pause_scanning(uint8_t reason, bool pause)
+{
+    if (pause)
+        bt_scan_pause_reasons |= reason;
+    else
+        bt_scan_pause_reasons &= (uint8_t)~reason;
 }
 
 void bt_hid_pair_window(void)
@@ -2073,7 +2085,7 @@ static void bt_hid_settings_task(void)
     work = bt_forget_request || bt_forgetting || bt_pair_request || expired
         || (bt_radio_on && !enabled) || (!bt_radio_on && enabled && bt_controller_off)
         || (bt_classic_working && (bt_discoverable != (int8_t)bt_pairing_allowed()))
-        || (bt_scan_pause_wanted != bt_scan_paused);
+        || (bt_scan_pause_effective() != bt_scan_paused);
     if (!work)
         return;
 
@@ -2115,7 +2127,7 @@ static void bt_hid_settings_task(void)
         hci_power_control(HCI_POWER_ON);
     }
 
-    if (bt_scan_pause_wanted && !bt_scan_paused) {
+    if (bt_scan_pause_effective() && !bt_scan_paused) {
         bt_scan_paused = true;
         bt_classic_stop_inquiry();
         if (bt_le_state == BT_LE_STATE_SCANNING) {
@@ -2123,7 +2135,7 @@ static void bt_hid_settings_task(void)
             bt_le_set_state(BT_LE_STATE_OFF);
         }
         ahprintf("[bt] searching paused\n");
-    } else if (!bt_scan_pause_wanted && bt_scan_paused) {
+    } else if (!bt_scan_pause_effective() && bt_scan_paused) {
         bt_scan_paused = false;
         bt_classic_schedule_inquiry(1000);
         if (bt_le_state == BT_LE_STATE_OFF)

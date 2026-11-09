@@ -12,6 +12,7 @@
 #define _BT_HID_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 void bt_hid_init(void);
 
@@ -27,12 +28,17 @@ void bt_hid_task(void);
  */
 void bt_hid_pair_window(void);
 
+// why searching is paused; it stays paused while any reason holds
+#define BT_HID_PAUSE_UPLOAD     0x01    // a firmware upload over wi-fi
+#define BT_HID_PAUSE_AP         0x02    // the wi-fi access point is up
+
 /**
  * @brief Stop (true) or resume (false) searching for new devices, classic
- *        inquiry and le scanning, keeping the links that are up. For a
- *        firmware upload over wi-fi, which shares the radio. Main loop.
+ *        inquiry and le scanning, for one reason, keeping the links that are
+ *        up: wi-fi shares the radio and loses frames while bluetooth searches.
+ *        A pairing window searches regardless. Main loop.
  */
-void bt_hid_pause_scanning(bool pause);
+void bt_hid_pause_scanning(uint8_t reason, bool pause);
 
 /**
  * @brief Drop every connection, forget all classic and le bonds, and bring

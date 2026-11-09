@@ -29,6 +29,7 @@
 #include "lwip/netif.h"
 
 #include "apply.h"
+#include "bt_hid.h"
 #include "dhcp_server.h"
 #include "http_server.h"
 #include "radio.h"
@@ -231,6 +232,8 @@ static void ap_start(void)
     }
 
     ap_up = true;
+    // a client's association goes unanswered while bluetooth searches
+    bt_hid_pause_scanning(BT_HID_PAUSE_AP, true);
     cyw43_arch_lwip_begin();
     dhcp_ok = dhcp_server_start(ap_netif());
     http_ok = http_server_start();
@@ -252,6 +255,7 @@ static void ap_stop(void)
     cyw43_arch_disable_ap_mode();
     ap_clients = 0;
     ap_up = false;
+    bt_hid_pause_scanning(BT_HID_PAUSE_AP, false);
 }
 
 static void ap_poll(uint32_t now)

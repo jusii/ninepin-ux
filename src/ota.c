@@ -374,7 +374,7 @@ static void oled(char const *text)
 static void radio_for_upload(bool upload)
 {
 #ifdef ENABLE_BLUETOOTH_HID
-    bt_hid_pause_scanning(upload);
+    bt_hid_pause_scanning(BT_HID_PAUSE_UPLOAD, upload);
 #else
     (void)upload;
 #endif
