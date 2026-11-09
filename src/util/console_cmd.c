@@ -21,6 +21,7 @@
 #include "pico/bootrom.h"
 #include "pico/platform.h"
 
+#include "build_stamp.h"
 #include "keyboard_map.h"
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
@@ -89,7 +90,7 @@ static void cmd_info(char const *arg)
     boot_info_t boot;
 
     (void)arg;
-    ahprintf("firmware built %s %s, board %s\n", __DATE__, __TIME__, PICO_BOARD);
+    ahprintf("firmware built %s, board %s\n", ahp_build_stamp, PICO_BOARD);
 #if !PICO_RP2040
     ahprintf("chip rp2350 rev a%u\n", rp2350_chip_version());
     if (rom_get_boot_info(&boot)) {

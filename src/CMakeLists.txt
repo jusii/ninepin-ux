@@ -38,6 +38,15 @@ if (ENABLE_BLUETOOTH_HID)
   endif ()
 endif ()
 
+# the build time, stamped on every build (build_stamp.h)
+set(AHP_STAMP_C ${CMAKE_CURRENT_BINARY_DIR}/build_stamp.c)
+add_custom_target(amigahid-pico-build-stamp
+  COMMAND ${CMAKE_COMMAND} -DOUT=${AHP_STAMP_C} -P ${CMAKE_CURRENT_LIST_DIR}/build_stamp.cmake
+  BYPRODUCTS ${AHP_STAMP_C}
+  VERBATIM)
+target_sources(amigahid-pico PRIVATE ${AHP_STAMP_C})
+add_dependencies(amigahid-pico amigahid-pico-build-stamp)
+
 add_subdirectory(platform)
 add_subdirectory(util)
 add_subdirectory(display)

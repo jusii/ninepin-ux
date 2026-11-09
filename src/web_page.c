@@ -22,8 +22,10 @@
 #include "pico/bootrom.h"
 
 #include "bt_hid.h"
+#include "build_stamp.h"
 #include "http_server.h"
 #include "keyboard_map.h"
+#include "ota.h"
 #include "pad.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
@@ -195,8 +197,9 @@ size_t web_page_render(char *out, size_t size)
     // status
     put(&w, "<h2>Status</h2><table>");
     put_status_row(&w, "Mode", run_mode_name(run_mode_get()), 16);
-    snprintf(line, sizeof(line), "%s %s, slot %s", __DATE__, __TIME__, boot_slot);
+    snprintf(line, sizeof(line), "%s, slot %s%s", ahp_build_stamp, boot_slot, ota_trial() ? ", on trial" : "");
     put_status_row(&w, "Firmware", line, sizeof(line));
+    put_status_row(&w, "Update", ota_status(), 48);
     for (uint8_t player = 0; player < 2; player++) {
         pad_player_t const *p = pads_player(player);
 
