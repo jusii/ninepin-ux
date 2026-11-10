@@ -45,6 +45,8 @@ ENC_HOLE, ENC_BODY, ENC_BODY_H, ENC_PINS_H = 7.2, 13.5, 7.0, 10.0   # PEC11R: M7
 ENC_LUG = None                                                 # (dx, dy, dia) of an anti-rotation lug hole if the part has one
 WIN_CLR = 0.3                                                  # window = lit area + this each side
 LED_HOLE = 2.5
+SW_STEM_DY = 2.25                                              # PTS645Vx58 actuator centre: half-way between pins 1 and 2,
+SW_STEM = tuple(y + SW_STEM_DY for y in FP["SW_Y"])            # 2.25 south of the footprint origin (= pin 1, = SW_Y)
 A500_SLOT = True                                               # ribbon exit above J1 in the north wall
 FONT = next(f for f in ("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",                      # flatpak FreeCAD sees its own fonts
                         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",             # debian host
@@ -112,7 +114,7 @@ cap = cap.cut(fillet_along(kbox(OUT_X1 - DE9_WALL - 1, OUT_X1 + 1, yc - 4.8, yc 
 # (the face stays behind the wall)
 cap = cap.cut(kbox(IN_X1 - 0.01, OUT_X1 - DE9_WALL, yc - 5.5, yc + 5.5, Z_BT + 0.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
 # east: BOOT / RESET actuators
-for sy in FP["SW_Y"]:
+for sy in SW_STEM:
     cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), Z_BT + 3.2, V(-1, 0, 0)))
     # the stem passes the tray lip on the way down: a notch in the lip above the hole
     cap = cap.cut(kbox(IN_X1 - 0.01, IN_X1 + LIP_T + LIP_CLR + 0.01, sy - 2.0, sy + 2.0, Z_BT + 3.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
@@ -146,8 +148,8 @@ labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("USB", LS, V(CONN["J4"][4] + 3.5, OUT_Y0, ZL), X, Z, Y),
           label("AMIGA", LS, V(CONN["J10"][4], OUT_Y1, ZL), -X, Z, -Y),
           label("KEYB", LS, V(CONN["J12"][4], OUT_Y1, ZL), -X, Z, -Y),
-          label("BOOT", LS, V(OUT_X1, ky(FP["SW_Y"][0]), ZL), Y, Z, -X),
-          label("RESET", LS, V(OUT_X1, ky(FP["SW_Y"][1]), ZL), Y, Z, -X),
+          label("BOOT", LS, V(OUT_X1, ky(SW_STEM[0]), ZL), Y, Z, -X),
+          label("RESET", LS, V(OUT_X1, ky(SW_STEM[1]), ZL), Y, Z, -X),
           label("5V", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
 for l in labels: cap = cap.cut(l)
 
@@ -188,7 +190,7 @@ for ref in ("P1", "P2"):
     checks.append((ref + " shell", kbox(cx - 8.3, cx + 8.3, H + FP["DE9_FLANGE"], H + FP["DE9_FLANGE"] + 6.0, Z_BT + 2.5, Z_BT + 10.5)))
 x = CONN["J4"][4]; checks.append(("J4", kbox(x - 3.5, x + 10.5, H - 10, H + OVH, Z_BT + 0.3, Z_BT + 7.0)))
 checks.append(("J13", kbox(W - 5.6, W + OVH - DE9_WALL, yc - 4.5, yc + 4.5, Z_BT + 0.2, Z_BT + 3.3)))
-for ref, sy in zip(("SW1", "SW2"), FP["SW_Y"]):
+for ref, sy in zip(("SW1", "SW2"), SW_STEM):
     checks.append((ref + " body", kbox(W - 4.5, W - 0.2, sy - 3.2, sy + 3.2, Z_BT, Z_BT + 6.5)))
     checks.append((ref + " stem", kbox(W - 0.2, W + OVH, sy - 1.75, sy + 1.75, Z_BT + 1.45, Z_BT + 4.95)))
 ox0, oy0 = FP["OLED_X0"], FP["OLED_Y0"]; pw, ph = FP["OLED_PCB"]
