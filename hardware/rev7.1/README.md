@@ -1,40 +1,37 @@
-# UX rev7.1
+# Ninepin UX rev7.1
 
-rev7 with one fix: **U11, a TLV803S reset supervisor on RUN.** Same firmware, outline, connectors, case
-(`../rev7/case/`) and hand-fitted parts as rev7. `../rev7/` stays as fabricated.
+rev7 plus **U11, a TLV803S reset supervisor on RUN**. Same firmware, outline, connectors, case
+(`../case/`) and hand-fitted parts as rev7 (tag `hw/ux-rev7`). Ordering and assembly:
+[doc/build.md](../../doc/build.md).
 
-## What changed from rev7
+## changes from rev7
 
-* **U11 TLV803SDBZR (LCSC C132016) + C40 100 nF** in the free spot south of the OLED. U11 holds RUN low
-  until 3V3 has been above 2.93 V for 200 ms, and again whenever 3V3 sags below that. This fixes the rev7
-  cold-plug BOOTSEL bug: the boot ROM no longer reads the flash (min 2.7 V) on a half-risen rail.
-  Open drain, wired-OR with SW2 on `run_sw`.
-* The output reaches SW2 pad 1 through a via south of the USB-C pair, along B.Cu under the AMIGA_IO5V
-  column, back up east of it and along F.Cu south of D3. Every rev7 track and via is unchanged
-  (`route.py` block 5 is the only new copper).
-* R70/R71 use C25190, the same 27R as R57/R58: one BOM line fewer.
-* L1 is the Abracon AOTA-B201610S3R3-101-T the land was drawn for (the rev7 substitute became unbuyable).
-* `fab/make_fab.py`: JLC rotation offsets read from the order preview (SSOP-24, SOIC-8, SOT-23-6 -90,
-  SOT-23 180), and the SMT-only recipe (see below).
+* **U11 TLV803SDBZR (LCSC C132016) + C40 100 nF**, south of the OLED. U11 holds RUN low until 3V3
+  has been above 2.93 V for 200 ms, and again whenever 3V3 sags below that: no more cold-plug
+  BOOTSEL. Open drain, wired-OR with SW2 on `run_sw`. New copper is `route.py` block 5 only.
+* R70/R71 use C25190, the same 27R as R57/R58.
+* L1 is the Abracon AOTA-B201610S3R3-101-T the land was drawn for.
+* `fab/make_fab.py`: JLC rotation offsets from the rev7 order preview; SMT-only recipe.
 
-**If U11 misbehaves** (board stays in reset, or still lands in BOOTSEL): lift U11 and fit 1 uF + 1 Mohm
-across SW2 pins 1-2 on the back, the bodge proven on rev7 board 1.
+If U11 misbehaves: remove it and fit 1 µF + 1 MΩ across SW2 pins 1-2 on the back.
 
-## Ordering (SMT-only recipe)
+## regenerate and check
 
-* JLCPCB **Economic PCBA**, which needs green mask (4 layers, 1.6 mm, ENIG). `fab/` holds the gerbers, BOM and CPL
-  for the SMT parts only. The THT parts, L1 and LED1 are not in it.
-* Hand-fitted: `bom/rev7.1-mouser-hand-10.csv` (THT parts + L1, 10 boards); LED1 from LCSC, see `bom/README.md`.
-* **Check every polarised part in JLC's placement preview before ordering.** The rotation offsets come
-  from the rev7 preview and their direction has not been confirmed on a rev7.1 upload yet.
+From the repository root. KiCad 10 with its Python `pcbnew`; FreeCAD for the case.
 
-## Regenerate and check
-
+```shell
+cd hardware/rev7.1 && python3 make_sch.py && python3 make_board.py --force && python3 route.py && cd ../..
+P=hardware/rev7.1/ninepin-ux-rev7.1
+kicad-cli sch erc $P.kicad_sch --exit-code-violations
+kicad-cli pcb drc $P.kicad_pcb --schematic-parity --severity-all --refill-zones --save-board --exit-code-violations
+git checkout -- $P.kicad_pro $P.kicad_prl     # kicad-cli rewrites them
+python3 tools/check_rev7_1_pcb.py && python3 tools/check_rev7_1_netlist.py && python3 tools/check_rev7_1_style.py
+python3 hardware/rev7.1/fab/make_fab.py       # --full adds the hand-fitted parts for a full-assembly order
+python3 tools/check_rev7_1_fab.py             # the fab package matches the board
+python3 hardware/case/run_case.py             # case STLs and fit report
 ```
-python3 make_sch.py && python3 make_board.py --force && python3 route.py
-kicad-cli sch erc ninepin-ux-rev7.1.kicad_sch --exit-code-violations
-kicad-cli pcb drc ninepin-ux-rev7.1.kicad_pcb --schematic-parity --severity-all --refill-zones --save-board --exit-code-violations
-git checkout -- ninepin-ux-rev7.1.kicad_pro ninepin-ux-rev7.1.kicad_prl
-python3 ../../tools/check_rev7_1_pcb.py && python3 ../../tools/check_rev7_1_netlist.py && python3 ../../tools/check_rev7_1_style.py
-python3 fab/make_fab.py          # --full puts the hand-fitted parts back for a full-assembly order
-```
+
+`bom/ibom.html` comes from the InteractiveHtmlBom plugin
+(`generate_interactive_bom.py --no-browser --dest-dir bom --name-format ibom --highlight-pin1 all
+--checkboxes Sourced,Placed --bom-view top-bottom --layer-view F --show-fields Value,Footprint
+--blacklist 'H*' ninepin-ux-rev7.1.kicad_pcb`).

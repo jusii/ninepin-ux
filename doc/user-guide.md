@@ -1,16 +1,32 @@
-# UX rev7 instructions
+# Ninepin UX user guide
 
-Firmware for the [UX rev7 board](./ux-rev7.md). Read the [errata](./errata.md) first.
+For the rev7 and rev7.1 boards. Connectors: [board](./board.md). Read the [errata](./errata.md) first.
 
-> **Status:** tested on hardware: modes, menu, settings, USB and A4000 keyboards, mice, joystick
-> and CD32 with a DualSense, USB-C gamepads, Wi-Fi (access point and join), updates with rollback.
-> Not yet tested: Bluetooth pads and keyboards, PS3 pad, C64 joystick, 1351 mouse.
+> **Tested on hardware:** modes, menu, settings, USB and A4000 keyboards, mice, joystick and CD32
+> with a DualSense, USB-C gamepads, Wi-Fi (access point and join), updates with rollback.
+> **Not yet tested:** Bluetooth pads and keyboards, PS3 pad, C64 joystick, 1351 mouse.
+
+## connecting
+
+| machine | keyboard out | real keyboard in |
+|---|---|---|
+| A4000D | J10 KBD OUT, mini-DIN6 male-male cable | J12 KBD IN, the A4000 keyboard |
+| A2000, A3000, A4000T | J10 through a DIN5-to-mini-DIN6 cable | J12 through a DIN5 (female) to mini-DIN6 adapter |
+| A500 | J1 header, 8-way cable to the A500 keyboard header | J8 header, the A500 keyboard's own cable |
+| A600, A1200 | no connector (keyboard MCU) | — |
+
+* Controller ports P1 / P2: straight-through DE9 female-female cables, not null-modem. They work
+  with only the DE9 cables connected (A600 / A1200, C64).
+* Power: the Amiga keyboard connector or USB-C. DE9 5 V never powers the board.
+* USB-A: keyboards, mice, pads, hubs. USB-C: power, and the device port in `c64` and `usb` modes.
 
 ## first install
 
-1. Hold BOOT, plug in USB-C. An `RP2350` drive appears.
-2. Copy `partition-table.uf2`. The board restarts into BOOTSEL by itself.
-3. Copy `amigahid-pico.uf2`.
+1. Download `ninepin-ux.uf2` and `partition-table.uf2` from
+   [Releases](https://github.com/jusii/ninepin-ux/releases), or [build them](./build.md).
+2. Hold BOOT, plug in USB-C. An `RP2350` drive appears.
+3. Copy `partition-table.uf2`. The board restarts into BOOTSEL by itself.
+4. Copy `ninepin-ux.uf2`.
 
 The flash holds two firmware slots; every later update goes into the free one.
 
@@ -23,9 +39,6 @@ BOOT held 1 s steps the mode; the board remembers it.
 | `amiga` | Amiga keyboard port | DE9 port set to mouse | DE9 ports | Amiga |
 | `c64` | USB-C | USB-C, or a DE9 port set to 1351 | DE9 ports | USB-C |
 | `usb` | USB-C | USB-C | USB-C, two gamepads | USB-C |
-
-`usb` turns the board into a USB adapter for a PC or Mac: the Amiga keyboard works as a USB
-keyboard (see the A4000 settings below).
 
 ## the menu
 
@@ -112,20 +125,18 @@ pads.
 
 ## Bluetooth
 
-PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share +
-PS.
-Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED. Paired devices
-reconnect by themselves.
-
-Searching for new devices pauses while the Wi-Fi access point is on and during an upload (shared
-radio). Connected devices keep working; BT pair (2 min) searches anyway.
+* PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.
+* Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED.
+* Paired devices reconnect by themselves.
+* Searching for new devices pauses while the Wi-Fi access point is on and during an upload (shared
+  radio). Connected devices keep working; BT pair (2 min) searches anyway.
 
 ## Wi-Fi
 
-* **Access point:** open network `amigahid-xxxx`, page at `http://192.168.4.1/`. Off after 15 min
+* **Access point:** open network `ninepin-xxxx`, page at `http://192.168.4.1/`. Off after 15 min
   without a client; any save or a restart brings it back.
 * **Join network:** set the network on the page, then Wi-Fi = join network. Page at
-  `http://amigahid-xxxx.local/`; any user name, password from Show page password.
+  `http://ninepin-xxxx.local/`; any user name, password from Show page password.
 
 The page shows the status and every menu setting except Updates need BOOT (remaps read-only).
 
@@ -136,15 +147,15 @@ PiKVM and GL.iNet KVM clients and their MCP servers work with it. The screen has
 capture device or an IP KVM; the board has no video.
 
 1. Wi-Fi = join network, Network control = on. Not available in access point mode.
-2. Base URL `http://amigahid-xxxx.local/api/`. Auth: any user name and the page password, as
+2. Base URL `http://ninepin-xxxx.local/api/`. Auth: any user name and the page password, as
    `X-KVMD-User` / `X-KVMD-Passwd` headers, HTTP Basic, or `POST /api/auth/login`.
 3. Plain HTTP only.
 
 ```shell
-curl -u admin:PASSWORD http://amigahid-xxxx.local/api/hid
-curl -u admin:PASSWORD -X POST --data-binary 'Hello' 'http://amigahid-xxxx.local/api/hid/print?keymap=en-us'
-curl -u admin:PASSWORD -X POST 'http://amigahid-xxxx.local/api/hid/events/send_key?key=Enter&finish=true'
-curl -u admin:PASSWORD -X POST 'http://amigahid-xxxx.local/api/hid/events/send_mouse_relative?delta_x=20&delta_y=0'
+curl -u admin:PASSWORD http://ninepin-xxxx.local/api/hid
+curl -u admin:PASSWORD -X POST --data-binary 'Hello' 'http://ninepin-xxxx.local/api/hid/print?keymap=en-us'
+curl -u admin:PASSWORD -X POST 'http://ninepin-xxxx.local/api/hid/events/send_key?key=Enter&finish=true'
+curl -u admin:PASSWORD -X POST 'http://ninepin-xxxx.local/api/hid/events/send_mouse_relative?delta_x=20&delta_y=0'
 ```
 
 * Calls: `info`, `hid`, `hid/keymaps`, `hid/print` (`keymap`, `slow`, `delay`, `limit`),
@@ -162,12 +173,14 @@ curl -u admin:PASSWORD -X POST 'http://amigahid-xxxx.local/api/hid/events/send_m
 
 ## updates
 
-Copy `amigahid-pico.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
+Copy `ninepin-ux.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
 = yes, press BOOT within 30 s when the OLED shows `BOOT: install`.
 
 A new firmware runs on trial and keeps itself after 10 s; if it hangs, the previous one boots.
 Previous firmware in the menu goes back one update. A running board enters BOOTSEL on a 1200 baud
 touch of its serial port (`stty -F /dev/ttyACM0 1200`).
+
+Boards running firmware from before the rename show up as `amigahid-xxxx` until updated.
 
 ## console
 

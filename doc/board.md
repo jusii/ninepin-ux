@@ -1,10 +1,12 @@
-# UX rev7 board guide
+# Ninepin UX board (rev7.1)
 
 RP2350A and RM2 (CYW43439) radio chip-down, 16 MB flash, 4 layers, 100 x 62 mm, four M3 holes.
-KiCad project and generator scripts in `kicad/rev7/`. Firmware: [rev7 instructions](./rev7-guide.md).
-Read the [errata](./errata.md) first.
+Sources in [`hardware/rev7.1/`](../hardware/rev7.1/). Using it: [user guide](./user-guide.md).
+Building one: [build](./build.md). Read the [errata](./errata.md) first.
 
-![UX rev7](./images/ux-rev7-photo.jpg)
+rev7.1 is rev7 plus U11, a TLV803S reset supervisor on RUN; everything below holds for both.
+
+![Ninepin UX rev7](./images/ux-rev7-photo.jpg)
 
 ## connectors
 
@@ -31,12 +33,13 @@ Either source runs the board:
 * USB-C: `-> D2 -> SYS5V`.
 
 SYS5V feeds a 3.3 V regulator (RP2350, RM2, flash, OLED, I/O expander) and the USB-A port
-(F2, 500 mA). The keyboard input port has its own 500 mA fuse (F3).
+(F2, 500 mA). The keyboard input port has its own 500 mA fuse (F3). U11 holds RUN low until 3V3
+has been above 2.93 V for 200 ms.
 
 Amiga-facing lines go through bus switches on their own rail, diode-OR'd from the keyboard
-connector's 5 V and DE9 pin 7 of each port. The ports therefore work with only the DE9 cables
-connected (A600/A1200), but DE9 5 V never powers the board, and a USB-C-powered board never
-back-feeds an Amiga that is off.
+connector's 5 V and DE9 pin 7 of each port. The ports work with only the DE9 cables connected
+(A600/A1200), DE9 5 V never powers the board, and a USB-C-powered board never back-feeds an
+Amiga that is off.
 
 ## encoder (optional)
 
@@ -55,15 +58,4 @@ that page is wrong; measured:
 * Mount on 11 mm M2 posts over an 8.5 mm socket. **Nylon posts, screws and nuts only**: copper
   runs 0.2 mm from the post holes.
 
-## parts
-
-* Fab: `kicad/rev7/fab/` (gerbers, JLCPCB BOM and CPL).
-* Distributors: `kicad/rev7/bom/`, Mouser and Digi-Key import files for one board. See
-  [bom/README.md](../kicad/rev7/bom/README.md) for parts they don't stock.
-* Assembly view: `kicad/rev7/bom/ibom.html` (open in a browser).
-* Case: `kicad/rev7/case/` (STEP, STL, FreeCAD).
-
-## first flash
-
-Hold BOOT while plugging in USB-C; an `RP2350` drive appears. Copy `partition-table.uf2`, then
-`amigahid-pico.uf2`. Details in the [rev7 guide](./rev7-guide.md#first-install).
+A 1.3" SH1106 module works with a firmware built for it ([build](./build.md#options)).
