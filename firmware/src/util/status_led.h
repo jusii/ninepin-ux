@@ -5,15 +5,14 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * status led indicators (boards with HAS_STATUS_LEDS).
+ * status led indicators.
  *
  * two leds tell you what the adapter is doing without a serial console or an
  * oled attached: led 1 is "am i usable" (heartbeat whilst nothing is attached,
  * solid once a usb or bluetooth device has mounted) and led 2 is "am i doing
  * something" (a short flash per input event forwarded to the amiga, replaced by
- * a fast blink whilst bluetooth is asking for a passkey). boards with a single
- * ws2812 instead (HAS_STATUS_WS2812) show led 1 on its green channel and led 2
- * on its blue one.
+ * a fast blink whilst bluetooth is asking for a passkey). both are painted on
+ * the one ws2812: led 1 on its green channel, led 2 on its blue one.
  *
  * every entry point here is core0-only: the call sites are the hid callbacks,
  * the bluetooth state changes and the main loop. core1 runs the quadrature
@@ -49,8 +48,6 @@ typedef enum
     STATUS_LED_SOURCE_BT,
     STATUS_LED_SOURCE_COUNT
 } status_led_source_t;
-
-#ifdef HAS_STATUS_LEDS
 
 /**
  * @brief Claim and blank the status led pins.
@@ -94,17 +91,5 @@ void status_led_mode(bool alternate);
  * @param active    true whilst a passkey or pin prompt is on display
  */
 void status_led_pairing(bool active);
-
-#else // !HAS_STATUS_LEDS
-
-// boards without status leds compile the call sites away entirely
-static inline void status_led_init(void) {}
-static inline void status_led_task(void) {}
-static inline void status_led_source(status_led_source_t source, bool present) { (void)source; (void)present; }
-static inline void status_led_activity(void) {}
-static inline void status_led_mode(bool alternate) { (void)alternate; }
-static inline void status_led_pairing(bool active) { (void)active; }
-
-#endif // HAS_STATUS_LEDS
 
 #endif // _UTIL_STATUS_LED_H

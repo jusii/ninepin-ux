@@ -14,8 +14,6 @@
 #include "config.h"
 #include "de9.h"
 
-#ifdef HAS_DE9_OUTPUTS
-
 #include <string.h>
 
 #include "pico/stdlib.h"
@@ -419,4 +417,3 @@ void de9_describe(void)
         ahprintf("mouse core on port %d\n", amiga_quad_mouse_get_port() + 1);
 }
 
-#endif // HAS_DE9_OUTPUTS

@@ -10,8 +10,6 @@
 
 #include "config.h"
 
-#ifdef HAS_USB_DEVICE
-
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
@@ -637,4 +635,3 @@ void tud_hid_set_report_cb(uint8_t instance, uint8_t report_id, hid_report_type_
         host_caps_lock = (buffer[0] & KEYBOARD_LED_CAPSLOCK) ? 1 : 0;
 }
 
-#endif // HAS_USB_DEVICE

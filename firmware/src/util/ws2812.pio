@@ -4,8 +4,8 @@
 ; released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
 ; please find the complete license text at https://spdx.org/licenses/EPL-2.0
 ;
-; statemachine program for a single ws2812 status led (boards with
-; HAS_STATUS_WS2812). the program is the one from raspberry pi's pico-examples
+; statemachine program for the single ws2812 status led. the program is the
+; one from raspberry pi's pico-examples
 ; (pio/ws2812/ws2812.pio, BSD-3-Clause, (c) 2020 Raspberry Pi (Trading) Ltd.):
 ; every bit is t1+t2+t3 = 10 sm cycles at 800 kHz, high for t1 (a 0) or t1+t2
 ; (a 1). the cpu writes one 24-bit grb word per frame, left-justified; autopull

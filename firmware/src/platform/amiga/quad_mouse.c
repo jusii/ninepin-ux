@@ -61,9 +61,7 @@ typedef struct {
 
 static aqm_pins_t const aqm_port_pins[] = {
     { QM1_AMIGA_H, QM1_AMIGA_V, QM1_AMIGA_HQ, QM1_AMIGA_VQ, QM1_AMIGA_B1, QM1_AMIGA_B2, QM1_AMIGA_B3 },
-#ifdef QM2_AMIGA_V
     { QM2_AMIGA_H, QM2_AMIGA_V, QM2_AMIGA_HQ, QM2_AMIGA_VQ, QM2_AMIGA_B1, QM2_AMIGA_B2, QM2_AMIGA_B3 },
-#endif
 };
 #define AQM_PORTS ((int8_t)(sizeof(aqm_port_pins) / sizeof(aqm_port_pins[0])))
 
@@ -403,11 +401,9 @@ void amiga_quad_mouse_set_motion(int16_t in_x, int16_t in_y)
 void amiga_quad_mouse_motion()
 {
     // ahprintf("[aqm] hello from core1, mouse motion output loop starting\n");
-#ifdef HAS_USER_BUTTON
     // the BOOT button readback floats the flash chip select, which core1 must
     // not be executing from at the time: let core0 park us (user_button.h)
     multicore_lockout_victim_init();
-#endif
     aqm_motion_t motion;
     int16_t out_x = 0, out_y = 0;
     int16_t x_residue = 0, y_residue = 0;

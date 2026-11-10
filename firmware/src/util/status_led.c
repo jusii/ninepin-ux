@@ -11,25 +11,15 @@
 #include "config.h"
 #include "util/status_led.h"
 
-#ifdef HAS_STATUS_LEDS
-
 #include <stdbool.h>
 #include <stdint.h>
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
-#ifdef HAS_STATUS_WS2812
 #include "hardware/pio.h"
 #include "ws2812.pio.h" // generated at compile time
-#endif
 
-#ifndef HAS_STATUS_WS2812
-// the leds sit on the 3v3 side behind a series resistor, so a high output
-// lights them
-#define STATUS_LED_ON   1
-#define STATUS_LED_OFF  0
-#else
 // one rgb led stands in for both: led 1 ("am i usable") is the green channel
 // and led 2 ("am i doing something") the blue one, so attached + idle is green,
 // an input event flashes cyan and a pairing prompt blinks blue over it. kept
@@ -49,7 +39,6 @@ static uint rgb_offset;
 static bool rgb_painted;
 static uint32_t rgb_painted_grb;
 static uint64_t rgb_painted_at;
-#endif
 
 // led 1: half-period of the "nothing attached yet" heartbeat
 #define STATUS_LED_HEARTBEAT_MS 500
@@ -90,7 +79,6 @@ static inline bool status_led_any_source(void)
     return false;
 }
 
-#ifdef HAS_STATUS_WS2812
 /**
  * claim a state machine and room for the ws2812 program on one pio, lowest
  * numbered first. the sdk's pio_claim_free_sm_and_add_program_for_gpio_range()
@@ -107,10 +95,8 @@ static bool status_led_rgb_claim(void)
         PIO pio = pio_get_instance(pio_num);
         int sm;
 
-#ifdef HAS_PIO_USB_HOST
         if (pio_num == PIO_USB_PIO)
             continue;
-#endif
 
         if (!pio_can_add_program(pio, &ws2812_program))
             continue;
@@ -151,17 +137,12 @@ static void status_led_rgb_put(uint32_t grb)
     rgb_painted_grb = grb;
     rgb_painted_at = now;
 }
-#endif
 
 /**
  * put the two logical leds on the hardware.
  */
 static void status_led_paint(bool led1_lit, bool led2_lit)
 {
-#ifndef HAS_STATUS_WS2812
-    gpio_put(LED_STATUS1, led1_lit ? STATUS_LED_ON : STATUS_LED_OFF);
-    gpio_put(LED_STATUS2, led2_lit ? STATUS_LED_ON : STATUS_LED_OFF);
-#else
     uint32_t green = led1_lit ? STATUS_RGB_LEVEL : 0;
     uint32_t blue = led2_lit ? STATUS_RGB_LEVEL : 0;
 
@@ -171,20 +152,10 @@ static void status_led_paint(bool led1_lit, bool led2_lit)
     uint32_t red = mode_alternate ? STATUS_RGB_LEVEL : 0;
 
     status_led_rgb_put((green << 16) | (red << 8) | blue);
-#endif
 }
 
 void status_led_init(void)
 {
-#ifndef HAS_STATUS_WS2812
-    gpio_init(LED_STATUS1);
-    gpio_set_dir(LED_STATUS1, GPIO_OUT);
-    gpio_put(LED_STATUS1, STATUS_LED_OFF);
-
-    gpio_init(LED_STATUS2);
-    gpio_set_dir(LED_STATUS2, GPIO_OUT);
-    gpio_put(LED_STATUS2, STATUS_LED_OFF);
-#else
     // a pio other than the usb host's with a free sm and room for four
     // instructions; this runs before the keyboard receiver and the cyw43
     // driver claim theirs. a status led is not worth a boot panic, so if there
@@ -199,7 +170,6 @@ void status_led_init(void)
 #endif
         status_led_rgb_put(0);
     }
-#endif
 
     heartbeat_since = to_ms_since_boot(get_absolute_time());
     pairing_since = heartbeat_since;
@@ -286,4 +256,3 @@ void status_led_task(void)
     status_led_paint(led1_lit, led2_lit);
 }
 
-#endif // HAS_STATUS_LEDS

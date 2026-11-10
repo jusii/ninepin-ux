@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * tca9554 i2c i/o expander (boards with HAS_IO_EXPANDER).
+ * tca9554 i2c i/o expander.
  *
  * on rev7 the expander carries an optional ec11 rotary encoder with push switch
  * (P0 a, P1 b, P2 switch, P3 spare; all pulled up by the tca9554, the encoder
@@ -37,8 +37,6 @@ typedef enum
     IO_EXPANDER_EVENT_VBUS_ON,      // usb-c vbus appeared (debounced)
     IO_EXPANDER_EVENT_VBUS_OFF,     // usb-c vbus went away (debounced)
 } io_expander_event_t;
-
-#ifdef HAS_IO_EXPANDER
 
 /**
  * @brief Configure the expander and arm the /INT interrupt.
@@ -83,16 +81,5 @@ bool io_expander_vbus_present(void);
  *         more if it took retries (or is still not answering)
  */
 uint32_t io_expander_attempts(void);
-
-#else
-
-static inline bool io_expander_init(void) { return false; }
-static inline void io_expander_task(void) {}
-static inline io_expander_event_t io_expander_poll_event(void) { return IO_EXPANDER_EVENT_NONE; }
-static inline bool io_expander_present(void) { return false; }
-static inline bool io_expander_vbus_present(void) { return false; }
-static inline uint32_t io_expander_attempts(void) { return 0; }
-
-#endif // HAS_IO_EXPANDER
 
 #endif // _UTIL_IO_EXPANDER_H

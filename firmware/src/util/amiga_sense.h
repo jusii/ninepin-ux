@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * amiga-on sense (boards with HAS_AMIGA_SENSE).
+ * amiga-on sense.
  *
  * the board watches the amiga's i/o rail through a 100k/100k divider on an adc
  * input: about 2.2-2.4 v with an amiga connected and switched on, 0 v without.
@@ -24,8 +24,6 @@
 #include <stdint.h>
 
 #include "config.h"
-
-#ifdef HAS_AMIGA_SENSE
 
 /**
  * @brief Claim the adc and take a first reading, so amiga_sense_is_on() is
@@ -51,14 +49,5 @@ bool amiga_sense_is_on(void);
  * @return the last averaged reading at the adc pin, in millivolts
  */
 uint16_t amiga_sense_millivolts(void);
-
-#else
-
-static inline void amiga_sense_init(void) {}
-static inline bool amiga_sense_task(void) { return false; }
-static inline bool amiga_sense_is_on(void) { return true; }
-static inline uint16_t amiga_sense_millivolts(void) { return 0; }
-
-#endif // HAS_AMIGA_SENSE
 
 #endif // _UTIL_AMIGA_SENSE_H

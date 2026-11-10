@@ -32,11 +32,7 @@
 
 #define SSD_WIDTH           128
 #define SSD_HEIGHT          64
-#ifdef I2C_BAUD
 #define SSD_BAUD            I2C_BAUD        // the board shares the bus with a slower device
-#else
-#define SSD_BAUD            1000000         // 1MHz; if my estimation is correct, this could achieve 122fps
-#endif
 #define SSD_ADDR            0x3c            // my board has 0x78 jumper soldered closed on the back but ¯\_(ツ)_/¯
 #define I2C_MAX_TRANSFER    0x400 + 0x20    // 1KB + 32B overhead
 

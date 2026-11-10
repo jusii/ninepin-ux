@@ -11,8 +11,6 @@
 #include "config.h"
 #include "util/run_mode.h"
 
-#ifdef HAS_USB_DEVICE
-
 #include "input_bridge.h"
 #include "platform/amiga/keyboard_recv.h"
 #include "platform/amiga/de9.h"
@@ -122,4 +120,3 @@ void run_mode_next(void)
     run_mode_set((run_mode_t)((current_mode + 1) % RUN_MODE_COUNT));
 }
 
-#endif // HAS_USB_DEVICE

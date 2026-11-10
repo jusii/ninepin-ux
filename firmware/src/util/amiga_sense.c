@@ -11,8 +11,6 @@
 #include "config.h"
 #include "util/amiga_sense.h"
 
-#ifdef HAS_AMIGA_SENSE
-
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -98,4 +96,3 @@ uint16_t amiga_sense_millivolts(void)
     return sense_mv;
 }
 
-#endif // HAS_AMIGA_SENSE

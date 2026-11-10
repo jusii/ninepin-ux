@@ -15,8 +15,6 @@
 #include "config.h"
 #include "cd32.h"
 
-#ifdef HAS_DE9_OUTPUTS
-
 #include "cd32.pio.h"
 #include "pad.h"
 
@@ -139,4 +137,3 @@ void cd32_update(unsigned port, uint16_t state)
     }
 }
 
-#endif // HAS_DE9_OUTPUTS

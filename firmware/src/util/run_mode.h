@@ -9,8 +9,7 @@
  * input goes.
  *
  *   RUN_MODE_AMIGA  keyboards to the amiga keyboard port, the mouse and pads to
- *                   the de9 ports (the default, and the only mode on boards
- *                   without HAS_USB_DEVICE)
+ *                   the de9 ports (the default)
  *   RUN_MODE_C64    keyboards and the mouse to the usb-c device port (a
  *                   commodore 64 ultimate takes those over usb), pads to the
  *                   de9 ports as c64 joysticks
@@ -38,8 +37,6 @@ typedef enum
     RUN_MODE_USB,
     RUN_MODE_COUNT
 } run_mode_t;
-
-#ifdef HAS_USB_DEVICE
 
 /**
  * @return the current mode
@@ -83,18 +80,5 @@ bool run_mode_mouse_usb(run_mode_t mode);
  * @return true if pads go to the usb-c port in this mode (else the de9 ports)
  */
 bool run_mode_pads_usb(run_mode_t mode);
-
-#else
-
-static inline run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA; }
-static inline void run_mode_set(run_mode_t mode) { (void)mode; }
-static inline void run_mode_next(void) {}
-static inline char const *run_mode_name(run_mode_t mode) { (void)mode; return "amiga"; }
-static inline void run_mode_restore(void) {}
-static inline bool run_mode_keyboard_usb(run_mode_t mode) { (void)mode; return false; }
-static inline bool run_mode_mouse_usb(run_mode_t mode) { (void)mode; return false; }
-static inline bool run_mode_pads_usb(run_mode_t mode) { (void)mode; return false; }
-
-#endif // HAS_USB_DEVICE
 
 #endif // _UTIL_RUN_MODE_H

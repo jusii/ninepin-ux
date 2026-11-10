@@ -27,8 +27,6 @@
 #include "config.h"
 #include "ota.h"
 
-#ifdef HAS_OTA
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -839,4 +837,3 @@ bool ota_boot_previous(char *message, size_t size)
     return false;
 }
 
-#endif // HAS_OTA

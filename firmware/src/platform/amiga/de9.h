@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * the two de9 controller ports (boards with HAS_DE9_OUTPUTS): what each port is
+ * the two de9 controller ports: what each port is
  * in the current mode (settings: amiga_port[], c64_port[]), and the outputs for
  * it - the quadrature mouse (quad_mouse.c, either port), joysticks, cd32 pads
  * (cd32.c) and the commodore 1351 mouse.
@@ -31,8 +31,6 @@
 #include <stdint.h>
 
 #include "config.h"
-
-#ifdef HAS_DE9_OUTPUTS
 
 /**
  * @brief Claim pio1 (all of it: cd32 or 1351) and set the ports up for the
@@ -61,15 +59,5 @@ void de9_describe(void);
  *         goes there in c64 mode rather than to usb)
  */
 bool de9_c64_has_1351(void);
-
-#else
-
-static inline void de9_init(void) {}
-static inline void de9_apply(void) {}
-static inline void de9_task(void) {}
-static inline void de9_describe(void) {}
-static inline bool de9_c64_has_1351(void) { return false; }
-
-#endif
 
 #endif // _PLATFORM_AMIGA_DE9_H

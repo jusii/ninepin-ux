@@ -15,9 +15,6 @@
 #include "config.h"
 
 // these reside within the tinyusb sdk and are not part of this project source
-#ifndef HAS_USB_DEVICE
-#include "bsp/board.h" // the tinyusb bsp is not linked on boards which run their own device role
-#endif
 #include "tusb.h"
 
 // other includes

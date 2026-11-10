@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * real amiga keyboard receive path (boards with HAS_KBD_IN).
+ * real amiga keyboard receive path.
  */
 
 #ifndef _PLATFORM_AMIGA_KEYBOARD_RECV_H
@@ -20,7 +20,6 @@
  *
  * Claims a PIO state machine that clocks in keycodes from a physically
  * attached amiga keyboard and drives the protocol handshake autonomously.
- * No-op on boards without HAS_KBD_IN.
  */
 void amiga_keyboard_recv_init(void);
 
@@ -29,14 +28,14 @@ void amiga_keyboard_recv_init(void);
  *
  * Call from the main loop. Decodes bytes received from the real keyboard and
  * forwards decoded keys to the shared keyboard event queue (the same merge
- * point the USB/BT path feeds). No-op on boards without HAS_KBD_IN.
+ * point the USB/BT path feeds).
  */
 void amiga_keyboard_recv_task(void);
 
 /**
  * @brief Follow a run mode switch (run_mode_set()): release every real-keyboard
  *        key held on the side being left, and bring the side now receiving to
- *        the keyboard's caps lamp. No-op on boards without HAS_KBD_IN.
+ *        the keyboard's caps lamp.
  */
 void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to);
 

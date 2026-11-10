@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * firmware updates into the A/B partition slots (HAS_OTA: every rev7 build).
+ * firmware updates into the A/B partition slots (every build).
  * every rev7 image is try-before-you-buy, so every rev7 build needs ota_task()
  * to accept itself; the upload side is only used where there is wi-fi.
  *
@@ -18,8 +18,7 @@
  * ota_space(), ota_receive() and ota_finish() run in the cyw43 background
  * context (a low-priority interrupt on core0, holding the lwip lock), or in
  * the main loop under that lock: they never block, never write flash (that is
- * ota_task()'s job) and never call lwip. without HAS_OTA, weak defaults in
- * http_server.c refuse every update.
+ * ota_task()'s job) and never call lwip.
  */
 
 #ifndef _OTA_H
@@ -70,8 +69,6 @@ bool ota_hold_window(void);
  */
 bool http_server_upload_quiet(void);
 
-#ifdef HAS_OTA
-
 /**
  * @brief Accept a firmware on trial after 10 s of clean main loop; write
  *        uploaded blocks to the free slot; time out an unconfirmed install.
@@ -108,16 +105,5 @@ bool ota_previous_available(void);
  * @return false with the reason in message; on success the board restarts
  */
 bool ota_boot_previous(char *message, size_t size);
-
-#else
-
-static inline void ota_task(void) {}
-static inline bool ota_trial(void) { return false; }
-static inline bool ota_button(void) { return false; }
-static inline char const *ota_status(void) { return "not available"; }
-static inline bool ota_previous_available(void) { return false; }
-static inline bool ota_boot_previous(char *message, size_t size) { (void)message; (void)size; return false; }
-
-#endif // HAS_OTA
 
 #endif // _OTA_H

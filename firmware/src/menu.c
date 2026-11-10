@@ -17,8 +17,6 @@
 #include "apply.h"
 #include "pad.h"
 
-#ifdef HAS_MENU
-
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,9 +35,7 @@
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
-#ifdef HAS_USB_DEVICE
 #include "usb_device.h"
-#endif
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
 #endif
@@ -85,9 +81,7 @@ static void action_bt_forget(void);
 static void action_page_password_show(void);
 static void action_page_password_new(void);
 #endif
-#ifdef HAS_OTA
 static void action_previous_firmware(void);
-#endif
 
 #define CHOICE(label, field, names, visible) \
     { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, false }
@@ -142,9 +136,7 @@ static const menu_item_t items[] = {
     CHOICE("Net mouse scale",   net_scale,      names_net_scale,    NULL),
 #endif
     CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
-#ifdef HAS_OTA
     ACTION("Previous firmware", action_previous_firmware),
-#endif
     ACTION("Factory defaults",  action_defaults),
     ACTION("Save & exit",       action_save),
     ACTION("Cancel",            action_cancel),
@@ -281,9 +273,7 @@ void menu_lines(char lines[MENU_LINES][MENU_COLS + 1])
 static void release_everything(void)
 {
     input_bridge_release_all();
-#ifdef HAS_USB_DEVICE
     usb_device_release_all();
-#endif
     amiga_keyboard_recv_release_all();
     pads_release_all();
 }
@@ -438,7 +428,6 @@ static void action_page_password_new(void)
 }
 #endif
 
-#ifdef HAS_OTA
 /**
  * back to the firmware before the last update, if it was saved; asks twice
  */
@@ -462,7 +451,6 @@ static void action_previous_firmware(void)
     confirm_since = now;
     notice = "select again: restart";
 }
-#endif
 
 //--------------------------------------------------------------------+
 // inputs
@@ -916,4 +904,3 @@ void menu_task(void)
     }
 }
 
-#endif // HAS_MENU

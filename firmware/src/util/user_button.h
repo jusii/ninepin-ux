@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * BOOT button readback (boards with HAS_USER_BUTTON).
+ * BOOT button readback.
  *
  * the BOOT button pulls the flash chip select (qspi_ss) low through 1k; the
  * bootrom samples it at reset. at runtime it can be read with the "bootsel
@@ -17,7 +17,7 @@
  *    interrupt and the cyw43 background work by the same amount.
  *  - core1 must not execute from flash meanwhile, so core1 is parked with the
  *    sdk's multicore lockout. core1 (the quadrature mouse loop) registers as a
- *    lockout victim on boards with HAS_USER_BUTTON; if the lockout cannot be
+ *    lockout victim; if the lockout cannot be
  *    taken the read is skipped, never forced.
  *  - user_button_task() samples at most once per USER_BUTTON_POLL_MS (50 ms)
  *    and must only ever be called from the core0 main loop - never from an
@@ -42,8 +42,6 @@ typedef enum
     USER_BUTTON_EVENT_HOLD,         // held for USER_BUTTON_HOLD_PRESS_MS (3 s; fires once, whilst still held)
 } user_button_event_t;
 
-#ifdef HAS_USER_BUTTON
-
 void user_button_init(void);
 
 /**
@@ -52,12 +50,5 @@ void user_button_init(void);
  * @return the event, or USER_BUTTON_EVENT_NONE
  */
 user_button_event_t user_button_task(void);
-
-#else
-
-static inline void user_button_init(void) {}
-static inline user_button_event_t user_button_task(void) { return USER_BUTTON_EVENT_NONE; }
-
-#endif // HAS_USER_BUTTON
 
 #endif // _UTIL_USER_BUTTON_H

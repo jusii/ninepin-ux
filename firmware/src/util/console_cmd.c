@@ -12,8 +12,6 @@
 #include "config.h"
 #include "util/console_cmd.h"
 
-#ifdef HAS_USB_DEVICE
-
 #include <stdio.h>
 #include <string.h>
 
@@ -104,9 +102,7 @@ static void cmd_info(char const *arg)
     }
 #endif
     ahprintf("settings: %s\n", settings_source());
-#ifdef HAS_DE9_OUTPUTS
     ahprintf("amiga keyboard: %lu key codes not acknowledged\n", (unsigned long)amiga_keyboard_missed_handshakes());
-#endif
 }
 
 static char const *const mode_names[SETTINGS_MODE_COUNT] = { "amiga", "c64", "usb" };
@@ -343,7 +339,6 @@ void console_cmd_task(void)
 
 static void cmd_ota(char const *arg)
 {
-#ifdef HAS_OTA
     char message[64];
 
     if (strcmp(arg, "previous") == 0) {
@@ -359,10 +354,5 @@ static void cmd_ota(char const *arg)
     ahprintf("this firmware: %s\n", ota_trial() ? "on trial (accepts itself 10 s after boot)" : "accepted");
     ahprintf("previous firmware: %s\n", ota_previous_available() ? "can be booted again (ota previous)" : "none");
     ahprintf("updates need BOOT: %s\n", settings_get()->ota_needs_boot ? "yes" : "no");
-#else
-    (void)arg;
-    ahprintf("updates: not in this build\n");
-#endif
 }
 
-#endif // HAS_USB_DEVICE

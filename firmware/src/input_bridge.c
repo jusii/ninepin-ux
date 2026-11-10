@@ -22,9 +22,7 @@
 #include "util/run_mode.h"
 #include "util/status_led.h"
 
-#ifdef HAS_USB_DEVICE
 #include "usb_device.h"
-#endif
 
 typedef struct
 {
@@ -126,9 +124,7 @@ void input_bridge_disconnect(uint8_t slot)
     // in passthrough the amiga-side state is already empty (run_mode_set()
     // released it), so this is a no-op there; the device side lets go itself
     _ib_release_amiga(slot);
-#ifdef HAS_USB_DEVICE
     usb_device_release_slot(slot);
-#endif
 }
 
 void input_bridge_release_all(void)
@@ -150,7 +146,6 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
     if (menu_keyboard_hid(slot, report))
         return;
 
-#ifdef HAS_USB_DEVICE
     // passthrough hands the report on untouched; the amiga-side state stays
     // empty, so switching back starts from nothing held
     if (run_mode_keyboard_usb(run_mode_get())) {
@@ -158,7 +153,6 @@ void input_bridge_handle_keyboard(uint8_t slot, hid_keyboard_report_t const *rep
         status_led_activity();
         return;
     }
-#endif
 
     state = &bridge_state[slot];
 
@@ -188,13 +182,11 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
     if (menu_is_open())
         return;
 
-#ifdef HAS_USB_DEVICE
     if (run_mode_mouse_usb(run_mode_get())) {
         usb_device_mouse(slot, report);
         status_led_activity();
         return;
     }
-#endif
 
     state = &bridge_state[slot];
 

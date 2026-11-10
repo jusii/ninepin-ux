@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * usb device role on the native phy (boards with HAS_USB_DEVICE).
+ * usb device role on the native phy.
  *
  * the device runs alongside the host stack (tinyusb dual role: device on the
  * native rhport 0, host on pio-usb rhport 1) and offers:
@@ -32,8 +32,6 @@
 #define _USB_DEVICE_H
 
 #include "config.h"
-
-#ifdef HAS_USB_DEVICE
 
 #include <stdbool.h>
 #include <stddef.h>
@@ -166,7 +164,5 @@ void usb_device_release_slot(uint8_t slot);
  * @brief Release every key and button on the usb-c host (leaving passthrough).
  */
 void usb_device_release_all(void);
-
-#endif // HAS_USB_DEVICE
 
 #endif // _USB_DEVICE_H

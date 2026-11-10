@@ -6,7 +6,7 @@
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
  * usb device descriptors for the native (usb-c) port on boards with
- * HAS_USB_DEVICE: a composite of one cdc acm (debug console) and three hid
+ * a composite of one cdc acm (debug console) and three hid
  * interfaces - a boot keyboard, a boot mouse and a gamepad. separate hid
  * interfaces rather than one with report ids, so that boot-protocol-only hosts
  * (bios setups, small machines such as the commodore 64 ultimate) find a plain
@@ -14,8 +14,6 @@
  */
 
 #include "config.h"
-
-#ifdef HAS_USB_DEVICE
 
 #include <string.h>
 
@@ -195,4 +193,3 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
     return desc_str;
 }
 
-#endif // HAS_USB_DEVICE

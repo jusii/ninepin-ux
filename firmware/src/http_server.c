@@ -104,34 +104,6 @@ static char text[256];                      // a response's text, built before t
 static uint32_t next_wait_id = 1;
 
 //--------------------------------------------------------------------+
-// firmware update hooks: refuse until the ota code exists
-//--------------------------------------------------------------------+
-
-__attribute__((weak)) size_t ota_space(void)
-{
-    return SIZE_MAX;
-}
-
-__attribute__((weak)) bool ota_hold_window(void)
-{
-    return false;
-}
-
-__attribute__((weak)) bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
-{
-    (void)offset;
-    (void)data;
-    (void)len;
-    return false;
-}
-
-__attribute__((weak)) bool ota_finish(char *message, size_t size)
-{
-    snprintf(message, size, "updates are not available in this firmware yet");
-    return false;
-}
-
-//--------------------------------------------------------------------+
 // helpers
 //--------------------------------------------------------------------+
 

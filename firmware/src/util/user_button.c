@@ -11,8 +11,6 @@
 #include "config.h"
 #include "util/user_button.h"
 
-#ifdef HAS_USER_BUTTON
-
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -149,4 +147,3 @@ user_button_event_t user_button_task(void)
     return USER_BUTTON_EVENT_NONE;
 }
 
-#endif // HAS_USER_BUTTON

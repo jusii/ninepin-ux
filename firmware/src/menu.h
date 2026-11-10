@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * the settings menu on the oled (boards with HAS_MENU).
+ * the settings menu on the oled.
  *
  * one item at a time: its name, its value, and a hint for the controls in use.
  * edits work on a copy of the settings; "save & exit" stores and applies them,
@@ -55,8 +55,6 @@ typedef enum {
 // what the four oled lines show, also for the console
 #define MENU_LINES  4
 #define MENU_COLS   21
-
-#ifdef HAS_MENU
 
 void menu_init(void);
 
@@ -108,19 +106,5 @@ void menu_encoder_switch(bool down);
  * @brief The text of the four lines, as the oled shows them (empty when closed).
  */
 void menu_lines(char lines[MENU_LINES][MENU_COLS + 1]);
-
-#else
-
-static inline void menu_init(void) {}
-static inline void menu_task(void) {}
-static inline bool menu_is_open(void) { return false; }
-static inline void menu_input(menu_input_t input) { (void)input; }
-static inline bool menu_keyboard_hid(uint8_t slot, hid_keyboard_report_t const *report) { (void)slot; (void)report; return false; }
-static inline bool menu_keyboard_amiga(uint8_t keycode, bool up) { (void)keycode; (void)up; return false; }
-static inline bool menu_button(user_button_event_t event) { (void)event; return false; }
-static inline void menu_encoder_turn(int8_t direction) { (void)direction; }
-static inline void menu_encoder_switch(bool down) { (void)down; }
-
-#endif // HAS_MENU
 
 #endif // _MENU_H

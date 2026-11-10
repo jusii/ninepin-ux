@@ -11,19 +11,14 @@
 #include "config.h"
 
 // these reside within the tinyusb sdk and are not part of this project source
-#ifndef HAS_USB_DEVICE
-#include "bsp/board.h"
-#endif
 #include "tusb.h"
 
-#ifdef HAS_PIO_USB_HOST
 #include <stdio.h>
 
 #include "pico/stdlib.h"
 #include "hardware/clocks.h"
 #include "hardware/dma.h"
 #include "pio_usb.h"
-#endif
 
 #include "display/disp_ssd.h"
 #include "platform/amiga/keyboard_serial_io.h"
@@ -47,9 +42,7 @@
 
 #include "tusb_config.h"
 
-#ifdef HAS_USB_DEVICE
 #include "usb_device.h"
-#endif
 
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
@@ -59,7 +52,6 @@
 // defined within usb_hid.c
 extern void hid_app_task(void);
 
-#ifdef HAS_PIO_USB_HOST
 /**
  * hand tinyusb the pio-usb root port: D+ on PIO_USB_DP_PIN (D- on the next
  * gpio), the whole of PIO_USB_PIO for tx, rx and eop detection, and a free dma
@@ -85,9 +77,7 @@ static void pio_usb_host_configure(void)
 
     tuh_configure(BOARD_TUH_RHPORT, TUH_CFGID_RPI_PIO_USB_CONFIGURATION, &pio_cfg);
 }
-#endif
 
-#ifdef HAS_AMIGA_SENSE
 /**
  * follow the amiga's power: greet it when it comes on, stop talking to it (and
  * forget its state) when it goes off.
@@ -104,7 +94,6 @@ static void amiga_power_task(void)
 
     dbgcons_amiga_power(amiga_sense_is_on());
 }
-#endif
 
 #ifdef USB_DEVICE_BRINGUP_SERVICE
 #include "hardware/watchdog.h"
@@ -263,7 +252,6 @@ static void boot_stage(char const *name)
 #define boot_stage(name) do { } while (0)
 #endif
 
-#ifdef HAS_USB_DEVICE
 /**
  * show the usb-c device port's state on the oled whenever it changes: whether
  * the expander that senses vbus answered, vbus itself, and the host's view.
@@ -293,9 +281,7 @@ static void usb_c_status_task(void)
     shown_attempts = attempts;
     dbgcons_usb_c(state, attempts);
 }
-#endif
 
-#if defined(HAS_IO_EXPANDER) || defined(HAS_USER_BUTTON)
 /**
  * the board's own controls: encoder and switch on the expander, and the BOOT
  * button. the oled menu will hang off these; for now the button long-press
@@ -329,7 +315,6 @@ static void board_controls_task(void)
             run_mode_next();
     }
 }
-#endif
 
 // main entry point
 int main(void)
@@ -341,23 +326,16 @@ int main(void)
     // the stored settings, before anything reads one (a flash read only)
     settings_init();
 
-#ifdef HAS_PIO_USB_HOST
     // pio-usb needs clk_sys at a multiple of 12 MHz. first thing, so that every
     // divider computed from clock_get_hz(clk_sys) below (i2c, ws2812, keyboard
     // receiver, pio-usb itself) sees the final frequency
     set_sys_clock_khz(PIO_USB_SYS_CLOCK_KHZ, true);
-#endif
 
-#ifdef HAS_USB_DEVICE
     // no tinyusb bsp here (its board_init() would set its own clock and pio-usb
     // pins); just route stdout into the cdc console buffer
     usb_device_init();
 #ifdef USB_DEVICE_BRINGUP_SERVICE
     usb_device_bringup_service_start();
-#endif
-#else
-    // tinyusb board init; led, uart, button, usb
-    board_init();
 #endif
 
     // board-level pads before any driver claims them: pull-ups on lines with
@@ -379,23 +357,17 @@ int main(void)
     // say hello, trevor ("hello, trevor")
     dbgcons_init();
     apply_report_watchdog_reboot();
-#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     dbgcons_mode(run_mode_name(run_mode_get()));
     dbgcons_amiga_power(amiga_sense_is_on());
-#endif
 
 #ifdef USB_DEVICE_BRINGUP_SERVICE
     trap_report_or_arm();
 #endif
     boot_stage("init");
 
-    // initialise the usb host stack on the rhport from tusb_config.h, first
-    // pointing the usb mux (on boards with one) at the host port
+    // initialise the usb host stack on the rhport from tusb_config.h
     boot_stage("usb host");
-#ifdef HAS_PIO_USB_HOST
     pio_usb_host_configure();
-#endif
-    board_pins_usb_host();
     const tusb_rhport_init_t rhport_init = {
         .role = TUSB_ROLE_HOST,
         .speed = TUH_OPT_HIGH_SPEED ? TUSB_SPEED_HIGH : TUSB_SPEED_FULL,
@@ -403,13 +375,12 @@ int main(void)
     boot_stage("tuh init");
     tusb_init(BOARD_TUH_RHPORT, &rhport_init);
 
-    // the device role (boards with HAS_USB_DEVICE) is brought up from the main
+    // the device role is brought up from the main
     // loop once usb-c vbus is seen; see usb_device_task()
 
     // we're single arch right now, but in future this should hand off to whatever the
     // configured arch is
     boot_stage("amiga io");
-#ifdef HAS_AMIGA_SENSE
     // claim the lines now, greet the amiga only once it is seen to be on (and
     // again every time it comes back on); the greeting no longer blocks
     amiga_init_io();
@@ -417,9 +388,6 @@ int main(void)
         amiga_power_on();
     else
         amiga_power_off();
-#else
-    amiga_init();
-#endif
 
     boot_stage("mouse");
     // start amiga mouse emulation
@@ -429,10 +397,8 @@ int main(void)
     de9_init();
 
     boot_stage("kbd in");
-#ifdef HAS_KBD_IN
     // start receiving from a physically attached real amiga keyboard
     amiga_keyboard_recv_init();
-#endif
 
 #ifdef ENABLE_BLUETOOTH_HID
     bt_hid_init();
@@ -459,7 +425,6 @@ int main(void)
         // run host mode jobs (hotplug events, packet io callbacks)
         tuh_task();
 
-#ifdef HAS_USB_DEVICE
         LOOP_STAGE("L usbd");
         // device mode jobs on the usb-c port, which follows its vbus
 #ifndef USB_DEVICE_BRINGUP_SERVICE
@@ -480,7 +445,6 @@ int main(void)
 
         // the watchdog, if the settings ask for one
         apply_task();
-#endif
 
 #ifdef ENABLE_BLUETOOTH_HID
         bt_hid_task();
@@ -492,27 +456,21 @@ int main(void)
         // uploaded one to the free slot
         ota_task();
 
-#ifdef HAS_KBD_IN
         LOOP_STAGE("L kbd");
         // drain + inject any keycodes from the real amiga keyboard
         amiga_keyboard_recv_task();
-#endif
 
-#ifdef HAS_AMIGA_SENSE
         LOOP_STAGE("L power");
         // greet or forget the amiga as it is switched on and off
         amiga_power_task();
-#endif
 
         LOOP_STAGE("L kbd svc");
         // amiga keyboard service routine
         amiga_service();
 
-#if defined(HAS_IO_EXPANDER) || defined(HAS_USER_BUTTON)
         LOOP_STAGE("L ctl");
         // encoder, vbus sense and the BOOT button
         board_controls_task();
-#endif
 
         LOOP_STAGE("L led");
         // advance the status indicators

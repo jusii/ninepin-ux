@@ -10,10 +10,9 @@
  *
  * one section per role:
  *   common  - mcu, os, memory placement
- *   host    - every board. rev2-rev6 run it on the native phy (rhport 0); rev7
- *             (HAS_PIO_USB_HOST) runs it on pio-usb as rhport 1, because its
- *             native phy is wired to the usb-c connector instead
- *   device  - rev7 only (HAS_USB_DEVICE): the native phy on rhport 0, as a
+ *   host    - pio-usb as rhport 1 on the usb-a port, because the native phy
+ *             is wired to the usb-c connector
+ *   device  - the native phy on rhport 0 (usb-c), as a
  *             composite cdc (debug console) + hid (keyboard, mouse, gamepad)
  */
 
@@ -47,18 +46,11 @@
 // host
 //--------------------------------------------------------------------
 
-#ifdef HAS_PIO_USB_HOST
 // the usb-a port is bit-banged by pico-pio-usb; tinyusb numbers that root port 1
 #   define CFG_TUH_RPI_PIO_USB 1
 #   ifndef BOARD_TUH_RHPORT
 #       define BOARD_TUH_RHPORT 1
 #   endif
-#else
-// the native phy is the host port
-#   ifndef BOARD_TUH_RHPORT
-#       define BOARD_TUH_RHPORT 0
-#   endif
-#endif
 
 // maximum speed permitted (which on a pico is usb 1.1)
 #ifndef BOARD_TUH_MAX_SPEED
@@ -78,24 +70,16 @@
 
 // supported devices & interfaces; tusb examples use a convention of multi-purpose
 // constants where >0 may also mean multiple endpoints on a single device
-#ifdef HAS_PIO_USB_HOST
 // pico-pio-usb keeps a fixed table of PIO_USB_DEVICE_CNT (4) devices; one hub
 // plus four devices behind it is what tinyusb's own pio-usb examples run
 #   define CFG_TUH_HUB 1
-#else
-#   define CFG_TUH_HUB 8 // permit usb hubs (pico has a single port)
-#endif
 #define CFG_TUH_CDC 0 // no serial
 #define CFG_TUH_HID 8 // keyboard/mouse/joystick; 4 endpoints maximum per device
 #define CFG_TUH_MSC 0 // no mass storage
 #define CFG_TUH_VENDOR 0 // not sure what this is but no anyway
 
 // max device support (excluding hub)
-#ifdef HAS_PIO_USB_HOST
 #   define CFG_TUH_DEVICE_MAX 4
-#else
-#   define CFG_TUH_DEVICE_MAX 16
-#endif
 
 // hid event buffer sizes
 #define CFG_TUH_HID_EPIN_BUFSIZE 64
@@ -105,7 +89,6 @@
 // device
 //--------------------------------------------------------------------
 
-#ifdef HAS_USB_DEVICE
 #   ifndef BOARD_TUD_RHPORT
 #       define BOARD_TUD_RHPORT 0
 #   endif
@@ -131,8 +114,5 @@
 
 // big enough for the largest report (gamepad, 11 bytes)
 #   define CFG_TUD_HID_EP_BUFSIZE 16
-#else
-#   define CFG_TUD_ENABLED 0
-#endif
 
 #endif // _TUSB_CONFIG_H

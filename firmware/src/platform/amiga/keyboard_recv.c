@@ -7,9 +7,7 @@
  *
  * real amiga keyboard receive path.
  *
- * on boards with a keyboard input (HAS_KBD_IN: a dedicated pin pair on rev6, or
- * controller port 2 repurposed on rev4 with PORT2_ROLE=KEYBOARD), a physically
- * attached amiga keyboard can drive the amiga alongside the usb/bluetooth path.
+ through the keyboard input (J12, KBD IN), a physically attached amiga keyboard can drive the amiga alongside the usb/bluetooth path.
  * the pico acts as the host: a real keyboard is the clock master and clocks out
  * keycodes; a pio state machine samples them and drives the ~85us handshake
  * back autonomously. in amiga mode, decoded keycodes are pushed into the same
@@ -38,8 +36,6 @@
 #include "config.h"
 #include "keyboard_recv.h"
 
-#ifdef HAS_KBD_IN
-
 #include "keyboard.h"
 #include "keyboard_serial_io.h"
 #include "keyboard_recv.pio.h" // generated at compile time
@@ -51,9 +47,7 @@
 #include "util/output.h"
 #include "util/run_mode.h"
 #include "util/status_led.h"
-#ifdef HAS_USB_DEVICE
 #include "usb_device.h"
-#endif
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -160,7 +154,6 @@ static inline bool held_any(uint32_t const *set)
     return set[0] | set[1] | set[2] | set[3];
 }
 
-#ifdef HAS_USB_DEVICE
 // hid usage table, keyboard page: "keyboard errorrollover"
 #define KBDIN_HID_ERROR_ROLLOVER 0x01
 
@@ -426,15 +419,6 @@ static void kbdin_usb_release(void)
     memset(held_usb, 0, sizeof(held_usb));
     kbdin_usb_report();
 }
-#else
-static inline bool kbdin_to_usb(void) { return false; }
-static inline bool kbdin_usb_maps(uint8_t keycode) { (void)keycode; return false; }
-static inline void kbdin_usb_report(void) {}
-static inline void kbdin_usb_caps_sync(bool on_event) { (void)on_event; }
-static inline void kbdin_usb_release(void) { memset(held_usb, 0, sizeof(held_usb)); }
-static inline void kbdin_usb_ctrl_alt_del(void) {}
-static inline void kbdin_usb_cad_rearm(void) {}
-#endif
 
 /**
  * let go of every key the amiga holds from the real keyboard.
@@ -738,12 +722,7 @@ void amiga_keyboard_recv_task(void)
 
 uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga)
 {
-#ifdef HAS_USB_DEVICE
     return (amiga < sizeof(mapAmigaToHid)) ? mapAmigaToHid[amiga] : 0;
-#else
-    (void)amiga;
-    return 0;
-#endif
 }
 
 void amiga_keyboard_recv_release_all(void)
@@ -778,12 +757,3 @@ void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to)
         amiga_send_rawkey(AMIGA_CAPSLOCK, !caps_lamp);
 }
 
-#else // !HAS_KBD_IN
-
-void amiga_keyboard_recv_init(void) {}
-void amiga_keyboard_recv_task(void) {}
-void amiga_keyboard_recv_mode_changed(run_mode_t from, run_mode_t to) { (void)from; (void)to; }
-void amiga_keyboard_recv_release_all(void) {}
-uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga) { (void)amiga; return 0; }
-
-#endif // HAS_KBD_IN

@@ -11,8 +11,6 @@
 #include "config.h"
 #include "util/io_expander.h"
 
-#ifdef HAS_IO_EXPANDER
-
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -395,4 +393,3 @@ uint32_t io_expander_attempts(void)
     return iox_attempts;
 }
 
-#endif // HAS_IO_EXPANDER

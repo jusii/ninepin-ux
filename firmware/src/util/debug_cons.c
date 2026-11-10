@@ -73,7 +73,6 @@ static bool diag_mouse(void)
 #endif
 }
 
-#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
 // what lines 1-3 last showed, for a redraw after the display comes back on
 static char line_cache[4][DBGCONS_OLED_COLS + 1];
 
@@ -87,9 +86,7 @@ static void dbgcons_write_padded_line(uint8_t line, char const *message)
         memcpy(line_cache[line], linebuf, sizeof(linebuf));
     disp_write(0, line, linebuf);
 }
-#endif
 
-#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
 // the board status line: output mode and amiga power. it shares oled line 2
 // with the DEBUG_HID_STATUS readout, which wins until the next status change
 #define DBGCONS_STATUS_LINE 2
@@ -101,14 +98,9 @@ static void dbgcons_status_line(void)
 {
     char linebuf[DBGCONS_OLED_COLS + 1] = "";
 
-#ifdef HAS_AMIGA_SENSE
     snprintf(linebuf, sizeof(linebuf), "out:%s amiga:%s", status_mode, status_amiga_on ? "on" : "off");
-#else
-    snprintf(linebuf, sizeof(linebuf), "out:%s", status_mode);
-#endif
     dbgcons_write_padded_line(DBGCONS_STATUS_LINE, linebuf);
 }
-#endif
 
 void dbgcons_init()
 {
@@ -368,22 +360,14 @@ void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t respo
 
 void dbgcons_mode(char const *mode)
 {
-#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     status_mode = (mode != NULL) ? mode : "?";
     dbgcons_status_line();
-#else
-    (void)mode;
-#endif
 }
 
 void dbgcons_amiga_power(bool on)
 {
-#if defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     status_amiga_on = on;
     dbgcons_status_line();
-#else
-    (void)on;
-#endif
 }
 
 void dbgcons_boot_stage(char const *stage)
@@ -391,7 +375,6 @@ void dbgcons_boot_stage(char const *stage)
     // bring-up breadcrumb on oled line 3: the last one shown is where boot
     // stopped. the wait lets the frame (~25 ms at 400 kHz) reach the panel
     // before the next step runs, in case that step never returns
-#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     char linebuf[DBGCONS_OLED_COLS + 1] = "";
 
     snprintf(linebuf, sizeof(linebuf), "%s", stage != NULL ? stage : "?");
@@ -400,16 +383,13 @@ void dbgcons_boot_stage(char const *stage)
 
     // a cycle loop, not sleep_ms(): the wait must not depend on timer alarms
     busy_wait_at_least_cycles(clock_get_hz(clk_sys) / 25);
-#else
-    (void)stage;
-#endif
 }
 
 void dbgcons_usb_c(char const *state, uint32_t iox_attempts)
 {
     // oled line 1 belongs to the bluetooth status on bluetooth builds, and is
     // borrowed by DEBUG_KEYBOARD's key readout until the next usb-c change
-#if defined(HAS_USB_DEVICE) && !defined(ENABLE_BLUETOOTH_HID)
+#ifndef ENABLE_BLUETOOTH_HID
     char linebuf[DBGCONS_OLED_COLS + 1] = "";
 
     snprintf(linebuf, sizeof(linebuf), "usb-c:%-8s try:%lu",
@@ -503,9 +483,7 @@ void dbgcons_display_mode(uint8_t mode)
     // back on: draw what the status screen showed before it went dark
     disp_blank(false);
     dbgcons_print_counters();
-#if defined(ENABLE_BLUETOOTH_HID) || defined(HAS_USB_DEVICE) || defined(HAS_AMIGA_SENSE)
     for (uint8_t line = 1; line < 4; line++)
         if (line_cache[line][0])
             disp_write(0, line, line_cache[line]);
-#endif
 }

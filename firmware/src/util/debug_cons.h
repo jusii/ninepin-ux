@@ -47,16 +47,15 @@ void dbgcons_mouse_wheel(int8_t wheel);
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses);
 
 /**
- * board status line (boards with HAS_USB_DEVICE / HAS_AMIGA_SENSE; no-ops
- * elsewhere): where input goes, and whether the amiga is powered.
+ * board status line: where input goes, and whether the amiga is powered.
  */
 void dbgcons_mode(char const *mode);
 
 void dbgcons_amiga_power(bool on);
 
 /**
- * usb-c device port state on oled line 1 (HAS_USB_DEVICE boards without
- * bluetooth; a no-op elsewhere), with the number of attempts the i/o expander
+ * usb-c device port state on oled line 1 (builds without bluetooth; a no-op
+ * otherwise), with the number of attempts the i/o expander
  * that senses its vbus took to answer.
  */
 void dbgcons_usb_c(char const *state, uint32_t iox_attempts);
