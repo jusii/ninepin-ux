@@ -2,10 +2,11 @@
 """Cut the JLCPCB order package for the rev7.1 board.
 
 Writes, next to this script:
-  amigahid-pico-rev7.1-gerbers.zip   fab layers only (4 copper, mask, paste, silk, outline, drills, job file)
-  amigahid-pico-rev7.1-bom.csv       JLCPCB SMT/THT BOM: Comment, Designator, Footprint, LCSC Part #
-  amigahid-pico-rev7.1-cpl.csv       JLCPCB pick-and-place: Designator, Mid X, Mid Y, Layer, Rotation
-  fab-manifest.md                  what was cut from which commit, drill table, the DNP and hand-fitted parts
+  ninepin-ux-rev7.1-gerbers.zip   fab layers only (4 copper, mask, paste, silk, outline, drills, job file)
+  ninepin-ux-rev7.1-bom.csv       JLCPCB SMT/THT BOM: Comment, Designator, Footprint, LCSC Part #
+  ninepin-ux-rev7.1-cpl.csv       JLCPCB pick-and-place: Designator, Mid X, Mid Y, Layer, Rotation
+  fab-manifest.md                  what was cut from which board (its sha256, checked by tools/check_rev7_1_fab.py),
+                                   drill table, the DNP and hand-fitted parts
 
 Default recipe (rev7.1 order, decided 2026-11-09): JLCPCB Economic PCBA places the SMT parts only. The parts in HAND
 (THT connectors, switches, headers, L1, LED1) are left out of the BOM and CPL and fitted by hand from the Mouser BOM
@@ -19,8 +20,8 @@ import csv, hashlib, io, os, re, shutil, subprocess, sys, tempfile, zipfile
 import pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__)); REV7 = os.path.dirname(HERE); REPO = os.path.dirname(os.path.dirname(REV7))
-PCB = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pcb"); PRO = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pro"); PRL = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_prl")
-NAME = "amigahid-pico-rev7.1"
+PCB = os.path.join(REV7, "ninepin-ux-rev7.1.kicad_pcb"); PRO = os.path.join(REV7, "ninepin-ux-rev7.1.kicad_pro"); PRL = os.path.join(REV7, "ninepin-ux-rev7.1.kicad_prl")
+NAME = "ninepin-ux-rev7.1"
 LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,Edge.Cuts"
 # hand-fitted in the rev7.1 recipe: every THT part (cheaper from Mouser, no JLC THT fee, and Economic PCBA takes no
 # THT), L1 (the AOTA has a 27-piece JLC minimum; Mouser) and LED1 (WS2812B-2020 is MSL 5: JLC would bake it and refuse Economic)
@@ -46,7 +47,7 @@ def git(*args): return subprocess.run(["git", "-C", REPO] + list(args), capture_
 
 
 def main():
-    head = git("rev-parse", "--short", "HEAD"); dirty = git("status", "--short", "--", "hardware/rev7.1/*.py", "hardware/rev7.1/*.kicad_pcb", "hardware/rev7.1/*.kicad_sch", "hardware/rev7.1/rev7.pretty", "tools")
+    head = git("rev-parse", "--short", "HEAD"); branch = git("rev-parse", "--abbrev-ref", "HEAD"); dirty = git("status", "--short", "--", "hardware/rev7.1/*.py", "hardware/rev7.1/*.kicad_pcb", "hardware/rev7.1/*.kicad_sch", "hardware/rev7.1/rev7.pretty", "tools")
     pro_bak = PRO + ".fabbak"; prl_bak = PRL + ".fabbak"; shutil.copy(PRO, pro_bak); shutil.copy(PRL, prl_bak)
     tmp = tempfile.mkdtemp(prefix="rev7fab-")
     try:
@@ -101,10 +102,12 @@ def main():
                 if cur and re.match(r"^X[-\d.]+Y[-\d.]+", line): hits[cur] = hits.get(cur, 0) + 1
             drills[f] = [(tools[t], hits.get(t, 0)) for t in sorted(tools, key=lambda t: float(tools[t]))]
     sha = hashlib.sha256(open(zpath, "rb").read()).hexdigest()[:16]
+    board_sha = hashlib.sha256(open(PCB, "rb").read()).hexdigest()
     lines = ["# %s fab package" % NAME, "",
-             "Cut from `board-rev7` @ `%s` (%s), `kicad-cli` %s, outline %.2f x %.2f mm (centreline), 4 layers." % (
-                 head, "working tree clean" if not dirty else "WORKING TREE DIRTY: " + dirty.replace("\n", "; "),
+             "Cut from `%s` @ `%s` (%s), `kicad-cli` %s, outline %.2f x %.2f mm (centreline), 4 layers." % (
+                 branch, head, "working tree clean" if not dirty else "plus uncommitted changes; the board sha256 below is the link",
                  run("kicad-cli", "--version").strip(), bb.GetWidth() / 1e6 - 0.1, bb.GetHeight() / 1e6 - 0.1), "",
+             "Board `%s` sha256 %s" % (os.path.basename(PCB), board_sha), "",
              "`%s` sha256 %s, %d files: %s" % (os.path.basename(zpath), sha, len(files), ", ".join(files)), "",
              "## Drill table", ""]
     for f, tbl in drills.items():

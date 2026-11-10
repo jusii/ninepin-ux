@@ -6,7 +6,7 @@ import os, sys, pcbnew
 from pcbnew import VECTOR2I, FromMM as mm
 HERE = os.path.dirname(os.path.abspath(__file__)); sys.path.insert(0, HERE)
 import placement as PL
-PCB = os.path.join(HERE, "amigahid-pico-rev7.1.kicad_pcb")
+PCB = os.path.join(HERE, "ninepin-ux-rev7.1.kicad_pcb")
 b = pcbnew.LoadBoard(PCB)
 L = {"F": pcbnew.F_Cu, "B": pcbnew.B_Cu, "I2": pcbnew.In2_Cu}
 CX, CY = PL.CX, PL.CY

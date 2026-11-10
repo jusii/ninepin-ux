@@ -32,9 +32,9 @@ across SW2 pins 1-2 on the back, the bodge proven on rev7 board 1.
 
 ```
 python3 make_sch.py && python3 make_board.py --force && python3 route.py
-kicad-cli sch erc amigahid-pico-rev7.1.kicad_sch --exit-code-violations
-kicad-cli pcb drc amigahid-pico-rev7.1.kicad_pcb --schematic-parity --severity-all --refill-zones --save-board --exit-code-violations
-git checkout -- amigahid-pico-rev7.1.kicad_pro amigahid-pico-rev7.1.kicad_prl
+kicad-cli sch erc ninepin-ux-rev7.1.kicad_sch --exit-code-violations
+kicad-cli pcb drc ninepin-ux-rev7.1.kicad_pcb --schematic-parity --severity-all --refill-zones --save-board --exit-code-violations
+git checkout -- ninepin-ux-rev7.1.kicad_pro ninepin-ux-rev7.1.kicad_prl
 python3 ../../tools/check_rev7_1_pcb.py && python3 ../../tools/check_rev7_1_netlist.py && python3 ../../tools/check_rev7_1_style.py
 python3 fab/make_fab.py          # --full puts the hand-fitted parts back for a full-assembly order
 ```

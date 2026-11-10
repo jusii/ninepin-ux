@@ -5,11 +5,11 @@
 	(uuid "de218eeb-b539-5154-8f46-ab3ef77ae250")
 	(paper "A0")
 	(title_block
-		(title "hid-pico Amiga UX")
+		(title "Ninepin UX")
 		(date "2026-11-09")
 		(rev "7.1")
-		(comment 1 "rev7.1 (rev7 + U11 RUN supervisor) - RP2350A + RM2 chip-down, CBTD3861 bus switches, USB-C + USB-A host, real keyboard passthrough")
-		(comment 2 "based on borb's amigahid-pico (github.com/borb/amigahid-pico) and the UX rev 1 (rev6) board")
+		(comment 1 "rev7.1 (rev7 + U11 RUN supervisor) - USB and Bluetooth HID bridge for retro computers; RP2350A + RM2 chip-down, CBTD3861 bus switches, USB-C + USB-A host, real keyboard passthrough")
+		(comment 2 "github.com/jusii/ninepin-ux - based on borb's amigahid-pico (github.com/borb/amigahid-pico) and the UX rev 1 (rev6) board")
 		(comment 3 "Amiga-side pull-ups and bus switches run from the Amiga's own 5 V (AMIGA_IO5V, OR-ed from the keyboard connector and both DE9 ports), never from USB-C")
 	)
 	(lib_symbols

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate amigahid-pico-rev7.1.kicad_sch from design.py.
+"""Generate ninepin-ux-rev7.1.kicad_sch from design.py.
 
 design.py describes blocks of parts; each part is (ref, lib_id, value, footprint, pins, extra)
 where pins maps pin number -> net name ("GND" gets a ground symbol, "NC" a no-connect, anything
@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import design as D
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "amigahid-pico-rev7.1.kicad_sch")
+OUT = os.path.join(HERE, "ninepin-ux-rev7.1.kicad_sch")
 SYSLIB = "/usr/share/kicad/symbols"
 NS = uuid.UUID("7e3b4b2e-5a0c-4d6b-9c2a-1f0e8d7c6b5a")
 def U(*k): return str(uuid.uuid5(NS, "|".join(str(x) for x in k)))

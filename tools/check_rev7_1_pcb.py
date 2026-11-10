@@ -57,19 +57,19 @@ BBox = Tuple[float, float, float, float]  # minx, miny, maxx, maxy
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
 REV7_DIR = os.path.join(REPO_ROOT, "hardware", "rev7.1")
-BOARD_NAME = "amigahid-pico-rev7.1.kicad_pcb"
+BOARD_NAME = "ninepin-ux-rev7.1.kicad_pcb"
 BOARD_REL = "hardware/rev7.1/" + BOARD_NAME
-PROJECT_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_pro"
-PRL_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_prl"
+PROJECT_REL = "hardware/rev7.1/ninepin-ux-rev7.1.kicad_pro"
+PRL_REL = "hardware/rev7.1/ninepin-ux-rev7.1.kicad_prl"
 # what a scratch copy needs so kicad-cli and pcbnew behave exactly as in-tree.
 # the schematic and its symbol library ride along for --schematic-parity.
 STAGE_FILES = [
     BOARD_NAME,
-    "amigahid-pico-rev7.1.kicad_pro",
-    "amigahid-pico-rev7.1.kicad_prl",
+    "ninepin-ux-rev7.1.kicad_pro",
+    "ninepin-ux-rev7.1.kicad_prl",
     "fp-lib-table",
     "sym-lib-table",
-    "amigahid-pico-rev7.1.kicad_sch",
+    "ninepin-ux-rev7.1.kicad_sch",
     "rev7-symbols.kicad_sym",
 ]
 STAGE_DIRS = ["rev7.pretty"]
@@ -1447,7 +1447,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     check_f(rep, drc_f, how_f)
     check_g(rep, model)
     check_h(rep, model)
-    check_k(rep, os.path.join(os.path.dirname(geom_copy), "amigahid-pico-rev7.1.kicad_pro"), model)
+    check_k(rep, os.path.join(os.path.dirname(geom_copy), "ninepin-ux-rev7.1.kicad_pro"), model)
     check_l(rep, model, drc_l, how_l, routed)
     check_m(rep, model, routed)
     check_n(rep, REPO_ROOT, not args.no_git)

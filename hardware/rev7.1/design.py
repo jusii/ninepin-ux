@@ -1,12 +1,12 @@
-"""amigahid-pico-UX rev7.1 schematic design data (rev7 + RUN supervisor; see the Rev8 Plan vault note). Read by make_sch.py.
+"""Ninepin UX rev7.1 schematic design data (rev7 + RUN supervisor; see the Rev8 Plan vault note). Read by make_sch.py.
 Part = (ref, lib_id, value, footprint, {pin: net}, extra). Nets: "GND" = ground symbol,
 "NC" = no-connect, anything else a label. Net naming follows rev6 so the firmware pin map and
 the checker carry over: Amiga-side 5 V nets are plain, the RP2350 side gets the _lo suffix."""
 
-TITLE = "hid-pico Amiga UX"
+TITLE = "Ninepin UX"
 DATE = "2026-11-09"
-COMMENTS = ["rev7.1 (rev7 + U11 RUN supervisor) - RP2350A + RM2 chip-down, CBTD3861 bus switches, USB-C + USB-A host, real keyboard passthrough",
-            "based on borb's amigahid-pico (github.com/borb/amigahid-pico) and the UX rev 1 (rev6) board",
+COMMENTS = ["rev7.1 (rev7 + U11 RUN supervisor) - USB and Bluetooth HID bridge for retro computers; RP2350A + RM2 chip-down, CBTD3861 bus switches, USB-C + USB-A host, real keyboard passthrough",
+            "github.com/jusii/ninepin-ux - based on borb's amigahid-pico (github.com/borb/amigahid-pico) and the UX rev 1 (rev6) board",
             "Amiga-side pull-ups and bus switches run from the Amiga's own 5 V (AMIGA_IO5V, OR-ed from the keyboard connector and both DE9 ports), never from USB-C"]
 
 R0603 = "Resistor_SMD:R_0603_1608Metric"

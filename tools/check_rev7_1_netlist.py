@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-amigahid-pico rev7.1 netlist cross-checker (re-targeted copy of check_rev7_netlist.py).
+ninepin ux rev7.1 netlist cross-checker (re-targeted copy of check_rev7_netlist.py).
 
 asserts the rev7 schematic's netlist against an explicit rev7 connectivity
 spec held in this file, and cross-checks that spec against hardware/rev7.1/design.py
@@ -38,10 +38,10 @@ import xml.etree.ElementTree as ET
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
 REV7_DIR = os.path.join(REPO_ROOT, "hardware", "rev7.1")
-SCH_NAME = "amigahid-pico-rev7.1.kicad_sch"
+SCH_NAME = "ninepin-ux-rev7.1.kicad_sch"
 DEF_SCH = os.path.join(REV7_DIR, SCH_NAME)
 # what the scratch copy of the project needs for export + erc to behave like in-tree
-PROJECT_FILES = [SCH_NAME, "amigahid-pico-rev7.1.kicad_pro", "sym-lib-table",
+PROJECT_FILES = [SCH_NAME, "ninepin-ux-rev7.1.kicad_pro", "sym-lib-table",
                  "fp-lib-table", "rev7-symbols.kicad_sym"]
 PROJECT_DIRS = ["rev7.pretty"]      # ERC resolves footprint links against fp-lib-table
 KICAD_CLI = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
@@ -982,7 +982,7 @@ def main(argv=None):
         return 2
     os.makedirs(work, exist_ok=True)
 
-    print("=== amigahid-pico rev7 netlist checker ===")
+    print("=== ninepin ux rev7.1 netlist checker ===")
     print("schematic : %s" % args.sch)
     print("scratch   : %s" % work)
     if not os.path.exists(args.sch):

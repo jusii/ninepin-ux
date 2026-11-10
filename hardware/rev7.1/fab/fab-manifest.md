@@ -1,17 +1,19 @@
-# amigahid-pico-rev7.1 fab package
+# ninepin-ux-rev7.1 fab package
 
-Cut from `board-rev7` @ `6a102e0` (working tree clean), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
+Cut from `master` @ `27ce711` (plus uncommitted changes; the board sha256 below is the link), `kicad-cli` 10.0.7, outline 100.00 x 62.00 mm (centreline), 4 layers.
 
-`amigahid-pico-rev7.1-gerbers.zip` sha256 3df4eb1d98caf25d, 14 files: amigahid-pico-rev7.1-B_Cu.gbl, amigahid-pico-rev7.1-B_Mask.gbs, amigahid-pico-rev7.1-B_Paste.gbp, amigahid-pico-rev7.1-B_Silkscreen.gbo, amigahid-pico-rev7.1-Edge_Cuts.gm1, amigahid-pico-rev7.1-F_Cu.gtl, amigahid-pico-rev7.1-F_Mask.gts, amigahid-pico-rev7.1-F_Paste.gtp, amigahid-pico-rev7.1-F_Silkscreen.gto, amigahid-pico-rev7.1-In1_Cu.g1, amigahid-pico-rev7.1-In2_Cu.g2, amigahid-pico-rev7.1-NPTH.drl, amigahid-pico-rev7.1-PTH.drl, amigahid-pico-rev7.1-job.gbrjob
+Board `ninepin-ux-rev7.1.kicad_pcb` sha256 06bf450d3317594c040091c04365d7e5139e21938fa4359e322b65284b5cf375
+
+`ninepin-ux-rev7.1-gerbers.zip` sha256 3a5cc7818db96a17, 14 files: ninepin-ux-rev7.1-B_Cu.gbl, ninepin-ux-rev7.1-B_Mask.gbs, ninepin-ux-rev7.1-B_Paste.gbp, ninepin-ux-rev7.1-B_Silkscreen.gbo, ninepin-ux-rev7.1-Edge_Cuts.gm1, ninepin-ux-rev7.1-F_Cu.gtl, ninepin-ux-rev7.1-F_Mask.gts, ninepin-ux-rev7.1-F_Paste.gtp, ninepin-ux-rev7.1-F_Silkscreen.gto, ninepin-ux-rev7.1-In1_Cu.g1, ninepin-ux-rev7.1-In2_Cu.g2, ninepin-ux-rev7.1-NPTH.drl, ninepin-ux-rev7.1-PTH.drl, ninepin-ux-rev7.1-job.gbrjob
 
 ## Drill table
 
-amigahid-pico-rev7.1-NPTH.drl: 10 hits
+ninepin-ux-rev7.1-NPTH.drl: 10 hits
 - 0.650 mm x 2
 - 2.200 mm x 4
 - 3.200 mm x 4
 
-amigahid-pico-rev7.1-PTH.drl: 332 hits
+ninepin-ux-rev7.1-PTH.drl: 332 hits
 - 0.300 mm x 249
 - 0.600 mm x 4
 - 0.950 mm x 4

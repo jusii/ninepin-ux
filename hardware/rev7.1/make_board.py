@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build amigahid-pico-rev7.1.kicad_pcb from the schematic netlist + floorplan.py + placement.py.
+"""Build ninepin-ux-rev7.1.kicad_pcb from the schematic netlist + floorplan.py + placement.py.
 Creates the 4-layer board, outline, holes, every footprint with its nets, the GND/+3V3 planes,
 the RM2 antenna keep-out and the placement guides. Tracks/vias are NOT touched by this script
 once routing has started: it refuses to run if the existing board has copper tracks unless
@@ -12,8 +12,8 @@ sys.path.insert(0, HERE)
 import floorplan as F
 import placement as PL
 
-OUT = os.path.join(HERE, "amigahid-pico-rev7.1.kicad_pcb")
-SCH = os.path.join(HERE, "amigahid-pico-rev7.1.kicad_sch")
+OUT = os.path.join(HERE, "ninepin-ux-rev7.1.kicad_pcb")
+SCH = os.path.join(HERE, "ninepin-ux-rev7.1.kicad_sch")
 SYSFP = "/usr/share/kicad/footprints"
 
 if os.path.exists(OUT) and "--force" not in sys.argv:
@@ -184,7 +184,7 @@ text("OLED 0.96in on 11 mm posts", ox + F.OLED_PCB[0] / 2, oy + F.OLED_PCB[1] + 
 rect(kx0, ky0, kx1, ky1, C); text("RM2 antenna keep-out, no metal, all layers", 3.0, ky0 - 1.2, C, 0.7)
 g = F.GAP; o = F.OVH
 rect(-g, -g, W + g, H + g, D); rect(-o, -o, W + o, H + o, D)
-text("hid-pico Amiga UX rev7.1", W / 2, H + o + 2.5, D, 1.2)
+text("Ninepin UX rev7.1", W / 2, H + o + 2.5, D, 1.2)
 
 # top silk: connector and button labels (1.0 mm / 0.16 mm, JLCPCB minimums), and the JLCPCB order-number anchor on the back
 def silk(txt, x, y, rot=0, layer=pcbnew.F_SilkS, h=1.0, w=0.16):
@@ -198,9 +198,11 @@ for txt, x, y, rot in (("KBD OUT", 26.5, 11.6, 0), ("KBD IN", 63.6, 4.0, 90),
     silk(txt, x, y, rot)
 silk("A500", 59.3, 2.2, 90, h=0.8, w=0.15); silk("OUT", 60.4, 2.0, 90, h=0.8, w=0.15); silk("A500 IN", 50.8, 16.6, 0, h=0.8, w=0.15)   # out of the way of the pin names, J1 outline and JP1
 # back silk: what the board is (no JLCPCB order-number anchor: tick "remove order number" when ordering)
-for i, (txt, h) in enumerate((("amigahid-pico-UX  rev7.1  2026-11", 1.5), ("Amiga keyboard, mouse and joystick adapter  |  C64 joystick ports", 1.0),
-                              ("USB HID host  |  Bluetooth HID  |  USB device for C64 Ultimate", 1.0), ("github.com/jusii/amigahid-pico", 1.0))):
-    silk(txt, 50, 23.5 + i * 2.2 + (0 if i == 0 else 0.6), 0, pcbnew.B_SilkS, h, 0.2 if h > 1 else 0.15)   # between the OLED post rows (y 13 / 35.2)
+for i, (txt, h) in enumerate((("Ninepin UX  rev7.1  2026-11", 1.5), ("USB and Bluetooth HID bridge for retro computers", 1.0),
+                              ("Amiga keyboard, mouse and joystick  |  C64 joystick ports", 1.0),
+                              ("USB HID host  |  Bluetooth HID  |  USB device for C64 Ultimate", 1.0),
+                              ("github.com/jusii/ninepin-ux", 1.0), ("based on github.com/borb/amigahid-pico", 1.0))):
+    silk(txt, 50, 20.0 + i * 2.2 + (0 if i == 0 else 0.6), 0, pcbnew.B_SilkS, h, 0.2 if h > 1 else 0.15)   # between the OLED post rows (y 13 / 35.2)
 # pin names on the headers, then reference + value beside every part that has room (silk_labels.py)
 import silk_labels
 pp, pm = silk_labels.label_pins(b, W, H)
@@ -241,7 +243,7 @@ ns["classes"] = [default, power]
 ns["netclass_patterns"] = [{"netclass": "Power", "pattern": p} for p in ("/AMIGA_5V", "/AMIGA_5V_FUSED", "/AMIGA_IO5V", "/SYS5V", "/AUX_5V", "/USBA_5V", "/KBIN_5V", "/cont1_5v", "/cont2_5v")]
 if ns.get("meta", {}).get("version", 0) < 3: ns["meta"] = {"version": 3}
 if not j.get("schematic", {}).get("top_level_sheets"):              # kicad-cli sch export empties this; put the root sheet back
-    j.setdefault("schematic", {})["top_level_sheets"] = [{"filename": "amigahid-pico-rev7.1.kicad_sch", "name": "amigahid-pico-rev7.1", "uuid": "00000000-0000-0000-0000-000000000000"}]
+    j.setdefault("schematic", {})["top_level_sheets"] = [{"filename": "ninepin-ux-rev7.1.kicad_sch", "name": "ninepin-ux-rev7.1", "uuid": "00000000-0000-0000-0000-000000000000"}]
 r = j["board"]["design_settings"]["rules"]
 r.update({"min_clearance": 0.15, "min_track_width": 0.15, "min_via_diameter": 0.5, "min_through_hole_diameter": 0.3, "min_hole_to_hole": 0.5,
           "min_hole_clearance": 0.15, "min_copper_edge_clearance": 0.3, "min_silk_clearance": 0.15, "min_via_annular_width": 0.1})

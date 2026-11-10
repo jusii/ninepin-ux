@@ -283,7 +283,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "amigahid-pico-rev7.1.kicad_pro",
+    "filename": "ninepin-ux-rev7.1.kicad_pro",
     "version": 3
   },
   "net_settings": {
@@ -388,8 +388,8 @@
     "legacy_lib_list": [],
     "top_level_sheets": [
       {
-        "filename": "amigahid-pico-rev7.1.kicad_sch",
-        "name": "amigahid-pico-rev7.1",
+        "filename": "ninepin-ux-rev7.1.kicad_sch",
+        "name": "ninepin-ux-rev7.1",
         "uuid": "00000000-0000-0000-0000-000000000000"
       }
     ]

@@ -1,4 +1,4 @@
-"""amigahid-pico-UX rev7 floorplan: single source of truth for the board outline, the
+"""Ninepin UX rev7.1 floorplan (unchanged from rev7): single source of truth for the board outline, the
 connector positions and the case. KiCad coordinates (mm, origin at the board's NW corner,
 y down). Read by make_board.py (pcbnew) and case/enclosure.py (FreeCAD).
 

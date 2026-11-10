@@ -59,8 +59,8 @@ from typing import Dict, List, Optional, Sequence, Tuple
 # configuration
 # --------------------------------------------------------------------------
 
-BOARD_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_pcb"
-PROJECT_NAME = "amigahid-pico-rev7.1.kicad_pro"
+BOARD_REL = "hardware/rev7.1/ninepin-ux-rev7.1.kicad_pcb"
+PROJECT_NAME = "ninepin-ux-rev7.1.kicad_pro"
 COPPER_LAYERS = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
 
 NM = 1000000.0  # nanometres per millimetre (kicad's internal unit is the nm)

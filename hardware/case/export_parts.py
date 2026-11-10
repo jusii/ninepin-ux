@@ -7,7 +7,7 @@ import pcbnew
 HERE = os.path.dirname(os.path.abspath(__file__)); REV7 = os.path.join(os.path.dirname(HERE), "rev7.1"); REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "tools"))
 import check_rev7_1_pcb as C
-b = pcbnew.LoadBoard(os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pcb"))
+b = pcbnew.LoadBoard(os.path.join(REV7, "ninepin-ux-rev7.1.kicad_pcb"))
 out = []
 for fp in sorted(b.Footprints(), key=lambda f: f.GetReference()):
     name = fp.GetFPIDAsString().split(":")[-1]
