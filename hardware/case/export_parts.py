@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Dump every footprint's courtyard box and package height to parts.json for the case fit check
 (FreeCAD cannot import pcbnew). KiCad coordinates, mm. Run after any board change:
-python3 kicad/rev7/case/export_parts.py"""
+python3 hardware/case/export_parts.py"""
 import json, os, sys
 import pcbnew
-HERE = os.path.dirname(os.path.abspath(__file__)); REV7 = os.path.dirname(HERE); REPO = os.path.dirname(os.path.dirname(REV7))
+HERE = os.path.dirname(os.path.abspath(__file__)); REV7 = os.path.join(os.path.dirname(HERE), "rev7.1"); REPO = os.path.dirname(os.path.dirname(HERE))
 sys.path.insert(0, os.path.join(REPO, "tools"))
-import check_rev7_pcb as C
-b = pcbnew.LoadBoard(os.path.join(REV7, "amigahid-pico-rev7.kicad_pcb"))
+import check_rev7_1_pcb as C
+b = pcbnew.LoadBoard(os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pcb"))
 out = []
 for fp in sorted(b.Footprints(), key=lambda f: f.GetReference()):
     name = fp.GetFPIDAsString().split(":")[-1]

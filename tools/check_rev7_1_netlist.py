@@ -3,7 +3,7 @@
 amigahid-pico rev7.1 netlist cross-checker (re-targeted copy of check_rev7_netlist.py).
 
 asserts the rev7 schematic's netlist against an explicit rev7 connectivity
-spec held in this file, and cross-checks that spec against kicad/rev7.1/design.py
+spec held in this file, and cross-checks that spec against hardware/rev7.1/design.py
 (the generator's input), so a change in either one shows up here.
 
 usage (note: /nas is noexec, always invoke through the interpreter):
@@ -22,7 +22,6 @@ no third-party modules: stdlib only.
 """
 
 import argparse
-import fnmatch
 import importlib.util
 import os
 import re
@@ -38,7 +37,7 @@ import xml.etree.ElementTree as ET
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
-REV7_DIR = os.path.join(REPO_ROOT, "kicad", "rev7.1")
+REV7_DIR = os.path.join(REPO_ROOT, "hardware", "rev7.1")
 SCH_NAME = "amigahid-pico-rev7.1.kicad_sch"
 DEF_SCH = os.path.join(REV7_DIR, SCH_NAME)
 # what the scratch copy of the project needs for export + erc to behave like in-tree
@@ -47,29 +46,23 @@ PROJECT_FILES = [SCH_NAME, "amigahid-pico-rev7.1.kicad_pro", "sym-lib-table",
 PROJECT_DIRS = ["rev7.pretty"]      # ERC resolves footprint links against fp-lib-table
 KICAD_CLI = shutil.which("kicad-cli") or "/usr/bin/kicad-cli"
 
-THIS_BRANCH = "board-rev7"
-REV6_BRANCH = "board-rev6"
-
-REV5_GUARDED = [
-    "kicad/amigahid-pico.kicad_sch",
-    "kicad/amigahid-pico.kicad_pcb",
-]
-REV5_GUARDED_WIDE = [
-    "kicad/amigahid-pico.kicad_pro",
-    "kicad/amigahid-pico.kicad_prl",
-    "kicad/amigahid-pico.net",
-    "kicad/amigahid-pico-cache.lib",
-    "kicad/fp-lib-table",
-    "kicad/fp-info-cache",
-]
-# rev6 is frozen from the moment rev7 branched off it
-REV6_FROZEN_GLOBS = [
-    "kicad/rev6/*.kicad_sch",
-    "kicad/rev6/*.kicad_pcb",
-    "kicad/rev6/*.kicad_pro",
-    "kicad/rev6/rev6.pretty/*",
-    "kicad/rev6/rev6-symbols.kicad_sym",
-]
+# the older boards left the tree in the ninepin-ux restructure; each lives on, byte-identical, in an
+# annotated tag on the last commit that carried it. section I pins the tags and the key files in them.
+FROZEN_COMMIT = "287d90977a97ed140ebd98286712b06c671f3bae"
+FROZEN_TAGS = {
+    "hw/upstream-rev5": {
+        "kicad/amigahid-pico.kicad_sch": "b3d755153dbb16602e1fdb98f5ddc8c34d712ae2",
+        "kicad/amigahid-pico.kicad_pcb": "5b342ab6f9a4c03c8174a9fad53fa15a68271456",
+    },
+    "hw/ux-rev1": {
+        "kicad/rev6/amigahid-pico-rev6.kicad_sch": "13019d0945caa896db4429b03957830e76a38a21",
+        "kicad/rev6/amigahid-pico-rev6.kicad_pcb": "a1de425e26d527ca3ef61e7ef07dbff99c632cb3",
+    },
+    "hw/ux-rev7": {
+        "kicad/rev7/amigahid-pico-rev7.kicad_sch": "12921c2ea7572b0c4a472011dafa91b34145dc62",
+        "kicad/rev7/amigahid-pico-rev7.kicad_pcb": "c5b7baae756f02c0433de69021ca787c8e7f7938",
+    },
+}
 
 # ---------------------------------------------------------------------------
 # THE SPEC
@@ -401,7 +394,7 @@ def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     mod = importlib.util.module_from_spec(spec)
     old = sys.dont_write_bytecode
-    sys.dont_write_bytecode = True     # keep __pycache__ out of kicad/rev7
+    sys.dont_write_bytecode = True     # keep __pycache__ out of hardware/rev7.1
     try:
         spec.loader.exec_module(mod)
     finally:
@@ -895,58 +888,27 @@ def git(repo, *args):
 
 
 def check_frozen(rep, repo, enabled):
-    rep.sec("I. rev5 + rev6 files untouched")
+    rep.sec("I. old boards frozen in their hw/* tags")
     if not enabled:
-        rep.note("frozen-file git check skipped (--no-git)")
+        rep.note("frozen-tag git check skipped (--no-git)")
         return
-    try:
-        out = subprocess.run(["git", "-C", repo, "diff", "--stat", "HEAD", "--"] + REV5_GUARDED,
-                             capture_output=True, text=True, check=False)
-    except OSError as exc:
-        rep.chk("I.git", False, "cannot run git: %s" % exc)
-        return
-    rep.chk("I.rev5_sch_pcb", out.returncode == 0 and not out.stdout.strip(),
-            "rev5 schematic/pcb modified:\n%s" % out.stdout.strip())
-    wide = subprocess.run(["git", "-C", repo, "diff", "--stat", "HEAD", "--"] + REV5_GUARDED_WIDE,
-                          capture_output=True, text=True, check=False)
-    if wide.stdout.strip():
-        rep.warn("other rev5 files differ from HEAD:\n      %s" % wide.stdout.strip().replace("\n", "\n      "))
-
-    mb = git(repo, "merge-base", REV6_BRANCH, THIS_BRANCH)
-    base = mb.stdout.decode().strip()
-    if not rep.chk("I.merge_base", mb.returncode == 0 and base,
-                   "git merge-base %s %s failed: %s" % (REV6_BRANCH, THIS_BRANCH, mb.stderr.decode().strip())):
-        return
-    rep.note("rev6 frozen at merge-base %s..%s" % (base[:10], THIS_BRANCH))
-    paths = set()
-    for rev in (base, THIS_BRANCH):
-        ls = git(repo, "ls-tree", "-r", "--name-only", rev, "--", "kicad/rev6")
-        for p in ls.stdout.decode().splitlines():
-            if any(fnmatch.fnmatchcase(p, g) and p.count("/") == g.count("/") for g in REV6_FROZEN_GLOBS):
-                paths.add(p)
-    # files that exist on disk but in neither tree (e.g. a new footprint) also count
-    for g in REV6_FROZEN_GLOBS:
-        d = os.path.join(repo, os.path.dirname(g))
-        if os.path.isdir(d):
-            for name in os.listdir(d):
-                rel = os.path.join(os.path.dirname(g), name)
-                if fnmatch.fnmatchcase(rel, g) and os.path.isfile(os.path.join(repo, rel)):
-                    paths.add(rel)
-    rep.chk("I.rev6.found", len(paths) >= 5, "only %d rev6 frozen paths found: %s" % (len(paths), sorted(paths)))
-    for p in sorted(paths):
-        disk = os.path.join(repo, p)
+    for tag, files in sorted(FROZEN_TAGS.items()):
         try:
-            with open(disk, "rb") as fh:
-                cur = fh.read()
-        except OSError:
-            cur = None
-        for label, rev in ((THIS_BRANCH, THIS_BRANCH), ("merge-base", base)):
-            blob = git(repo, "cat-file", "blob", "%s:%s" % (rev, p))
-            ref = blob.stdout if blob.returncode == 0 else None
-            rep.chk("I.%s@%s" % (p.replace("kicad/rev6/", "rev6/"), label), cur is not None and cur == ref,
-                    "%s differs from %s:%s (%s)" % (p, label, p,
-                                                   "missing on disk" if cur is None else
-                                                   "missing in %s" % label if ref is None else "bytes differ"))
+            kind = git(repo, "cat-file", "-t", "refs/tags/" + tag)
+        except OSError as exc:
+            rep.chk("I.git", False, "cannot run git: %s" % exc)
+            return
+        if not rep.chk("I.%s.annotated" % tag, kind.returncode == 0 and kind.stdout.decode().strip() == "tag",
+                       "tag %s missing or not annotated (%s)" % (tag, (kind.stdout + kind.stderr).decode().strip())):
+            continue
+        peeled = git(repo, "rev-parse", tag + "^{commit}").stdout.decode().strip()
+        rep.chk("I.%s.commit" % tag, peeled == FROZEN_COMMIT,
+                "tag %s points at %s, expected %s; never move these tags" % (tag, peeled[:12], FROZEN_COMMIT[:12]))
+        for path, want in sorted(files.items()):
+            got = git(repo, "rev-parse", "%s:%s" % (tag, path))
+            have = got.stdout.decode().strip() if got.returncode == 0 else None
+            rep.chk("I.%s:%s" % (tag, os.path.basename(path)), have == want,
+                    "%s:%s is %s, expected blob %s" % (tag, path, have or "missing", want[:12]))
 
 
 # ---------------------------------------------------------------------------

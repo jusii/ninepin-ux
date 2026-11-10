@@ -5,9 +5,9 @@ these are the facts DRC cannot check on its own: where each connector sits
 against the case wall, whether the RM2 antenna keep-out is really empty,
 whether anything tall has crept under the OLED or above the case ceiling,
 whether the supply rails really land in the Power netclass, whether the
-planes are on the nets the pads use - and whether rev6 is still frozen.
+planes are on the nets the pads use - and whether the old boards are still frozen in their tags.
 
-every expected number comes from kicad/rev7.1/floorplan.py and placement.py,
+every expected number comes from hardware/rev7.1/floorplan.py and placement.py,
 imported here, so a floorplan change shows up as a checker result rather than
 as silent drift between the generator and its gate.
 
@@ -44,7 +44,7 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
-sys.dont_write_bytecode = True   # keep __pycache__ out of kicad/rev7
+sys.dont_write_bytecode = True   # keep __pycache__ out of hardware/rev7.1
 
 Pt = Tuple[float, float]
 Poly = List[Pt]
@@ -56,11 +56,11 @@ BBox = Tuple[float, float, float, float]  # minx, miny, maxx, maxy
 
 TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.dirname(TOOLS_DIR)
-REV7_DIR = os.path.join(REPO_ROOT, "kicad", "rev7.1")
+REV7_DIR = os.path.join(REPO_ROOT, "hardware", "rev7.1")
 BOARD_NAME = "amigahid-pico-rev7.1.kicad_pcb"
-BOARD_REL = "kicad/rev7.1/" + BOARD_NAME
-PROJECT_REL = "kicad/rev7.1/amigahid-pico-rev7.1.kicad_pro"
-PRL_REL = "kicad/rev7.1/amigahid-pico-rev7.1.kicad_prl"
+BOARD_REL = "hardware/rev7.1/" + BOARD_NAME
+PROJECT_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_pro"
+PRL_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_prl"
 # what a scratch copy needs so kicad-cli and pcbnew behave exactly as in-tree.
 # the schematic and its symbol library ride along for --schematic-parity.
 STAGE_FILES = [
@@ -213,7 +213,7 @@ POWER_VIA_EXCEPT = {(50.0, 46.6)}     # USBA_5V into U2 pin 5 between its rows: 
 POWER_TRACK_MIN = 0.3                 # rev7: 0.4 buses, 0.5 trunks, 0.3 short stubs (rev6: 1.0)
 TRACK_MIN = 0.2
 
-# N: rev6 freeze is check_rev7_1_netlist.py section I, imported verbatim
+# N: the old-board freeze is check_rev7_1_netlist.py section I, imported verbatim
 NETLIST_CHECKER = os.path.join(TOOLS_DIR, "check_rev7_1_netlist.py")
 
 # --------------------------------------------------------------------------
@@ -1354,7 +1354,7 @@ def load_module(name: str, path: str):
 
 
 def check_n(rep: Report, repo: str, enabled: bool) -> None:
-    rep.sec("N. rev5 + rev6 frozen (check_rev7_1_netlist.py section I), rev7 project clean")
+    rep.sec("N. old boards frozen in their tags (check_rev7_1_netlist.py section I), rev7.1 project clean")
     if not enabled:
         rep.add("N0", "git checks skipped (--no-git)", True)
         return
@@ -1363,7 +1363,7 @@ def check_n(rep: Report, repo: str, enabled: bool) -> None:
         nrep = NL.Report()
         NL.check_frozen(nrep, repo, True)
     except Exception as exc:  # noqa: BLE001 - fail closed
-        rep.check("N1", "rev6 freeze guard ran", False, "cannot run check_rev7_1_netlist.check_frozen: %s" % exc)
+        rep.check("N1", "old-board freeze guard ran", False, "cannot run check_rev7_1_netlist.check_frozen: %s" % exc)
         return
     bad = ["%s: %s" % (ident, msg) for _sec, ident, ok, msg in nrep.results if not ok]
     rep.add("N1", "check_rev7_1_netlist section I: %d/%d frozen-file assertions pass"
@@ -1385,7 +1385,7 @@ def check_n(rep: Report, repo: str, enabled: bool) -> None:
         elif r.stdout.strip():
             dirty.append("%s differs from HEAD - a kicad-cli/pcbnew save rewrote it; "
                          "git checkout -- it before trusting DRC" % rel)
-    rep.add("N2", "rev7 .kicad_pro/.kicad_prl unmodified in the working tree", not dirty, dirty)
+    rep.add("N2", "rev7.1 .kicad_pro/.kicad_prl unmodified in the working tree", not dirty, dirty)
 
 
 # --------------------------------------------------------------------------

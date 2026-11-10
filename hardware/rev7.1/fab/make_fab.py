@@ -1,27 +1,38 @@
 #!/usr/bin/env python3
-"""Cut the JLCPCB order package for the rev7 board.
+"""Cut the JLCPCB order package for the rev7.1 board.
 
 Writes, next to this script:
-  amigahid-pico-rev7-gerbers.zip   fab layers only (4 copper, mask, paste, silk, outline, drills, job file)
-  amigahid-pico-rev7-bom.csv       JLCPCB SMT/THT BOM: Comment, Designator, Footprint, LCSC Part #
-  amigahid-pico-rev7-cpl.csv       JLCPCB pick-and-place: Designator, Mid X, Mid Y, Layer, Rotation
-  fab-manifest.md                  what was cut from which commit, drill table, the DNP and hand-solder lines
+  amigahid-pico-rev7.1-gerbers.zip   fab layers only (4 copper, mask, paste, silk, outline, drills, job file)
+  amigahid-pico-rev7.1-bom.csv       JLCPCB SMT/THT BOM: Comment, Designator, Footprint, LCSC Part #
+  amigahid-pico-rev7.1-cpl.csv       JLCPCB pick-and-place: Designator, Mid X, Mid Y, Layer, Rotation
+  fab-manifest.md                  what was cut from which commit, drill table, the DNP and hand-fitted parts
+
+Default recipe (rev7.1 order, decided 2026-11-09): JLCPCB Economic PCBA places the SMT parts only. The parts in HAND
+(THT connectors, switches, headers, L1, LED1) are left out of the BOM and CPL and fitted by hand from the Mouser BOM
+(hardware/rev7.1/bom/) and LCSC; pass --full to put them back for a full-assembly order.
 
 Every value comes from the board file (footprint fields written by make_board.py from design.py), so the
 package can only be regenerated, never hand-edited. kicad-cli rewrites the project file on export; the
-script restores it from a copy taken first. Run from anywhere: python3 kicad/rev7/fab/make_fab.py
+script restores it from a copy taken first. Run from anywhere: python3 hardware/rev7.1/fab/make_fab.py [--full]
 """
 import csv, hashlib, io, os, re, shutil, subprocess, sys, tempfile, zipfile
 import pcbnew
 
 HERE = os.path.dirname(os.path.abspath(__file__)); REV7 = os.path.dirname(HERE); REPO = os.path.dirname(os.path.dirname(REV7))
-PCB = os.path.join(REV7, "amigahid-pico-rev7.kicad_pcb"); PRO = os.path.join(REV7, "amigahid-pico-rev7.kicad_pro"); PRL = os.path.join(REV7, "amigahid-pico-rev7.kicad_prl")
-NAME = "amigahid-pico-rev7"
+PCB = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pcb"); PRO = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_pro"); PRL = os.path.join(REV7, "amigahid-pico-rev7.1.kicad_prl")
+NAME = "amigahid-pico-rev7.1"
 LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.Paste,B.Paste,F.Silkscreen,B.Silkscreen,Edge.Cuts"
-HAND = {"P1", "P2"}                      # deselect at JLC if their DE9 stock is short; hand-solder (Kycon K22X-E9P-N)
-# JLCPCB rotation offsets by footprint prefix: their pin-header / pin-socket models lie along the pad row at 0 deg where
-# KiCad's stand across it (seen in the order preview 2026-10-17: every header came up turned 90 deg)
-JLC_ROT = {"PinHeader_": -90, "PinSocket_": -90}
+# hand-fitted in the rev7.1 recipe: every THT part (cheaper from Mouser, no JLC THT fee, and Economic PCBA takes no
+# THT), L1 (the AOTA has a 27-piece JLC minimum; Mouser) and LED1 (WS2812B-2020 is MSL 5: JLC would bake it and refuse Economic)
+HAND = {"P1", "P2", "J1", "J2", "J3", "J4", "J7", "J8", "J10", "J12", "SW1", "SW2", "L1", "LED1"}
+FULL = "--full" in sys.argv
+# JLCPCB rotation offsets by footprint name (regex, first match wins): JLC's part models sit at a different 0 deg than
+# KiCad's footprints. Headers/sockets: their models lie along the pad row (order preview 2026-10-17). SSOP-24, SOIC-8,
+# SOT-23-6 (90 deg off) and SOT-23 (180 deg off): read from the placement preview of the rev7 package on 2026-11-09,
+# where the model leads ran across the pad rows / the SOT-23 two-lead side sat on the one-pad side. The direction
+# (clockwise = KiCad -90) puts each model's pin-1 mark on the pad-1 silk marker. Correct at 0 offset in the same
+# preview: QFN-60, WSON-6, TSSOP-16, SOD-123, SMA, CP_Elec, the 3225 crystal. RE-CHECK THE PREVIEW BEFORE EVERY ORDER.
+JLC_ROT = [(r"^PinHeader_", -90), (r"^PinSocket_", -90), (r"^SSOP-24_", -90), (r"^SOIC-8_", -90), (r"^SOT-23-6$", -90), (r"^SOT-23$", 180)]
 
 
 def run(*args):
@@ -35,7 +46,7 @@ def git(*args): return subprocess.run(["git", "-C", REPO] + list(args), capture_
 
 
 def main():
-    head = git("rev-parse", "--short", "HEAD"); dirty = git("status", "--short", "--", "kicad/rev7/*.py", "kicad/rev7/*.kicad_pcb", "kicad/rev7/*.kicad_sch", "kicad/rev7/rev7.pretty", "tools")
+    head = git("rev-parse", "--short", "HEAD"); dirty = git("status", "--short", "--", "hardware/rev7.1/*.py", "hardware/rev7.1/*.kicad_pcb", "hardware/rev7.1/*.kicad_sch", "hardware/rev7.1/rev7.pretty", "tools")
     pro_bak = PRO + ".fabbak"; prl_bak = PRL + ".fabbak"; shutil.copy(PRO, pro_bak); shutil.copy(PRL, prl_bak)
     tmp = tempfile.mkdtemp(prefix="rev7fab-")
     try:
@@ -52,10 +63,11 @@ def main():
 
     # BOM + CPL from the board itself
     b = pcbnew.LoadBoard(PCB); bb = b.GetBoardEdgesBoundingBox()
-    bom, cpl, dnp, nolcsc = {}, [], [], []
+    bom, cpl, dnp, nolcsc, hand = {}, [], [], [], []
     for fp in sorted(b.Footprints(), key=lambda f: (re.sub(r"\d+", "", f.GetReference()), int(re.sub(r"\D", "", f.GetReference()) or 0))):
         ref = fp.GetReference(); fields = {f.GetName(): f.GetText() for f in fp.GetFields()}
         if fp.IsDNP() or ref.startswith(("H", "JP")): dnp.append(ref); continue      # mounting holes and solder jumpers are not parts
+        if ref in HAND and not FULL: hand.append(ref); continue
         fpname = fp.GetFPIDAsString().split(":")[-1]; val = fp.GetValue(); lcsc = fields.get("LCSC", "").strip()
         if not lcsc: nolcsc.append(ref)
         key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
@@ -68,7 +80,7 @@ def main():
         if xs: pos = pcbnew.VECTOR2I(int((min(xs) + max(xs)) / 2), int((min(ys) + max(ys)) / 2))
         else: pos = fp.GetPosition()
         layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
-        rot = fp.GetOrientationDegrees() + next((d for p, d in JLC_ROT.items() if fpname.startswith(p)), 0)
+        rot = fp.GetOrientationDegrees() + next((d for p, d in JLC_ROT if re.search(p, fpname)), 0)
         cpl.append((ref, round(pos.x / 1e6, 4), round(-pos.y / 1e6, 4), layer, round((rot + 180) % 360 - 180, 2)))   # gerber frame: KiCad y negated (board spans Y -62..0), as kicad-cli pos does
     with open(os.path.join(HERE, NAME + "-bom.csv"), "w", newline="") as f:
         w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
@@ -100,8 +112,8 @@ def main():
     lines += ["## BOM: %d lines (one per LCSC part), %d placements; CPL rows %d" % (len(bom), sum(len(v[2]) for v in bom.values()), len(cpl)), "",
               "- not placed / not in the BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
-              "- hand-solder candidates if JLC stock is short: %s" % ", ".join(sorted(HAND)),
-              "- CPL coordinates are the pad-centre of each part in the gerber frame (KiCad X, Y negated: the board spans Y -62..0); rotations are KiCad's except the headers (JLC_ROT) - check JLC's placement preview for the polarised parts (D1-D6, C4, U1-U3, U6-U10, Q1-Q3, L1, LED1)", ""]
+              "- hand-fitted, not in this BOM/CPL (%s recipe): %s" % ("full-assembly: none" if FULL else "SMT-only", ", ".join(hand) or "none"),
+              "- CPL coordinates are the pad-centre of each part in the gerber frame (KiCad X, Y negated: the board spans Y -62..0); rotations are KiCad's plus the JLC_ROT offsets (%s) - check JLC's placement preview for every polarised part before ordering (D1-D6, C4, U1-U4, U6-U11, Q1-Q3, Y1)" % ", ".join("%s %+d" % (p.strip("^$"), d) for p, d in JLC_ROT), ""]
     open(os.path.join(HERE, "fab-manifest.md"), "w").write("\n".join(lines))
     shutil.rmtree(tmp)
     print("\n".join(lines[:4] + lines[-6:]))

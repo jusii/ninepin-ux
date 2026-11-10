@@ -1,4 +1,0 @@
-(fp_lib_table
-	(version 7)
-	(lib (name "rev7") (type "KiCad") (uri "${KIPRJMOD}/rev7.pretty") (options "") (descr "amigahid-pico rev7 project-local footprints"))
-)

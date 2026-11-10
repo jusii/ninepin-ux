@@ -1,5 +1,0 @@
-#VRML V2.0 utf8
-# amigahid-pico rev7 simple body, 1 unit = 2.54 mm
-Transform { translation 0.0000 -0.0000 0.3150 children [ Shape { appearance Appearance { material Material { diffuseColor 0.93 0.93 0.88 } } geometry Box { size 1.2598 1.2598 0.6299 } } ] }
-Transform { translation -0.7579 -0.0000 0.3150 children [ Shape { appearance Appearance { material Material { diffuseColor 0.80 0.80 0.80 } } geometry Box { size 0.2559 1.2598 0.6299 } } ] }
-Transform { translation 0.7579 -0.0000 0.3150 children [ Shape { appearance Appearance { material Material { diffuseColor 0.80 0.80 0.80 } } geometry Box { size 0.2559 1.2598 0.6299 } } ] }

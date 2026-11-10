@@ -150,7 +150,7 @@ endif ()
 pico_sdk_init()
 
 if (BOARD_TYPE STREQUAL "BOARD_HIDPICO_REV7" AND NOT TARGET tinyusb_pico_pio_usb)
-	message(FATAL_ERROR "BOARD_HIDPICO_REV7 needs pico-pio-usb at ${PICO_PIO_USB_PATH}; try 'git submodule update --init lib/pico_pio_usb'")
+	message(FATAL_ERROR "BOARD_HIDPICO_REV7 needs pico-pio-usb at ${PICO_PIO_USB_PATH}; try 'git submodule update --init firmware/lib/pico_pio_usb'")
 endif ()
 
 if (ENABLE_BLUETOOTH_HID AND NOT PICO_CYW43_SUPPORTED)

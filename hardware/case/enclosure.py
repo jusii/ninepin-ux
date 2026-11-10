@@ -1,6 +1,6 @@
 """amigahid-pico-UX rev7 enclosure (FreeCAD, Part workbench only, runs headless).
 
-Reads ../floorplan.py (board, connectors, case constants, OLED) and parts.json (every footprint's
+Reads ../rev7.1/floorplan.py (board, connectors, case constants, OLED) and parts.json (every footprint's
 courtyard and height, written by export_parts.py). KiCad x, y_up = -y_kicad, z = 0 at the board
 underside. A clamshell split at Z_SPLIT, so the board drops in with its connectors sticking out on
 three sides: TRAY = plate, standoffs and the walls up to the split (openings open upward), CAP =
@@ -16,14 +16,14 @@ Decisions taken here (2026-10-18), all parameters below:
   - A500 ribbon slot in the north wall above J1 (the only way to use the A500 headers closed)
   - debossed wall labels, 0.5 mm, DejaVu Bold
   - DE9 flange proud distance = floorplan DE9_FLANGE (0.9, still an assumption: measure on rev6)
-Run: python3 case/run_case.py (feeds this file to FreeCAD) or exec it inside FreeCAD with REV7 set.
+Run: python3 hardware/case/run_case.py (feeds this file to FreeCAD) or exec it inside FreeCAD with REV7 (board dir) and CASE set.
 """
 import json, os
 import FreeCAD, Part
 from FreeCAD import Vector as V
 
-REV7 = globals().get("REV7") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT_DIR = os.path.join(REV7, "case")
+REV7 = globals().get("REV7") or os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "rev7.1")
+OUT_DIR = globals().get("CASE") or os.path.dirname(os.path.abspath(__file__))
 FP = {}; exec(open(os.path.join(REV7, "floorplan.py")).read(), FP)
 PARTS = json.load(open(os.path.join(OUT_DIR, "parts.json")))
 

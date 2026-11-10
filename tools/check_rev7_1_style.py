@@ -59,7 +59,7 @@ from typing import Dict, List, Optional, Sequence, Tuple
 # configuration
 # --------------------------------------------------------------------------
 
-BOARD_REL = "kicad/rev7.1/amigahid-pico-rev7.1.kicad_pcb"
+BOARD_REL = "hardware/rev7.1/amigahid-pico-rev7.1.kicad_pcb"
 PROJECT_NAME = "amigahid-pico-rev7.1.kicad_pro"
 COPPER_LAYERS = ["F.Cu", "In1.Cu", "In2.Cu", "B.Cu"]
 
