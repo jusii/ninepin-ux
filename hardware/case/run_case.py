@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the rev7 case: dump the footprints from the board, then run enclosure.py in a headless
+"""Rebuild the case (rev7 / rev7.1 board): dump the footprints from the board, then run enclosure.py in a headless
 FreeCAD (the flatpak's freecadcmd, or a freecadcmd on PATH). Writes the STLs, STEP, FCStd and
 fit-report.txt next to this file. usage: python3 hardware/case/run_case.py"""
 import os, shutil, subprocess, sys

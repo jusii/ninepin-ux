@@ -1,4 +1,4 @@
-"""amigahid-pico-UX rev7 enclosure (FreeCAD, Part workbench only, runs headless).
+"""Ninepin UX enclosure for the rev7 / rev7.1 board (FreeCAD, Part workbench only, runs headless).
 
 Reads ../rev7.1/floorplan.py (board, connectors, case constants, OLED) and parts.json (every footprint's
 courtyard and height, written by export_parts.py). KiCad x, y_up = -y_kicad, z = 0 at the board
@@ -235,7 +235,7 @@ report.append("interference: " + (", ".join(hits) if hits else "none"))
 print("\n".join(report))
 
 # ---- document + exports ----
-doc = FreeCAD.newDocument("rev7_case")
+doc = FreeCAD.newDocument("ninepin_ux_case")
 def add(name, shape, color):
     o = doc.addObject("Part::Feature", name); o.Shape = shape
     try: o.ViewObject.ShapeColor = color
@@ -247,8 +247,8 @@ add("Parts", Part.makeCompound([s for _, s in checks]), (0.8, 0.7, 0.2))
 doc.recompute()
 import MeshPart
 for name, shape in (("cap", cap), ("tray", tray)):
-    MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.05, AngularDeflection=0.3).write(os.path.join(OUT_DIR, "amigahid-pico-rev7-%s.stl" % name))
-Part.export([doc.getObject("Cap"), doc.getObject("Tray")], os.path.join(OUT_DIR, "amigahid-pico-rev7-case.step"))
-doc.saveAs(os.path.join(OUT_DIR, "amigahid-pico-rev7-case.FCStd"))
+    MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.05, AngularDeflection=0.3).write(os.path.join(OUT_DIR, "ninepin-ux-case-%s.stl" % name))
+Part.export([doc.getObject("Cap"), doc.getObject("Tray")], os.path.join(OUT_DIR, "ninepin-ux-case.step"))
+doc.saveAs(os.path.join(OUT_DIR, "ninepin-ux-case.FCStd"))
 open(os.path.join(OUT_DIR, "fit-report.txt"), "w").write("\n".join(report) + "\n")
 print("exported to", OUT_DIR)
