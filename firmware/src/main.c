@@ -5,7 +5,7 @@
  * released under the terms of the Eclipse Public License 2.0 (EPL-2.0).
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
- * main entry point for amigahid-pico.
+ * main entry point for ninepin ux.
  */
 
 #include "config.h"

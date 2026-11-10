@@ -68,7 +68,7 @@
 #define DHCP_DOES_ARP_CHECK         0
 #define LWIP_DHCP_DOES_ACD_CHECK    0
 
-// mdns: amigahid-xxxx.local in join mode
+// mdns: ninepin-xxxx.local in join mode
 #define LWIP_IGMP                   1
 #define LWIP_MDNS_RESPONDER         1
 #define LWIP_NUM_NETIF_CLIENT_DATA  1

@@ -64,7 +64,7 @@ static char const *const state_names[] = {
     "joining", "joined", "join failed, retrying",
 };
 
-static char name[14];                   // "amigahid-xxxx"
+static char name[14];                   // "ninepin-xxxx"
 static wifi_state_t state;
 static uint8_t running;                 // enum settings_wifi actually set up
 static char joined_ssid[SETTINGS_WIFI_SSID_LEN];
@@ -548,7 +548,7 @@ void wifi_init(void)
 
     pico_get_unique_board_id_string(id, sizeof(id));
     length = strlen(id);
-    snprintf(name, sizeof(name), "amigahid-%.4s", (length >= 4) ? id + length - 4 : id);
+    snprintf(name, sizeof(name), "ninepin-%.4s", (length >= 4) ? id + length - 4 : id);
     for (char *c = name; *c; c++)
         if (*c >= 'A' && *c <= 'Z')
             *c = (char)(*c - 'A' + 'a');

@@ -11,6 +11,7 @@
 #include "boot/picoboot_constants.h"
 #include "lwip/tcp.h"
 #include "http_server.h"
+#include "kvmd_api.h"
 #include "ota.h"
 #include "pad.h"
 #include "settings.h"
@@ -121,7 +122,15 @@ void dbgcons_ota(char const *t) { snprintf(oled_line, sizeof(oled_line), "%s", t
 void apply_watchdog(void) {}
 void bt_hid_pause_scanning(bool p) { (void)p; }
 bool wifi_page_needs_password(void) { return false; }
-char const *wifi_name(void) { return "amigahid-64f6"; }
+char const *wifi_name(void) { return "ninepin-64f6"; }
+
+// the network-control api is not under test here: answer every call 404
+void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
+{
+    (void)req;
+    resp->status = 404;
+    resp->len = 0;
+}
 char const *wifi_status(void) { return "ap"; }
 char const *wifi_page_result(void) { return "-"; }
 bool wifi_page_submit(settings_t const *s) { (void)s; return true; }

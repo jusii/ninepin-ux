@@ -15,6 +15,7 @@ typedef uint32_t u32_t;
 #define TCP_PRIO_MIN 1
 #define IPADDR_TYPE_ANY 46
 typedef struct { uint32_t addr; } ip_addr_t;
+#define ip_addr_get_ip4_u32(ipaddr) ((ipaddr)->addr)
 extern ip_addr_t ip_addr_any_fake;
 #define IP_ANY_TYPE (&ip_addr_any_fake)
 struct pbuf { struct pbuf *next; void *payload; u16_t tot_len; u16_t len; };

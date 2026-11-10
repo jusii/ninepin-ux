@@ -54,7 +54,7 @@
 // is several hundred bytes
 #define BT_CLASSIC_DESCRIPTOR_STORAGE_SIZE 2048
 #define BT_LE_DESCRIPTOR_STORAGE_SIZE 1024
-#define BT_HID_LOCAL_NAME "AmigaHID Pico"
+#define BT_HID_LOCAL_NAME "Ninepin UX"
 
 // the input slots bluetooth owns; the real keyboard slot after them is not ours
 #define BT_HID_SLOTS (INPUT_BRIDGE_BT_SLOT_END - INPUT_BRIDGE_BT_CLASSIC_SLOT_BASE)

@@ -10,6 +10,7 @@
 #include "settings.h"
 #include "settings_names.h"
 #include "http_server.h"
+#include "kvmd_api.h"
 #include "pad.h"
 #include "util/run_mode.h"
 
@@ -61,8 +62,20 @@ bool settings_valid(settings_t const *s) { return s->mode < SETTINGS_MODE_COUNT 
 void ahprintf(const char *fmt, ...) { va_list a; va_start(a, fmt); printf("    log: "); vprintf(fmt, a); va_end(a); }
 static int join_mode;
 bool wifi_page_needs_password(void) { return join_mode; }
-char const *wifi_name(void) { return "amigahid-64f6"; }
-char const *wifi_status(void) { return "access point amigahid-64f6, 1 client"; }
+char const *wifi_name(void) { return "ninepin-64f6"; }
+
+// the network-control api is not under test here: answer every call 404
+void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
+{
+    (void)req;
+    resp->status = 404;
+    resp->len = 0;
+}
+
+// ota.c is not linked into this test
+size_t ota_space(void) { return SIZE_MAX; }
+bool ota_hold_window(void) { return false; }
+char const *wifi_status(void) { return "access point ninepin-64f6, 1 client"; }
 char const *wifi_page_result(void) { return "-"; }
 static settings_t submitted; static int submits;
 bool wifi_page_submit(settings_t const *s) { submitted = *s; submits++; return true; }
@@ -172,9 +185,9 @@ int main(void)
 
     printf("join mode: basic auth\n");
     join_mode = 1;
-    request("GET / HTTP/1.1\r\n\r\n", 1000, 401, "WWW-Authenticate: Basic realm=\"amigahid-64f6\"");
+    request("GET / HTTP/1.1\r\n\r\n", 1000, 401, "WWW-Authenticate: Basic realm=\"ninepin-64f6\"");
     // "x:d37qtsp979" -> eDpkMzdxdHNwOTc5
-    request("GET / HTTP/1.1\r\nAuthorization: Basic eDpkMzdxdHNwOTc5\r\n\r\n", 1000, 200, "<h1>amigahid-64f6</h1>");
+    request("GET / HTTP/1.1\r\nAuthorization: Basic eDpkMzdxdHNwOTc5\r\n\r\n", 1000, 200, "<h1>ninepin-64f6</h1>");
     // ":d37qtsp979" -> OmQzN3F0c3A5Nzk=
     request("GET / HTTP/1.1\r\nauthorization: basic OmQzN3F0c3A5Nzk=\r\n\r\n", 5, 200, NULL);
     // "x:d37qtsp97" -> eDpkMzdxdHNwOTc=

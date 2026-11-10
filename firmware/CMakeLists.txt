@@ -48,7 +48,7 @@ endif ()
 # use sdk from git submodule
 include(pico-sdk/pico_sdk_init.cmake)
 
-project(amigahid-pico C CXX ASM)
+project(ninepin-ux C CXX ASM)
 
 add_compile_options(-Wall -Werror)
 

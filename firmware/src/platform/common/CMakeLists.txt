@@ -1,1 +1,1 @@
-target_sources(amigahid-pico PRIVATE util.c)
+target_sources(ninepin-ux PRIVATE util.c)

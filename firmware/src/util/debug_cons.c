@@ -105,7 +105,7 @@ static void dbgcons_status_line(void)
 void dbgcons_init()
 {
     ahprintf(
-        VT_ED_CLS "amigahid-pico by nine <nine@aphlor.org>, https://github.com/borb/amigahid-pico"
+        VT_ED_CLS "Ninepin UX, https://github.com/jusii/ninepin-ux, based on amigahid-pico by nine <nine@aphlor.org>"
     );
 
     debug_counters.hid_keyboard = 0;

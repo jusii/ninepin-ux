@@ -8,13 +8,13 @@
  * wi-fi on the rm2 (boards with HAS_WIFI): the settings page over plain http.
  *
  *   off            the default; the wlan side of the radio stays idle
- *   access point   open network "amigahid-xxxx" (the last four hex digits of
+ *   access point   open network "ninepin-xxxx" (the last four hex digits of
  *                  the board id), the board at 192.168.4.1 handing out
  *                  addresses (dhcp_server.c), no page password. it switches
  *                  itself off after 15 minutes without a client, and comes back
  *                  with the next settings save or the next boot
  *   join network   station on wifi_ssid / wifi_password, address by dhcp,
- *                  answering as amigahid-xxxx.local (mdns); every request needs
+ *                  answering as ninepin-xxxx.local (mdns); every request needs
  *                  the page password (http basic auth, any user name)
  *
  * the mode follows the settings live. everything network-side runs in the
@@ -55,12 +55,12 @@ void wifi_task(void);
 bool wifi_new_page_password(void);
 
 /**
- * @return "amigahid-xxxx": the access point's name, the mdns host name
+ * @return "ninepin-xxxx": the access point's name, the mdns host name
  */
 char const *wifi_name(void);
 
 /**
- * @return the state in a line ("access point amigahid-1a2b, 1 client",
+ * @return the state in a line ("access point ninepin-1a2b, 1 client",
  *         "joined home, 192.168.1.23"), for the page. Any context.
  */
 char const *wifi_status(void);

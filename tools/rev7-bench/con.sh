@@ -3,7 +3,7 @@
 # LISTEN = seconds to collect each reply (default 2)
 out=$(mktemp)
 trap 'rm -f "$out"' EXIT
-t=$(ls /dev/serial/by-id/*amigahid* 2>/dev/null | head -1)
+t=$(ls /dev/serial/by-id/*Ninepin* /dev/serial/by-id/*amigahid* 2>/dev/null | head -1)
 [ -z "$t" ] && { echo "no console"; exit 1; }
 stty -F "$t" raw -echo 115200
 for c in "$@"; do

@@ -141,15 +141,15 @@ uint8_t const *tud_descriptor_configuration_cb(uint8_t index)
 
 static char const *const string_desc_arr[] = {
     NULL,                       // 0: language (handled below)
-    "amigahid-pico",            // 1: manufacturer
-    "amigahid-pico rev7",       // 2: product
+    "Ninepin",                  // 1: manufacturer
+    "Ninepin UX",               // 2: product
     NULL,                       // 3: serial, from the flash unique id
-    "amigahid debug console",   // 4: cdc
-    "amigahid keyboard",        // 5: hid keyboard
-    "amigahid mouse",           // 6: hid mouse
-    "amigahid gamepad 1",       // 7: hid gamepad, player 1
-    "amigahid gamepad 2",       // 8: hid gamepad, player 2
-    "amigahid pointer",         // 9: hid absolute pointer (network control)
+    "Ninepin debug console",    // 4: cdc
+    "Ninepin keyboard",         // 5: hid keyboard
+    "Ninepin mouse",            // 6: hid mouse
+    "Ninepin gamepad 1",        // 7: hid gamepad, player 1
+    "Ninepin gamepad 2",        // 8: hid gamepad, player 2
+    "Ninepin pointer",          // 9: hid absolute pointer (network control)
 };
 
 #define USB_STRING_MAX_CHARS 32

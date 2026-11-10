@@ -370,8 +370,8 @@ static void info(kvmd_response_t *resp)
 
     snprintf(result, sizeof(result),
         "{\"meta\": {\"server\": {\"host\": \"%s\"}, \"kvm\": {}}, "
-        "\"system\": {\"kvmd\": {\"version\": \"amigahid-pico %s\"}, "
-        "\"platform\": {\"type\": \"amigahid-pico\", \"base\": \"rp2350\"}}, \"hw\": {}, \"extras\": {}}",
+        "\"system\": {\"kvmd\": {\"version\": \"ninepin-ux %s\"}, "
+        "\"platform\": {\"type\": \"ninepin-ux\", \"base\": \"rp2350\"}}, \"hw\": {}, \"extras\": {}}",
         wifi_name(), ahp_build_stamp);
     reply(resp, 200, result);
 }
