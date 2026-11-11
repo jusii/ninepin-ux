@@ -26,7 +26,7 @@ kicad-cli sch erc $P.kicad_sch --exit-code-violations
 kicad-cli pcb drc $P.kicad_pcb --schematic-parity --severity-all --refill-zones --save-board --exit-code-violations
 git checkout -- $P.kicad_pro $P.kicad_prl     # kicad-cli rewrites them
 python3 tools/check_rev7_1_pcb.py && python3 tools/check_rev7_1_netlist.py && python3 tools/check_rev7_1_style.py
-python3 hardware/rev7.1/fab/make_fab.py       # --full adds the hand-fitted parts for a full-assembly order
+python3 hardware/rev7.1/fab/make_fab.py       # SMT-only and full-assembly BOM/CPL; gerbers only re-cut if the board changed
 python3 tools/check_rev7_1_fab.py             # the fab package matches the board
 python3 hardware/case/run_case.py             # case STLs and fit report
 ```

@@ -3,18 +3,23 @@
 
 Writes, next to this script:
   ninepin-ux-rev7.1-gerbers.zip   fab layers only (4 copper, mask, paste, silk, outline, drills, job file)
-  ninepin-ux-rev7.1-bom.csv       JLCPCB SMT/THT BOM: Comment, Designator, Footprint, LCSC Part #
-  ninepin-ux-rev7.1-cpl.csv       JLCPCB pick-and-place: Designator, Mid X, Mid Y, Layer, Rotation
+  ninepin-ux-rev7.1-bom.csv       JLCPCB BOM, SMT-only: Comment, Designator, Footprint, LCSC Part #
+  ninepin-ux-rev7.1-cpl.csv       JLCPCB pick-and-place, SMT-only: Designator, Mid X, Mid Y, Layer, Rotation
+  ninepin-ux-rev7.1-full-bom.csv  the same for a full-assembly order (every part, THT included)
+  ninepin-ux-rev7.1-full-cpl.csv
   fab-manifest.md                  what was cut from which board (its sha256, checked by tools/check_rev7_1_fab.py),
                                    drill table, the DNP and hand-fitted parts
 
-Default recipe (rev7.1 order, decided 2026-11-09): JLCPCB Economic PCBA places the SMT parts only. The parts in HAND
-(THT connectors, switches, headers, L1, LED1) are left out of the BOM and CPL and fitted by hand from the Mouser BOM
-(hardware/rev7.1/bom/) and LCSC; pass --full to put them back for a full-assembly order.
+SMT-only (the rev7.1 order, decided 2026-11-09): JLCPCB Economic PCBA places the SMT parts; the parts in HAND (THT
+connectors, switches, headers, L1, LED1) are fitted by hand from the Mouser BOM (hardware/rev7.1/bom/) and LCSC.
+Full: JLCPCB Standard PCBA places everything.
+
+The gerbers carry KiCad's export date, so they are only cut again when the board changed since the manifest was
+written (or with --regen); otherwise the zip on disk is reused and a re-run leaves it byte-identical.
 
 Every value comes from the board file (footprint fields written by make_board.py from design.py), so the
 package can only be regenerated, never hand-edited. kicad-cli rewrites the project file on export; the
-script restores it from a copy taken first. Run from anywhere: python3 hardware/rev7.1/fab/make_fab.py [--full]
+script restores it from a copy taken first. Run from anywhere: python3 hardware/rev7.1/fab/make_fab.py [--regen]
 """
 import csv, hashlib, io, os, re, shutil, subprocess, sys, tempfile, zipfile
 import pcbnew
@@ -26,7 +31,7 @@ LAYERS = "F.Cu,In1.Cu,In2.Cu,B.Cu,F.Mask,B.Mask,F.Paste,B.Paste,F.Silkscreen,B.S
 # hand-fitted in the rev7.1 recipe: every THT part (cheaper from Mouser, no JLC THT fee, and Economic PCBA takes no
 # THT), L1 (the AOTA has a 27-piece JLC minimum; Mouser) and LED1 (WS2812B-2020 is MSL 5: JLC would bake it and refuse Economic)
 HAND = {"P1", "P2", "J1", "J2", "J3", "J4", "J7", "J8", "J10", "J12", "SW1", "SW2", "L1", "LED1"}
-FULL = "--full" in sys.argv
+RECIPES = [("", "SMT-only, JLCPCB Economic PCBA", HAND), ("-full", "full assembly, JLCPCB Standard PCBA", set())]
 # JLCPCB rotation offsets by footprint name (regex, first match wins): JLC's part models sit at a different 0 deg than
 # KiCad's footprints. Headers/sockets: their models lie along the pad row (order preview 2026-10-17). SSOP-24, SOIC-8,
 # SOT-23-6 (90 deg off) and SOT-23 (180 deg off): read from the placement preview of the rev7 package on 2026-11-09,
@@ -46,29 +51,26 @@ def run(*args):
 def git(*args): return subprocess.run(["git", "-C", REPO] + list(args), capture_output=True, text=True).stdout.strip()
 
 
-def main():
-    head = git("rev-parse", "--short", "HEAD"); branch = git("rev-parse", "--abbrev-ref", "HEAD"); dirty = git("status", "--short", "--", "hardware/rev7.1/*.py", "hardware/rev7.1/*.kicad_pcb", "hardware/rev7.1/*.kicad_sch", "hardware/rev7.1/rev7.pretty", "tools")
-    pro_bak = PRO + ".fabbak"; prl_bak = PRL + ".fabbak"; shutil.copy(PRO, pro_bak); shutil.copy(PRL, prl_bak)
-    tmp = tempfile.mkdtemp(prefix="rev7fab-")
-    try:
-        run("kicad-cli", "pcb", "export", "gerbers", "--layers", LAYERS, "--no-x2", "--no-netlist", "--subtract-soldermask",
-            "--use-drill-file-origin", "-o", tmp + "/", PCB)
-        run("kicad-cli", "pcb", "export", "drill", "--format", "excellon", "--excellon-units", "mm", "--excellon-zeros-format", "decimal",
-            "--drill-origin", "absolute", "--excellon-separate-th", "-o", tmp + "/", PCB)
-    finally:
-        shutil.move(pro_bak, PRO); shutil.move(prl_bak, PRL)
-    files = sorted(f for f in os.listdir(tmp) if "drl_map" not in f)                    # JLC wants the fab layers and drills only
-    zpath = os.path.join(HERE, NAME + "-gerbers.zip")
-    with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
-        for f in files: z.write(os.path.join(tmp, f), f)
+def sha256(path): return hashlib.sha256(open(path, "rb").read()).hexdigest()
 
-    # BOM + CPL from the board itself
-    b = pcbnew.LoadBoard(PCB); bb = b.GetBoardEdgesBoundingBox()
+
+def cut_is_current(zpath):
+    """the manifest already pins this board and the zip on disk: a fresh cut would differ only in date stamps"""
+    man = os.path.join(HERE, "fab-manifest.md")
+    if "--regen" in sys.argv or not (os.path.isfile(man) and os.path.isfile(zpath)): return False
+    t = open(man).read()
+    b = re.search(r"^Board `[^`]+` sha256 ([0-9a-f]{64})$", t, re.M)
+    z = re.search(r"^`" + re.escape(NAME) + r"-gerbers\.zip` sha256 ([0-9a-f]{16}),", t, re.M)
+    return bool(b and z) and b.group(1) == sha256(PCB) and z.group(1) == sha256(zpath)[:16]
+
+
+def parts(b, hand_refs):
+    """BOM lines and CPL rows from the board, leaving out hand_refs"""
     bom, cpl, dnp, nolcsc, hand = {}, [], [], [], []
     for fp in sorted(b.Footprints(), key=lambda f: (re.sub(r"\d+", "", f.GetReference()), int(re.sub(r"\D", "", f.GetReference()) or 0))):
         ref = fp.GetReference(); fields = {f.GetName(): f.GetText() for f in fp.GetFields()}
         if fp.IsDNP() or ref.startswith(("H", "JP")): dnp.append(ref); continue      # mounting holes and solder jumpers are not parts
-        if ref in HAND and not FULL: hand.append(ref); continue
+        if ref in hand_refs: hand.append(ref); continue
         fpname = fp.GetFPIDAsString().split(":")[-1]; val = fp.GetValue(); lcsc = fields.get("LCSC", "").strip()
         if not lcsc: nolcsc.append(ref)
         key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
@@ -83,12 +85,40 @@ def main():
         layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
         rot = fp.GetOrientationDegrees() + next((d for p, d in JLC_ROT if re.search(p, fpname)), 0)
         cpl.append((ref, round(pos.x / 1e6, 4), round(-pos.y / 1e6, 4), layer, round((rot + 180) % 360 - 180, 2)))   # gerber frame: KiCad y negated (board spans Y -62..0), as kicad-cli pos does
-    with open(os.path.join(HERE, NAME + "-bom.csv"), "w", newline="") as f:
-        w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
-        for key, (val, fpname, refs) in bom.items(): w.writerow([val, ",".join(refs), fpname, key if isinstance(key, str) else ""])
-    with open(os.path.join(HERE, NAME + "-cpl.csv"), "w", newline="") as f:
-        w = csv.writer(f); w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
-        for r in cpl: w.writerow([r[0], "%.4fmm" % r[1], "%.4fmm" % r[2], r[3], r[4]])
+    return bom, cpl, dnp, nolcsc, hand
+
+
+def main():
+    head = git("rev-parse", "--short", "HEAD"); branch = git("rev-parse", "--abbrev-ref", "HEAD"); dirty = git("status", "--short", "--", "hardware/rev7.1/*.py", "hardware/rev7.1/*.kicad_pcb", "hardware/rev7.1/*.kicad_sch", "hardware/rev7.1/rev7.pretty", "tools")
+    tmp = tempfile.mkdtemp(prefix="rev7fab-"); zpath = os.path.join(HERE, NAME + "-gerbers.zip")
+    reused = cut_is_current(zpath)
+    if reused:
+        with zipfile.ZipFile(zpath) as z: z.extractall(tmp)                            # drill table below reads these
+    else:
+        pro_bak = PRO + ".fabbak"; prl_bak = PRL + ".fabbak"; shutil.copy(PRO, pro_bak); shutil.copy(PRL, prl_bak)
+        try:
+            run("kicad-cli", "pcb", "export", "gerbers", "--layers", LAYERS, "--no-x2", "--no-netlist", "--subtract-soldermask",
+                "--use-drill-file-origin", "-o", tmp + "/", PCB)
+            run("kicad-cli", "pcb", "export", "drill", "--format", "excellon", "--excellon-units", "mm", "--excellon-zeros-format", "decimal",
+                "--drill-origin", "absolute", "--excellon-separate-th", "-o", tmp + "/", PCB)
+        finally:
+            shutil.move(pro_bak, PRO); shutil.move(prl_bak, PRL)
+    files = sorted(f for f in os.listdir(tmp) if "drl_map" not in f)                    # JLC wants the fab layers and drills only
+    if not reused:
+        with zipfile.ZipFile(zpath, "w", zipfile.ZIP_DEFLATED) as z:
+            for f in files: z.write(os.path.join(tmp, f), f)
+
+    # BOM + CPL from the board itself, one pair per recipe
+    b = pcbnew.LoadBoard(PCB); bb = b.GetBoardEdgesBoundingBox(); cut = []
+    for suffix, what, hand_refs in RECIPES:
+        bom, cpl, dnp, nolcsc, hand = parts(b, hand_refs)
+        with open(os.path.join(HERE, NAME + suffix + "-bom.csv"), "w", newline="") as f:
+            w = csv.writer(f); w.writerow(["Comment", "Designator", "Footprint", "LCSC Part #"])
+            for key, (val, fpname, refs) in bom.items(): w.writerow([val, ",".join(refs), fpname, key if isinstance(key, str) else ""])
+        with open(os.path.join(HERE, NAME + suffix + "-cpl.csv"), "w", newline="") as f:
+            w = csv.writer(f); w.writerow(["Designator", "Mid X", "Mid Y", "Layer", "Rotation"])
+            for r in cpl: w.writerow([r[0], "%.4fmm" % r[1], "%.4fmm" % r[2], r[3], r[4]])
+        cut.append((suffix, what, bom, cpl, hand))
 
     # manifest: drill table from the excellon files, counts, hashes
     drills = {}
@@ -112,10 +142,13 @@ def main():
              "## Drill table", ""]
     for f, tbl in drills.items():
         lines += ["%s: %s hits" % (f, sum(h for _, h in tbl))] + ["- %s mm x %d" % (d, h) for d, h in tbl] + [""]
-    lines += ["## BOM: %d lines (one per LCSC part), %d placements; CPL rows %d" % (len(bom), sum(len(v[2]) for v in bom.values()), len(cpl)), "",
-              "- not placed / not in the BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
+    lines += ["## BOM and CPL", ""]
+    for suffix, what, bom, cpl, hand in cut:
+        lines += ["- `%s%s-bom.csv` / `-cpl.csv` (%s): %d BOM lines (one per LCSC part), %d placements, CPL rows %d; hand-fitted: %s" % (
+            NAME, suffix, what, len(bom), sum(len(v[2]) for v in bom.values()), len(cpl), ", ".join(hand) or "none")]
+    lines += ["- not placed / in no BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
-              "- hand-fitted, not in this BOM/CPL (%s recipe): %s" % ("full-assembly: none" if FULL else "SMT-only", ", ".join(hand) or "none"),
+              "- the full recipe's extra parts (%s) have not been through a JLC placement preview yet" % ", ".join(cut[0][4]),
               "- CPL coordinates are the pad-centre of each part in the gerber frame (KiCad X, Y negated: the board spans Y -62..0); rotations are KiCad's plus the JLC_ROT offsets (%s) - check JLC's placement preview for every polarised part before ordering (D1-D6, C4, U1-U4, U6-U11, Q1-Q3, Y1)" % ", ".join("%s %+d" % (p.strip("^$"), d) for p, d in JLC_ROT), ""]
     open(os.path.join(HERE, "fab-manifest.md"), "w").write("\n".join(lines))
     shutil.rmtree(tmp)

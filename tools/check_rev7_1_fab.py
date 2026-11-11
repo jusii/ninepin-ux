@@ -2,9 +2,9 @@
 """fab drift check for the rev7.1 board: is hardware/rev7.1/fab/ cut from the board file in the tree?
 
 make_fab.py records the sha256 of the .kicad_pcb it cut the package from, and of the gerber zip, in
-fab-manifest.md. This checks both against the files on disk and that the BOM and CPL are there. Run it
-last, after the board gates and make_fab.py: any board change (a DRC refill-and-save included, if it
-moves a byte) makes it fail until the package is cut again.
+fab-manifest.md. This checks both against the files on disk and that both BOM / CPL pairs (SMT-only
+and full assembly) are there. Run it last, after the board gates and make_fab.py: any board change (a
+DRC refill-and-save included, if it moves a byte) makes it fail until the package is cut again.
 
     python3 tools/check_rev7_1_fab.py
 """
@@ -51,7 +51,7 @@ def main():
     zpath = os.path.join(FAB, NAME + "-gerbers.zip")
     chk("F3", bool(z) and os.path.isfile(zpath) and sha256(zpath)[:16] == z.group(2),
         "gerber zip matches the manifest" if z else "manifest has no gerber zip line")
-    for ident, suffix in (("F4", "-bom.csv"), ("F5", "-cpl.csv")):
+    for ident, suffix in (("F4", "-bom.csv"), ("F5", "-cpl.csv"), ("F6", "-full-bom.csv"), ("F7", "-full-cpl.csv")):
         p = os.path.join(FAB, NAME + suffix)
         chk(ident, os.path.isfile(p) and os.path.getsize(p) > 0, "%s present" % os.path.basename(p))
 

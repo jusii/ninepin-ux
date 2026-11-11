@@ -39,19 +39,26 @@ SWD (J2) works too: openocd with the RP2350 target, see
 Everything for an order is in [`hardware/rev7.1/`](../hardware/rev7.1/). Read the
 [errata](./errata.md) first.
 
-### PCB and SMT assembly (JLCPCB)
+### PCB and assembly (JLCPCB)
 
 * Upload `fab/ninepin-ux-rev7.1-gerbers.zip`: 4 layers, 1.6 mm, 100 x 62 mm. Tick "remove order
   number" (the back silk carries the board text instead).
-* Assembly: `fab/ninepin-ux-rev7.1-bom.csv` and `fab/ninepin-ux-rev7.1-cpl.csv` cover the SMT
-  parts only. Economic PCBA needs green solder mask.
+* Assembly, pick one pair:
+  * SMT only: `fab/ninepin-ux-rev7.1-bom.csv` and `-cpl.csv`. Economic PCBA (green solder mask);
+    the connectors, switches, headers, L1 and LED1 are then fitted by hand (below).
+  * Fully assembled: `fab/ninepin-ux-rev7.1-full-bom.csv` and `-full-cpl.csv`. Standard PCBA with
+    THT assembly; nothing left to fit by hand. Not ordered this way yet: check the connectors in
+    the preview too.
 * **Check every polarised part in JLC's placement preview** before ordering (diodes, C4, ICs,
-  transistors, Y1). The rotation offsets in `fab/make_fab.py` come from the rev7 preview.
+  transistors, Y1). The rotation offsets in `fab/make_fab.py` come from the rev7 preview. JLC's
+  model for U9 (RM2) is smaller than the module and sits off-centre in the preview; pin 1 is the
+  castellation at the silk triangle.
 
 ### hand-fitted parts
 
-* `bom/rev7.1-mouser-hand-10.csv`: Mouser BOM import for 10 boards. Both DE9s, both mini-DINs,
-  USB-A, BOOT / RESET, the A500, SWD and encoder headers, the OLED socket and L1.
+* `bom/rev7.1-mouser-hand.csv`: Mouser BOM import for **one board**; set the quantity in the cart.
+  Both DE9s, both mini-DINs, USB-A, BOOT / RESET, the A500, SWD and encoder headers, the OLED
+  socket and L1.
 * LED1, WS2812B-2020: not at Mouser or Digi-Key; [LCSC C52917434](https://www.lcsc.com/product-detail/C52917434.html)
   or AliExpress. MSL 5: keep it sealed until fitting, or dry it a few hours at about 60 °C.
 * Not on any BOM: the OLED module ([board](./board.md#oled)), four nylon M2 posts 11 mm with
