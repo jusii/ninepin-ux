@@ -74,12 +74,14 @@ def parts(b, hand_refs):
         fpname = fp.GetFPIDAsString().split(":")[-1]; val = fp.GetValue(); lcsc = fields.get("LCSC", "").strip()
         if not lcsc: nolcsc.append(ref)
         key = lcsc or (val, fpname); bom.setdefault(key, [val, fpname, []])[2].append(ref)   # one BOM line per LCSC part (JLC rejects duplicates)
-        # JLC's Mid X/Y is the part centre; KiCad's origin is pin 1 on headers, D-subs, switches and the mini-DINs,
-        # so use the centre of the copper pads (identical to the origin for the IPC SMD footprints)
+        # JLC's Mid X/Y is the part centre. KiCad's origin is pin 1 on headers, D-subs, switches and the mini-DINs,
+        # so footprints with plated holes use the centre of their copper pads. Pure SMD footprints keep their origin,
+        # the body centre: the RM2 has no pads on its antenna end, and its pad centre sits 2.85 mm off the body.
         xs, ys = [], []
-        for p in fp.Pads():
-            if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH: continue
-            pbx = p.GetBoundingBox(); xs += [pbx.GetLeft(), pbx.GetRight()]; ys += [pbx.GetTop(), pbx.GetBottom()]
+        if any(p.GetAttribute() == pcbnew.PAD_ATTRIB_PTH for p in fp.Pads()):
+            for p in fp.Pads():
+                if p.GetAttribute() == pcbnew.PAD_ATTRIB_NPTH: continue
+                pbx = p.GetBoundingBox(); xs += [pbx.GetLeft(), pbx.GetRight()]; ys += [pbx.GetTop(), pbx.GetBottom()]
         if xs: pos = pcbnew.VECTOR2I(int((min(xs) + max(xs)) / 2), int((min(ys) + max(ys)) / 2))
         else: pos = fp.GetPosition()
         layer = "Top" if fp.GetLayer() == pcbnew.F_Cu else "Bottom"
@@ -149,7 +151,7 @@ def main():
     lines += ["- not placed / in no BOM: %s (DNP and the mounting holes)" % ", ".join(dnp),
               "- without an LCSC code: %s" % (", ".join(nolcsc) or "none"),
               "- the full recipe's extra parts (%s) have not been through a JLC placement preview yet" % ", ".join(cut[0][4]),
-              "- CPL coordinates are the pad-centre of each part in the gerber frame (KiCad X, Y negated: the board spans Y -62..0); rotations are KiCad's plus the JLC_ROT offsets (%s) - check JLC's placement preview for every polarised part before ordering (D1-D6, C4, U1-U4, U6-U11, Q1-Q3, Y1)" % ", ".join("%s %+d" % (p.strip("^$"), d) for p, d in JLC_ROT), ""]
+              "- CPL coordinates are the pad-centre of each THT part and the origin (body centre) of each SMD part, in the gerber frame (KiCad X, Y negated: the board spans Y -62..0); rotations are KiCad's plus the JLC_ROT offsets (%s) - check JLC's placement preview for every polarised part before ordering (D1-D6, C4, U1-U4, U6-U11, Q1-Q3, Y1)" % ", ".join("%s %+d" % (p.strip("^$"), d) for p, d in JLC_ROT), ""]
     open(os.path.join(HERE, "fab-manifest.md"), "w").write("\n".join(lines))
     shutil.rmtree(tmp)
     print("\n".join(lines[:4] + lines[-6:]))
