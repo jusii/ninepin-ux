@@ -12,4 +12,6 @@ order (`../fab/*-full-*.csv`) needs none of this.
 * `ibom.html`: interactive placement view, open in a browser.
 
 Not on any BOM: the 0.96" SSD1306 OLED module (26 x 26 mm, holes 22.2 x 22.2 mm, header GND VCC
-SCL SDA), four nylon M2 posts 11 mm with nylon screws and nuts, the optional EC11 encoder.
+SCL SDA), four nylon M2 x 11 mm posts with nylon M2 x 5 screws (female-female, or male-female with
+the thread cut to 5 mm and a nut: see [board](../../../doc/board.md#oled)), the optional EC11
+encoder.

@@ -61,8 +61,8 @@ Everything for an order is in [`hardware/rev7.1/`](../hardware/rev7.1/). Read th
   socket and L1.
 * LED1, WS2812B-2020: not at Mouser or Digi-Key; [LCSC C52917434](https://www.lcsc.com/product-detail/C52917434.html)
   or AliExpress. MSL 5: keep it sealed until fitting, or dry it a few hours at about 60 °C.
-* Not on any BOM: the OLED module ([board](./board.md#oled)), four nylon M2 posts 11 mm with
-  nylon screws and nuts, the optional EC11 encoder.
+* Not on any BOM: the OLED module, four nylon M2 x 11 mm posts and their nylon screws (and nuts
+  for male-female posts; [board](./board.md#oled)), the optional EC11 encoder.
 * `bom/ibom.html`: interactive placement view, open in a browser.
 
 ### case

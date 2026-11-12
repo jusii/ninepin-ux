@@ -55,7 +55,11 @@ that page is wrong; measured:
 
 * PCB 26.0 x 26.0 mm, mounting holes 22.2 x 22.2 mm (1.9 mm from the edges).
 * Header GND VCC SCL SDA. Check your module's silk before soldering the socket.
-* Mount on 11 mm M2 posts over an 8.5 mm socket. **Nylon posts, screws and nuts only**: copper
-  runs 0.2 mm from the post holes.
+* Mount on four 11 mm M2 posts over an 8.5 mm socket. **Nylon posts, screws and nuts only**: copper
+  runs 0.2 mm from the post holes. Either:
+  * female-female posts, M2 x 5 pan-head screws at both ends (8 per board), or
+  * male-female posts (11 + 6 mm): cut the male thread to 5 mm, nut under the board, M2 x 5 screw
+    on top. Uncut, it sticks out 4.4 mm and the case floor is 4.0 mm below the board.
+* 12 mm posts push the glass into the case lid; 10 mm posts bend the module.
 
 A 1.3" SH1106 module works with a firmware built for it ([build](./build.md#options)).
