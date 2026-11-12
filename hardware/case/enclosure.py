@@ -47,6 +47,7 @@ WIN_CLR = 0.3                                                  # window = lit ar
 LED_HOLE = 2.5
 SW_STEM_DY = 2.25                                              # PTS645Vx58 actuator centre: half-way between pins 1 and 2,
 SW_STEM = tuple(y + SW_STEM_DY for y in FP["SW_Y"])            # 2.25 south of the footprint origin (= pin 1, = SW_Y)
+SW_STEM_Z = 3.5                                                # actuator centre above the board top (KiCad PTS645Vx58 model: 1.93-5.07)
 A500_SLOT = True                                               # ribbon exit above J1 in the north wall
 FONT = next(f for f in ("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",                      # flatpak FreeCAD sees its own fonts
                         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",             # debian host
@@ -115,9 +116,9 @@ cap = cap.cut(fillet_along(kbox(OUT_X1 - DE9_WALL - 1, OUT_X1 + 1, yc - 4.8, yc 
 cap = cap.cut(kbox(IN_X1 - 0.01, OUT_X1 - DE9_WALL, yc - 5.5, yc + 5.5, Z_BT + 0.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
 # east: BOOT / RESET actuators
 for sy in SW_STEM:
-    cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), Z_BT + 3.2, V(-1, 0, 0)))
+    cap = cap.cut(cyl(5.2, 10, OUT_X1 + 1, ky(sy), Z_BT + SW_STEM_Z, V(-1, 0, 0)))
     # the stem passes the tray lip on the way down: a notch in the lip above the hole
-    cap = cap.cut(kbox(IN_X1 - 0.01, IN_X1 + LIP_T + LIP_CLR + 0.01, sy - 2.0, sy + 2.0, Z_BT + 3.2, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
+    cap = cap.cut(kbox(IN_X1 - 0.01, IN_X1 + LIP_T + LIP_CLR + 0.01, sy - 2.0, sy + 2.0, Z_BT + SW_STEM_Z, Z_SPLIT + LIP_UP + LIP_CLR + 0.01))
 # lid: OLED window on the lit area, LED hole, encoder bushing hole
 wx, wy, ww, wh = FP["OLED_WINDOW"]
 win = kbox(wx - WIN_CLR, wx + ww + WIN_CLR, wy - WIN_CLR, wy + wh + WIN_CLR, CEIL - 1, Z_TOP + 1)
@@ -192,7 +193,7 @@ x = CONN["J4"][4]; checks.append(("J4", kbox(x - 3.5, x + 10.5, H - 10, H + OVH,
 checks.append(("J13", kbox(W - 5.6, W + OVH - DE9_WALL, yc - 4.5, yc + 4.5, Z_BT + 0.2, Z_BT + 3.3)))
 for ref, sy in zip(("SW1", "SW2"), SW_STEM):
     checks.append((ref + " body", kbox(W - 4.5, W - 0.2, sy - 3.2, sy + 3.2, Z_BT, Z_BT + 6.5)))
-    checks.append((ref + " stem", kbox(W - 0.2, W + OVH, sy - 1.75, sy + 1.75, Z_BT + 1.45, Z_BT + 4.95)))
+    checks.append((ref + " stem", kbox(W - 0.2, W + OVH, sy - 1.75, sy + 1.75, Z_BT + SW_STEM_Z - 1.75, Z_BT + SW_STEM_Z + 1.75)))
 ox0, oy0 = FP["OLED_X0"], FP["OLED_Y0"]; pw, ph = FP["OLED_PCB"]
 checks.append(("OLED pcb", kbox(ox0, ox0 + pw, oy0, oy0 + ph, FP["OLED_Z_PCB_BOTTOM"], FP["OLED_Z_PCB_BOTTOM"] + FP["OLED_PCB_T"])))
 gx0, gy0 = FP["OLED_GLASS_X0"], FP["OLED_GLASS_Y0"]; gw, gh = FP["OLED_GLASS"]
