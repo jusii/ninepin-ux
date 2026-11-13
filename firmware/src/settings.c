@@ -28,18 +28,11 @@
 #include "pico/flash.h"
 #include "pico/stdlib.h"
 
-// two sectors directly below btstack's pairing bank. on the rp2350 that bank
-// sits one sector below the end of flash (the last sector is left to the
-// RP2350-E10 workaround block every uf2 carries), so the settings take the 8K
-// at end-20K. on the rp2040 the bank is the last 8K, and the settings follow
-// the same rule: the two sectors below it.
-#if PICO_RP2040
-#  define SETTINGS_FLASH_OFFSET (PICO_FLASH_SIZE_BYTES - 4u * FLASH_SECTOR_SIZE)
-#  define SETTINGS_READ_BASE    XIP_BASE
-#else
-#  define SETTINGS_FLASH_OFFSET (PICO_FLASH_SIZE_BYTES - 5u * FLASH_SECTOR_SIZE)
-#  define SETTINGS_READ_BASE    XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE
-#endif
+#include "flash_map.h"
+
+// two sectors directly below btstack's pairing bank (flash_map.h)
+#define SETTINGS_FLASH_OFFSET FLASH_MAP_SETTINGS_OFFSET
+#define SETTINGS_READ_BASE    FLASH_MAP_READ_BASE
 
 #define SETTINGS_MAGIC  0x53484141u     // "AAHS"
 #define SETTINGS_SCHEMA 1u
@@ -165,7 +158,7 @@ bool settings_valid(settings_t const *s)
         && (s->wheel_enabled <= 1) && (s->wheel_reverse <= 1)
         && (s->mouse_speed < SETTINGS_MOUSE_SPEED_COUNT)
         && (s->display < SETTINGS_DISPLAY_COUNT) && (s->watchdog < SETTINGS_WATCHDOG_COUNT)
-        && (s->page_open <= 1)
+        && (s->page_open <= 1) && (s->pad_profile <= SETTINGS_PAD_PROFILES)
         && (s->net_control <= 1) && (s->net_screen < SETTINGS_NET_SCREEN_COUNT)
         && (s->net_scale < SETTINGS_NET_SCALE_COUNT)
         && string_ok(s->wifi_ssid, sizeof(s->wifi_ssid))

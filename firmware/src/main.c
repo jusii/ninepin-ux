@@ -35,6 +35,7 @@
 #include "menu.h"
 #include "platform/amiga/de9.h"
 #include "pad.h"
+#include "profiles.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -325,6 +326,7 @@ int main(void)
 
     // the stored settings, before anything reads one (a flash read only)
     settings_init();
+    profiles_init();
 
     // pio-usb needs clk_sys at a multiple of 12 MHz. first thing, so that every
     // divider computed from clock_get_hz(clk_sys) below (i2c, ws2812, keyboard

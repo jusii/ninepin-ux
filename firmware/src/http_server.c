@@ -15,6 +15,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 
@@ -25,6 +26,7 @@
 
 #include "kvmd_api.h"
 #include "ota.h"
+#include "profiles.h"
 #include "settings.h"
 #include "util/output.h"
 #include "web_auth.h"
@@ -59,6 +61,9 @@ typedef enum {
     FORM_LOGIN,
     FORM_PASSWORD,
     FORM_LOGOUT,
+    FORM_PROFILE_SAVE,  // the settings form, and its pad part as a named profile
+    FORM_PROFILE_LOAD,
+    FORM_PROFILE_DELETE,
 } form_kind_t;
 
 typedef struct {
@@ -547,6 +552,34 @@ static bool handle_password(http_conn_t *c, char const *body)
     return respond_message(c, 200, "Changed", text, head[0] ? head : NULL);
 }
 
+/**
+ * load or delete the profile the form's select names; the rest of the form is
+ * not looked at
+ */
+static bool handle_profile(http_conn_t *c, char const *body, bool load)
+{
+    char value[8];
+    char *end;
+    unsigned long number;
+    profile_t const *profile;
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not done", "The page is out of date: reload it and try again.", NULL);
+
+    number = web_page_field(body, "profile", value, sizeof(value)) ? strtoul(value, &end, 10) : 0;
+    profile = (number && !*end) ? profiles_get((unsigned)number - 1u) : NULL;
+    if (!profile)
+        return respond_message(c, 400, "Not done", "There is no such pad profile.", NULL);
+
+    snprintf(text, sizeof(text), load ? "The board loads the pad profile %s into the settings now."
+        : "The board deletes the pad profile %s now; the settings stay as they are.", profile->name);
+    if (!wifi_page_profile_submit(load ? WIFI_PROFILE_LOAD : WIFI_PROFILE_DELETE, NULL, NULL, (unsigned)number - 1u))
+        return respond_message(c, 503, "Not done", "The previous save is still being stored; try again.", NULL);
+
+    ahprintf("[web] pad profile %s: %s\n", profile->name, load ? "load" : "delete");
+    return respond_message(c, 200, load ? "Loaded" : "Deleted", text, "Refresh: 2; url=/\r\n");
+}
+
 static bool handle_form(http_conn_t *c)
 {
     static settings_t submitted;    // lwip callbacks do not nest
@@ -554,6 +587,7 @@ static bool handle_form(http_conn_t *c)
     char error[96] = "";
     settings_t const *current = settings_get();
     char const *new_name;
+    char profile_name[PROFILE_NAME_LEN + 4] = "";
     bool wifi_changed, renamed;
 
     body[c->content_length] = 0;
@@ -562,7 +596,21 @@ static bool handle_form(http_conn_t *c)
         case FORM_LOGIN:    return handle_login(c, body);
         case FORM_LOGOUT:   return handle_logout(c, body);
         case FORM_PASSWORD: return handle_password(c, body);
+        case FORM_PROFILE_LOAD:     return handle_profile(c, body, true);
+        case FORM_PROFILE_DELETE:   return handle_profile(c, body, false);
         default:            break;
+    }
+
+    // the profile's name, before the parser takes the body apart
+    if (c->form == FORM_PROFILE_SAVE) {
+        if (!web_page_field(body, "profile_name", profile_name, sizeof(profile_name)))
+            profile_name[0] = 0;
+        if (!profiles_name_ok(profile_name))
+            return respond_message(c, 400, "Not saved", "A profile's name has 1 to 12 letters, digits, "
+                "spaces and - _ . +", NULL);
+        if ((profiles_find(profile_name) < 0) && (profiles_count() >= PROFILES_MAX))
+            return respond_message(c, 400, "Not saved", "Every pad profile slot is in use: delete one, "
+                "or save over one by its name.", NULL);
     }
 
     submitted = *current;
@@ -570,7 +618,8 @@ static bool handle_form(http_conn_t *c)
     if (!web_page_parse(body, &submitted, error, sizeof(error)))
         return respond_message(c, 400, "Not saved", error, NULL);
 
-    if (!wifi_page_submit(&submitted))
+    if (!wifi_page_profile_submit((c->form == FORM_PROFILE_SAVE) ? WIFI_PROFILE_SAVE : WIFI_PROFILE_NONE,
+            &submitted, profile_name, 0))
         return respond_message(c, 503, "Not saved", "The previous save is still being stored; try again.", NULL);
 
     renamed = strcmp(submitted.device_name, current->device_name) != 0;
@@ -592,6 +641,9 @@ static bool handle_form(http_conn_t *c)
     else if (wifi_changed)
         snprintf(text, sizeof(text), "The board stores the settings and restarts its access point %s now; "
             "join it again and open http://192.168.4.1/.", new_name);
+    else if (c->form == FORM_PROFILE_SAVE)
+        snprintf(text, sizeof(text), "The board stores and applies the settings now, and keeps their pad part "
+            "as the profile %s.", profile_name);
     else
         snprintf(text, sizeof(text), "The board stores and applies the settings now.");
 
@@ -987,6 +1039,12 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_PASSWORD);
     if (strcmp(target, "/logout") == 0)
         return form_begin(c, FORM_LOGOUT);
+    if (strcmp(target, "/profile-save") == 0)
+        return form_begin(c, FORM_PROFILE_SAVE);
+    if (strcmp(target, "/profile-load") == 0)
+        return form_begin(c, FORM_PROFILE_LOAD);
+    if (strcmp(target, "/profile-delete") == 0)
+        return form_begin(c, FORM_PROFILE_DELETE);
 
     if (strcmp(target, "/update") == 0) {
         if (!has_length)

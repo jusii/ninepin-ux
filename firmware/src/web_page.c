@@ -30,6 +30,7 @@
 #include "keyboard_map.h"
 #include "ota.h"
 #include "pad.h"
+#include "profiles.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
 #include "web_auth.h"
@@ -291,6 +292,41 @@ static void put_wifi(writer_t *w, settings_t const *s)
         "The access point is open and switches off after 15 minutes without a client.</small>");
 }
 
+/**
+ * the pad profiles: which one is loaded, load / delete one, save the form's as one
+ */
+static void put_profiles(writer_t *w, settings_t const *s)
+{
+    profile_t const *loaded = s->pad_profile ? profiles_get(s->pad_profile - 1u) : NULL;
+
+    put(w, "<p>Profile: ");
+    if (loaded) {
+        put(w, "<b>");
+        put_text(w, loaded->name, PROFILE_NAME_LEN);
+        put(w, "</b>%s", profiles_matches(loaded, s) ? "" : " (changed since)");
+    } else {
+        put(w, "none");
+    }
+
+    if (profiles_count()) {
+        put(w, "<label>Saved profiles <span><select name=profile>");
+        for (unsigned i = 0; i < PROFILES_MAX; i++) {
+            profile_t const *p = profiles_get(i);
+
+            if (!p)
+                continue;
+            put(w, "<option value=%u%s>", i + 1, (p == loaded) ? " selected" : "");
+            put_text(w, p->name, PROFILE_NAME_LEN);
+        }
+        put(w, "</select> <button formaction=/profile-load>Load</button>"
+            " <button formaction=/profile-delete>Delete</button></span></label>");
+    }
+    put(w, "<label>Save as <span><input name=profile_name size=12 maxlength=12 value=\"");
+    if (loaded)
+        put_text(w, loaded->name, PROFILE_NAME_LEN);
+    put(w, "\"> <button formaction=/profile-save>Save as profile</button></span></label>");
+}
+
 static void put_combos(writer_t *w, settings_t const *s)
 {
     char buf[8];
@@ -317,11 +353,14 @@ static void put_combos(writer_t *w, settings_t const *s)
     put(w, "</table><datalist id=keys>");
     for (size_t i = 0; i < KEY_COUNT; i++)
         put(w, "<option>%s", keys[i].name);
-    put(w, "</datalist><p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
+    put(w, "</datalist>");
+    put_profiles(w, s);
+    put(w, "<p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
         "held together (a direction wins over the stick), and the key is down on the keyboard. The button "
         "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
-        "the list.</small></fieldset>");
+        "the list. A profile keeps the combos, Pad directions and Triangle button under a name: Save as "
+        "stores the whole form and the profile, Load puts a profile back.</small></fieldset>");
 }
 
 //--------------------------------------------------------------------+
@@ -368,8 +407,11 @@ size_t web_page_render(char *out, size_t size)
     put(&w, "</table>");
 
     // settings
+    // the form's first button is what Enter in a field presses: the plain save,
+    // not a profile button further down
     put(&w, "<h2>Settings</h2><form method=post action=/settings>"
-        "<input type=hidden name=t value=%s>", http_server_token());
+        "<input type=hidden name=t value=%s>"
+        "<button tabindex=-1 style=\"position:absolute;left:-99em\">Save</button>", http_server_token());
 
     for (size_t i = 0; i < CHOICE_COUNT; i++) {
         web_choice_t const *c = &choices[i];

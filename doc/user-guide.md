@@ -70,6 +70,7 @@ Defaults in **bold**.
 * Stick deadzone: 25%, **50%**, 75%
 * Triangle button: **up (jump)**, autofire, off
 * Touchpad mouse: off, **on** (DualSense touchpad moves the pointer, left / right half clicks)
+* Pad profile: picks a saved profile (see pads); `*` after the name: changed since it was loaded
 
 **Mouse**
 * Mouse wheel: off, **on** (TankMouse / Cocolino protocol)
@@ -137,6 +138,16 @@ L2 = space.
 * Keys: a letter, a digit, `f1`-`f12`, or `space enter esc backspace tab up down left right del
   insert home end pgup pgdn lshift rshift lctrl lalt ralt lgui rgui capslock minus equals comma
   period slash`.
+
+### profiles
+
+A profile keeps the combos, Pad directions and Triangle button under a name (up to 16 profiles,
+names up to 12 characters), one per game.
+
+* Page: type a name, Save as profile (stores the whole form too); Load and Delete for saved ones.
+  Saving under an existing name replaces it.
+* Menu: Pad profile picks a saved one; Save & exit stores it.
+* A profile is a copy: loading one writes it into the settings. Factory defaults keep the profiles.
 
 ## Bluetooth
 

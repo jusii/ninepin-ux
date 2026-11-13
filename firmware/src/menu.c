@@ -39,6 +39,7 @@
 #ifdef ENABLE_BLUETOOTH_HID
 #include "bt_hid.h"
 #endif
+#include "profiles.h"
 #ifdef HAS_WIFI
 #include "wifi.h"
 #endif
@@ -52,7 +53,7 @@
 // the items
 //--------------------------------------------------------------------+
 
-typedef enum { ITEM_CHOICE, ITEM_ACTION, ITEM_REMAP } item_kind_t;
+typedef enum { ITEM_CHOICE, ITEM_ACTION, ITEM_REMAP, ITEM_PROFILE } item_kind_t;
 
 typedef struct {
     char const *label;
@@ -104,6 +105,7 @@ static const menu_item_t items[] = {
     CHOICE("Stick deadzone",    pad_deadzone,   names_deadzone,     NULL),
     CHOICE("Triangle button",   pad_triangle,   names_triangle,     NULL),
     CHOICE("Touchpad mouse",    pad_touchpad,   names_off_on,       NULL),
+    { "Pad profile", ITEM_PROFILE, offsetof(settings_t, pad_profile), NULL, NULL, NULL, 0, false },
     CHOICE("Mouse wheel",       wheel_enabled,  names_off_on,       NULL),
     CHOICE("Wheel direction",   wheel_reverse,  names_wheel_dir,    NULL),
     CHOICE("Keyboard preset",   kb_preset,      names_kb_preset,    NULL),
@@ -217,6 +219,15 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
     if (item->kind == ITEM_CHOICE) {
         char const *value = item->names->names[*item_value(cursor)];
         snprintf(lines[2], MENU_COLS + 1, editing ? " [ %s ]" : " < %s >", value);
+    } else if (item->kind == ITEM_PROFILE) {
+        // the pad profiles are made on the page; here one is picked
+        profile_t const *profile = edited.pad_profile ? profiles_get(edited.pad_profile - 1u) : NULL;
+
+        if (!profiles_count())
+            snprintf(lines[2], MENU_COLS + 1, " (none saved)");
+        else
+            snprintf(lines[2], MENU_COLS + 1, editing ? " [ %s%s ]" : " < %s%s >", profile ? profile->name : "-",
+                (profile && !profiles_matches(profile, &edited)) ? "*" : "");
     } else if (item->kind == ITEM_REMAP) {
         settings_remap_t const *remap = (settings_remap_t const *)item_value(cursor) + item->slot;
 
@@ -483,6 +494,25 @@ static void change(int step)
         return;
     }
 
+    if (item->kind == ITEM_PROFILE) {
+        // on to the next saved profile, which goes into the edits at once
+        unsigned slot = edited.pad_profile ? edited.pad_profile - 1u : ((step > 0) ? PROFILES_MAX - 1u : 0u);
+
+        for (unsigned tries = 0; tries < PROFILES_MAX; tries++) {
+            profile_t const *profile;
+
+            slot = (slot + ((step > 0) ? 1u : PROFILES_MAX - 1u)) % PROFILES_MAX;
+            profile = profiles_get(slot);
+            if (profile) {
+                edited.pad_profile = (uint8_t)(slot + 1);
+                profiles_to_settings(profile, &edited);
+                dirty = true;
+                return;
+            }
+        }
+        return;
+    }
+
     if (item->kind != ITEM_CHOICE)
         return;
 
@@ -540,7 +570,7 @@ void menu_input(menu_input_t input)
             break;
 
         case MENU_IN_CYCLE:
-            if (items[cursor].kind == ITEM_CHOICE) {
+            if ((items[cursor].kind == ITEM_CHOICE) || (items[cursor].kind == ITEM_PROFILE)) {
                 change(+1);
                 break;
             }

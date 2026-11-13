@@ -16,6 +16,7 @@
 #include "pad.h"
 #include "settings.h"
 #include "util/run_mode.h"
+#include "wifi.h"
 
 #define WND TCP_WND
 
@@ -137,6 +138,7 @@ void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
 char const *wifi_status(void) { return "ap"; }
 char const *wifi_page_result(void) { return "-"; }
 bool wifi_page_submit(settings_t const *s) { (void)s; return true; }
+bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *n, unsigned slot) { (void)op; (void)s; (void)n; (void)slot; return true; }
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }
@@ -210,6 +212,11 @@ static void upload(struct tcp_pcb *p, uint8_t const *data, size_t len, size_t ch
         if (drain_every && (off / chunk) % drain_every == 0)
             main_loop_pass();
     }
+    // a sender that stops part way leaves its window open: what the update side
+    // then still flushes is not the case flash_while_open counts (where in the
+    // image the stop falls decides whether a sector is waiting)
+    if (off < len)
+        uploading = NULL;
     for (int i = 0; i < 2000 && !p->closed && !p->aborted; i++) {
         main_loop_pass();
         while (p->sent && !p->closed && !p->aborted && p->sndbuf < 2920) { p->sndbuf = 2920; p->sent(p->arg, p, 0); }

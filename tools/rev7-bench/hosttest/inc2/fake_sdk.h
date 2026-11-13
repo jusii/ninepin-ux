@@ -8,6 +8,7 @@
 #define FLASH_SECTOR_SIZE 4096u
 #define FLASH_PAGE_SIZE 256u
 #define FAKE_FLASH_SIZE (16u * 1024u * 1024u)
+#define PICO_FLASH_SIZE_BYTES FAKE_FLASH_SIZE
 extern uint8_t fake_flash[];
 #define XIP_BASE 0x10000000u
 #define XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE ((uintptr_t)fake_flash)

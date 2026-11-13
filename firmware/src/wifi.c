@@ -38,6 +38,7 @@
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
+#include "profiles.h"
 #include "web_auth.h"
 #include "web_page.h"
 
@@ -89,11 +90,14 @@ static bool password_tried;
 
 // the page's save, waiting for the main loop
 static settings_t page_pending;
+static wifi_profile_op_t page_pending_op;
+static char page_pending_name[PROFILE_NAME_LEN];
+static unsigned page_pending_slot;
 static volatile bool page_pending_ready;
 static char password_pending[SETTINGS_PAGE_PASSWORD_LEN];   // empty: keep the password
 static bool password_pending_open;
 static volatile bool password_pending_ready;
-static char page_result[64] = "-";
+static char page_result[96] = "-";
 
 // what the page shows; written under the lwip lock, which the page's
 // callbacks run under
@@ -536,14 +540,23 @@ static void follow_settings(void)
 // a save from the page
 //--------------------------------------------------------------------+
 
-bool wifi_page_submit(settings_t const *settings)
+bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, char const *name, unsigned slot)
 {
     if (page_pending_ready)
         return false;
-    page_pending = *settings;
+    if (settings)
+        page_pending = *settings;
+    page_pending_op = op;
+    snprintf(page_pending_name, sizeof(page_pending_name), "%s", name ? name : "");
+    page_pending_slot = slot;
     __dmb();
     page_pending_ready = true;
     return true;
+}
+
+bool wifi_page_submit(settings_t const *settings)
+{
+    return wifi_page_profile_submit(WIFI_PROFILE_NONE, settings, NULL, 0);
 }
 
 bool wifi_page_password_submit(char const *password, bool open)
@@ -603,19 +616,73 @@ static void page_save_task(void)
     uint32_t interrupts;
     bool mode_changed;
     char result[sizeof(page_result)];
+    char what[40] = "";
+    wifi_profile_op_t op;
+    char profile_name[PROFILE_NAME_LEN];
+    unsigned profile_slot;
 
     if (!page_pending_ready)
         return;
 
     interrupts = save_and_disable_interrupts();
     settings = page_pending;
+    op = page_pending_op;
+    memcpy(profile_name, page_pending_name, sizeof(profile_name));
+    profile_slot = page_pending_slot;
     page_pending_ready = false;
     restore_interrupts(interrupts);
 
-    // the page never sets these; keep what the board has
-    settings.ota_needs_boot = settings_get()->ota_needs_boot;
-    settings.page_open = settings_get()->page_open;
-    memcpy(settings.page_password, settings_get()->page_password, sizeof(settings.page_password));
+    if ((op == WIFI_PROFILE_LOAD) || (op == WIFI_PROFILE_DELETE)) {
+        profile_t const *profile = profiles_get(profile_slot);
+
+        // nothing of the form counts: the settings as they are, and the profile
+        settings = *settings_get();
+        if (!profile) {
+            page_result_set("no such pad profile");
+            return;
+        }
+        snprintf(profile_name, sizeof(profile_name), "%s", profile->name);
+        if (op == WIFI_PROFILE_LOAD) {
+            profiles_to_settings(profile, &settings);
+            settings.pad_profile = (uint8_t)(profile_slot + 1);
+            snprintf(what, sizeof(what), "profile %s loaded, ", profile_name);
+        } else {
+            bool removed;
+
+            cyw43_arch_lwip_begin();
+            removed = profiles_remove(profile_slot);
+            cyw43_arch_lwip_end();
+            if (!removed) {
+                page_result_set("profile not deleted: the flash write failed");
+                return;
+            }
+            if (settings.pad_profile == profile_slot + 1)
+                settings.pad_profile = 0;
+            snprintf(what, sizeof(what), "profile %s deleted, ", profile_name);
+        }
+    } else {
+        // the page never sets these; keep what the board has
+        settings.ota_needs_boot = settings_get()->ota_needs_boot;
+        settings.page_open = settings_get()->page_open;
+        memcpy(settings.page_password, settings_get()->page_password, sizeof(settings.page_password));
+    }
+
+    if ((op == WIFI_PROFILE_SAVE) && settings_valid(&settings)) {
+        profile_t profile;
+        int slot;
+
+        profiles_from_settings(&profile, profile_name, &settings);
+        cyw43_arch_lwip_begin();
+        slot = profiles_put(&profile);
+        cyw43_arch_lwip_end();
+        if (slot < 0) {
+            page_result_set((slot == -1) ? "not stored: every pad profile slot is in use"
+                : "not stored: the flash write failed");
+            return;
+        }
+        settings.pad_profile = (uint8_t)(slot + 1);
+        snprintf(what, sizeof(what), "profile %s saved, ", profile_name);
+    }
 
     mode_changed = settings.mode != settings_get()->mode;
 
@@ -624,17 +691,14 @@ static void page_save_task(void)
     } else if (!settings_save(&settings)) {
         snprintf(result, sizeof(result), "not stored: the flash write failed");
     } else {
-        snprintf(result, sizeof(result), "stored at %lu s after boot", (unsigned long)(now_ms() / 1000u));
+        snprintf(result, sizeof(result), "%sstored at %lu s after boot", what, (unsigned long)(now_ms() / 1000u));
         // as the menu does: the mode last, then everything else
         if (mode_changed)
             run_mode_set((run_mode_t)settings.mode);
         apply_settings();
     }
     ahprintf("[web] settings %s\n", result);
-
-    cyw43_arch_lwip_begin();
-    memcpy(page_result, result, sizeof(page_result));
-    cyw43_arch_lwip_end();
+    page_result_set(result);
 }
 
 //--------------------------------------------------------------------+

@@ -14,6 +14,8 @@
  *   GET  /login       the log-in form; POST /login opens a session
  *   POST /password    a new page password, or none asked for
  *   POST /logout      ends the session
+ *   POST /profile-save, /profile-load, /profile-delete
+ *                     the settings form's pad profile buttons (profiles.h)
  *
  * in join mode every request needs the page password, unless it is switched
  * off: a session cookie from the log-in form (web_auth.h), or http basic

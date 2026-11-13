@@ -8,6 +8,7 @@ add_executable(ninepin-ux
   ota.c
   menu.c
   pads.c
+  profiles.c
   settings.c
   settings_names.c
   usb_descriptors.c

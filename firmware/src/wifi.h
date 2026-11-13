@@ -98,6 +98,24 @@ bool wifi_page_needs_password(void);
  */
 bool wifi_page_submit(settings_t const *settings);
 
+typedef enum {
+    WIFI_PROFILE_NONE = 0,
+    WIFI_PROFILE_SAVE,          // the form's settings, and their pad part as a profile under a name
+    WIFI_PROFILE_LOAD,          // a profile (by slot) into the settings
+    WIFI_PROFILE_DELETE,
+} wifi_profile_op_t;
+
+/**
+ * @brief As wifi_page_submit(), with a pad profile to save, load or delete
+ *        (profiles.h) in the same step. Cyw43 background context.
+ *
+ * @param settings  WIFI_PROFILE_SAVE: the form's settings; else NULL
+ * @param name      WIFI_PROFILE_SAVE: the profile's name, checked
+ * @param slot      WIFI_PROFILE_LOAD, WIFI_PROFILE_DELETE: the profile
+ * @return false if a previous save is still waiting
+ */
+bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, char const *name, unsigned slot);
+
 /**
  * @brief Hand a page password change to the main loop, which stores it.
  *        Cyw43 background context.

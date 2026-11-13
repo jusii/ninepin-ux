@@ -132,6 +132,7 @@ enum settings_display {
 #define SETTINGS_PAD_BUTTON_MAX     17  // 0 auto, 1..16 hid button, 17 off
 #define SETTINGS_REMAP_SLOTS        8
 #define SETTINGS_PAD_COMBOS         6
+#define SETTINGS_PAD_PROFILES       16  // profiles.h
 #define SETTINGS_PAD_COMBO_BUTTONS  16  // a pad's own buttons 1..16
 #define SETTINGS_PAD_COMBO_OUTPUTS  0x7fu // up down left right, fire 1 2 3 (pad.h's bits)
 
@@ -200,7 +201,9 @@ typedef struct {
 
     char device_name[SETTINGS_DEVICE_NAME_LEN];     // access point and .local name; empty: ninepin-xxxx
 
-    uint8_t reserved[7];                            // zero; pads the struct to 224 bytes
+    uint8_t pad_profile;                            // the pad profile loaded last, 1..16; 0: none
+
+    uint8_t reserved[6];                            // zero; pads the struct to 224 bytes
 } settings_t;
 
 /**
