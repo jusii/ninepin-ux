@@ -11,6 +11,10 @@ updates. Not part of the firmware build. Run from the repo root.
 * `bash tools/rev7-bench/con.sh "cmd" ...`: console commands, one reply each (`LISTEN=2`
   seconds). `help` lists them.
 
+* `update-server.py`: a stand-in for GitHub's release downloads, to try an update from the
+  internet (`ota check`, `ota install`, the page, the menu) against firmware built with
+  `-DNET_UPDATE_HOST`. Usage in the file.
+
 ## host tests (gcc, ASan/UBSan)
 
 `hosttest/` runs `http_server.c`, `web_page.c`, `web_auth.c` and `ota.c` against a fake lwIP
