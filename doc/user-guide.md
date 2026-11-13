@@ -3,8 +3,9 @@
 For the rev7 and rev7.1 boards. Connectors: [board](./board.md). Read the [errata](./errata.md) first.
 
 > **Tested on hardware:** modes, menu, settings, USB and A4000 keyboards, mice, joystick and CD32
-> with a DualSense, USB-C gamepads, Wi-Fi (access point and join), updates with rollback.
-> **Not yet tested:** Bluetooth pads and keyboards, PS3 pad, C64 joystick, 1351 mouse.
+> with a DualSense, two DualSenses over Bluetooth, pad combos, USB-C gamepads, C64 joystick and
+> 1351 mouse (C64 Ultimate, GEOS), Wi-Fi (access point and join), updates with rollback.
+> **Not yet tested:** Bluetooth keyboards and mice, DualShock 4, PS3 pad, a real C64.
 
 ## connecting
 
@@ -39,6 +40,9 @@ BOOT held 1 s steps the mode; the board remembers it.
 | `amiga` | Amiga keyboard port | DE9 port set to mouse | DE9 ports | Amiga |
 | `c64` | USB-C | USB-C, or a DE9 port set to 1351 | DE9 ports | USB-C |
 | `usb` | USB-C | USB-C | USB-C, two gamepads | USB-C |
+
+* **C64 1351 mouse:** set a C64 port to 1351 mouse. Left button on fire, right button on the up
+  line; pointer speed by Mouse speed. The mouse then no longer goes to USB-C.
 
 ## the menu
 
@@ -178,8 +182,17 @@ names up to 12 characters), one per game.
   with Updates need BOOT = no, replace the firmware. New page password in the menu makes a
   random one and switches it back on. Scripts can still use HTTP Basic (any user name).
 
-The page shows the status and every menu setting (remaps read-only),
-plus the pad combos, the device name and the page password.
+### the page
+
+* Status: mode, firmware and slot, update state, players, Bluetooth, Wi-Fi, and **Running**: how
+  long the board has been up and what started it (power on, reset button, brown-out, a restart
+  asked for, the watchdog, a fault). After a fault, **Last fault** has the details for a bug
+  report.
+* Every menu setting (remaps read-only), plus the pad combos and profiles, the device name, the
+  page password and Pair (2 min) for Bluetooth.
+* The settings are in groups that fold. Each group has a Save button: it stores the whole form
+  and comes back to that group. Wi-Fi changes answer with where to find the board again.
+* No JavaScript.
 
 ## network control
 
@@ -227,7 +240,8 @@ Boards running firmware from before the rename show up as `amigahid-xxxx` until 
 
 ## console
 
-USB-C serial, any baud rate except 1200. `help` lists the commands: `info`, `settings`,
+USB-C serial, any baud rate except 1200. `help` lists the commands: `info` (firmware, uptime,
+what started the board, the last fault), `settings`,
 `mode amiga|c64|usb`, `menu open|next|prev|inc|dec|enter|leave`, `bt [pair|forget]`,
 `wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `ota [previous]`, `log`, `defaults`,
 `reboot`, `bootsel`.

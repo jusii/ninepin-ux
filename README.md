@@ -29,18 +29,23 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
 * **Game controllers:** PS5 DualSense (USB, Bluetooth), PS4 DualShock 4 (Bluetooth), PS3
   DualShock 3 (USB), generic HID pads. Two players, swap, merge, deadzone, autofire, DualSense
   touchpad as mouse.
+* **Pad combos and profiles:** a pad button stands for directions and fire held together, a
+  keyboard key, or both; 32 named profiles, each for the Amiga, the C64 or both, switched from
+  the page, the menu or the pad.
 * **Three modes:** `amiga` (keyboards to the Amiga, mouse and pads to the DE9 ports), `c64`
   (keyboard and mouse to USB-C, pads to the DE9 ports), `usb` (everything, the Amiga keyboard
   included, to USB-C for a PC or Mac).
 * **DE9 ports, Amiga:** mouse (TankMouse / Cocolino wheel), joystick with 3 fire buttons, CD32 pad.
-* **DE9 ports, C64:** joystick with 2nd / 3rd fire on the POT lines, 1351 mouse (untuned).
+* **DE9 ports, C64:** joystick with 2nd / 3rd fire on the POT lines, 1351 mouse.
 * **USB-C device:** keyboard, mouse, two gamepads, serial console.
 * **Keyboard settings:** Help / Del / ISO key mapping, Y-Z and AZERTY presets, 8 remaps each way.
-* **Menu** on the OLED, from a keyboard, the BOOT button, a rotary encoder, a PlayStation pad or
-  the console.
-* **Wi-Fi:** access point or joins a network; settings page with every menu setting.
+* **Menu** on the OLED, in two levels, from a keyboard, the BOOT button, a rotary encoder, a
+  PlayStation pad or the console.
+* **Wi-Fi:** access point or joins a network; settings page (no JavaScript) with every menu
+  setting, a log-in with the page password, the board's uptime and why it last restarted.
 * **Network control:** a subset of the PiKVM `kvmd` HTTP API (keys, text in six keymaps, mouse).
-* **Firmware updates:** A/B slots with rollback, upload from the settings page.
+* **Firmware updates:** A/B slots with rollback, upload from the settings page, with or without
+  a press of BOOT on the board.
 
 ## docs
 

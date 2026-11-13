@@ -30,7 +30,10 @@ gcc $F -DCFG_TUSB_MCU=0 -I $H/inc3 -include $H/inc2/fake_sdk.h -o /tmp/ahp_pads_
 ```
 
 `test.c` covers the page, the log-in form, sessions, the page password form, the pad combo and
-device name fields, pad profiles (with `profiles.c` on the fake flash) and uploads; `pads_test.c` what a combo button does to the outputs.
+device name fields, pad profiles (with `profiles.c` on the fake flash: machine tags, a mode's own
+profile, the 16-slot record carried over), the per-group Save and its way back, the Pair button
+and uploads; `pads_test.c` what a combo button does to the outputs and PS + d-pad. `test.c`
+writes the rendered page to `page.html` in the current directory: run it from `/tmp`.
 
 `ota_test.c` uploads the real UF2 through the server into the update code and checks the slot
 byte for byte, refusals, a dropped upload, the BOOT timeout, self-install, and (`trial`) accept,
