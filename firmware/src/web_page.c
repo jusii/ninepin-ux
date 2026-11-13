@@ -77,6 +77,7 @@ static const web_choice_t choices[] = {
     CHOICE(NULL, "bt_pairing", "Pairing", bt_pairing, bt_pairing),
     CHOICE("Board", "display", "Display", display, display),
     CHOICE(NULL, "watchdog", "Watchdog", watchdog, watchdog),
+    CHOICE(NULL, "ota_needs_boot", "Updates need a BOOT press", ota_needs_boot, no_yes),
     CHOICE("Wi-Fi", "wifi_mode", "Wi-Fi", wifi_mode, wifi),
     CHOICE("Network control", "net_control", "Network control", net_control, off_on),
     CHOICE(NULL, "net_screen", "Target screen (DE9 mouse)", net_screen, net_screen),
@@ -466,6 +467,9 @@ size_t web_page_render(char *out, size_t size)
             put_remaps(&w, s->ak_remap, true);
         else if (strcmp(c->key, "wifi_mode") == 0)
             put_wifi(&w, s);
+        else if (strcmp(c->key, "ota_needs_boot") == 0)
+            put(&w, "<p><small>With no BOOT press needed, whoever can open this page can replace the "
+                "firmware from the network. Without a page password that is everyone on your network.</small>");
 #ifdef ENABLE_BLUETOOTH_HID
         else if (strcmp(c->key, "bt_pairing") == 0)
             put(&w, "<label>New device <button formaction=/bt-pair>Pair (2 min)</button></label>"
@@ -491,8 +495,8 @@ size_t web_page_render(char *out, size_t size)
         "<option value=1%s>no password"
         "</select></label>"
         "<p><small>%u to 16 characters. Without a password everyone on your network can change these "
-        "settings and, with network control on, type on the machine; a firmware update then always waits "
-        "for a BOOT press. The board menu shows the password (Show page password), makes a new one and "
+        "settings and, with network control on, type on the machine, and replace "
+        "the firmware unless updates need a BOOT press (Board). The board menu shows the password (Show page password), makes a new one and "
         "switches it back on.</small>"
         "<p><button>Change</button></form>",
         s->page_open ? "" : " selected", s->page_open ? " selected" : "", WEB_AUTH_PASSWORD_MIN);
@@ -504,10 +508,8 @@ size_t web_page_render(char *out, size_t size)
     put(&w, "<h2>Firmware update</h2>"
         "<form method=post action=\"/update?t=%s\" enctype=multipart/form-data>"
         "<input type=file name=firmware accept=.uf2> <button>Upload</button></form>"
-        "<p><small>Updates need a BOOT press: %s (set on the board only; always yes without a page "
-        "password).</small>",
-        http_server_token(),
-        (s->ota_needs_boot || (s->page_open && s->wifi_mode == SETTINGS_WIFI_JOIN)) ? "yes" : "no");
+        "<p><small>Updates need a BOOT press: %s (Board, above).</small>",
+        http_server_token(), s->ota_needs_boot ? "yes" : "no");
 
     put(&w, "</body></html>");
 
@@ -743,8 +745,7 @@ bool web_page_parse(char *body, settings_t *settings, char *error, size_t error_
         if (!settings->pad_combo[i].button)
             memset(&settings->pad_combo[i], 0, sizeof(settings->pad_combo[i]));
 
-    // board only; the page password has its own form
-    settings->ota_needs_boot = current->ota_needs_boot;
+    // the page password has its own form
     settings->page_open = current->page_open;
     memcpy(settings->page_password, current->page_password, sizeof(settings->page_password));
 

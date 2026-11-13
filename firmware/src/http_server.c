@@ -567,7 +567,7 @@ static bool handle_password(http_conn_t *c, char const *body)
 
     if (is_open)
         snprintf(text, sizeof(text), "The board stores that now: join mode no longer asks for the page password%s. "
-            "Firmware updates wait for a BOOT press.", fresh[0] ? " (the new one is kept for when it does)" : "");
+            "Firmware updates wait for a BOOT press only if the Board setting says so.", fresh[0] ? " (the new one is kept for when it does)" : "");
     else
         snprintf(text, sizeof(text), "The board stores that now: join mode asks for the %spage password.",
             fresh[0] ? "new " : "");

@@ -369,7 +369,8 @@ int main(void)
         assert(submitted.mode == 2 && submitted.amiga_port[0] == 3 && submitted.wifi_mode == 2 && submitted.kb_help == 4);
         assert(strcmp(submitted.wifi_ssid, "My Net!") == 0);
         assert(strcmp(submitted.wifi_password, "secret&123") == 0);
-        assert(submitted.ota_needs_boot == 1);
+        // the page may switch the BOOT press off (the owner's choice)
+        assert(submitted.ota_needs_boot == 0);
         assert(strcmp(submitted.page_password, "d37qtsp979") == 0);
 
         // pad combos: the form carries them whole; a partial form leaves them be

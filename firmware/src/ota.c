@@ -150,14 +150,12 @@ static uint32_t now_ms(void)
 }
 
 /**
- * an update waits for a BOOT press if the settings say so, and always when
- * the page takes requests from the network without its password
+ * an update waits for a BOOT press if the settings say so. the page may switch
+ * that off, also with its password off: the owner's choice, the page warns
  */
 static bool needs_boot(void)
 {
-    settings_t const *s = settings_get();
-
-    return s->ota_needs_boot || (s->page_open && (s->wifi_mode == SETTINGS_WIFI_JOIN));
+    return settings_get()->ota_needs_boot;
 }
 
 static uint32_t ring_used(void)

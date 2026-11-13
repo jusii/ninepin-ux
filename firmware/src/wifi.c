@@ -664,8 +664,7 @@ static void page_save_task(void)
             snprintf(what, sizeof(what), "profile %s deleted, ", profile_name);
         }
     } else {
-        // the page never sets these; keep what the board has
-        settings.ota_needs_boot = settings_get()->ota_needs_boot;
+        // the page's settings form never sets these; keep what the board has
         settings.page_open = settings_get()->page_open;
         memcpy(settings.page_password, settings_get()->page_password, sizeof(settings.page_password));
     }

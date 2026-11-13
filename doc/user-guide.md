@@ -173,11 +173,11 @@ names up to 12 characters), one per game.
 * **Device name:** set on the page; it replaces `ninepin-xxxx` as the access point's name and
   the `.local` address. Letters, digits and `-`, up to 15; empty goes back to `ninepin-xxxx`.
 * **Page password:** change it on the page (8 to 16 characters), or switch it off there or in
-  the menu. Without it everyone on the network can change settings and use network control;
-  a firmware update then always waits for a BOOT press. New page password in the menu makes a
+  the menu. Without it everyone on the network can change settings, use network control and,
+  with Updates need BOOT = no, replace the firmware. New page password in the menu makes a
   random one and switches it back on. Scripts can still use HTTP Basic (any user name).
 
-The page shows the status and every menu setting except Updates need BOOT (remaps read-only),
+The page shows the status and every menu setting (remaps read-only),
 plus the pad combos, the device name and the page password.
 
 ## network control
@@ -215,8 +215,8 @@ curl -u admin:PASSWORD -X POST 'http://ninepin-xxxx.local/api/hid/events/send_mo
 ## updates
 
 Copy `ninepin-ux.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
-= yes (and always with the page password switched off), press BOOT within 30 s when the OLED
-shows `BOOT: install`.
+= yes, press BOOT within 30 s when the OLED shows `BOOT: install`. The setting is in the menu and
+on the page (Board); with it off, whoever can open the page can replace the firmware.
 
 A new firmware runs on trial and keeps itself after 10 s; if it hangs, the previous one boots.
 Previous firmware in the menu goes back one update. A running board enters BOOTSEL on a 1200 baud
