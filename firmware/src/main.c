@@ -36,6 +36,7 @@
 #include "platform/amiga/de9.h"
 #include "pad.h"
 #include "profiles.h"
+#include "util/reset_info.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -49,6 +50,7 @@
 #include "bt_hid.h"
 #endif
 #include "wifi.h"
+#include "util/reset_info.h"
 
 // defined within usb_hid.c
 extern void hid_app_task(void);
@@ -322,6 +324,8 @@ int main(void)
 {
 #ifdef USB_DEVICE_BRINGUP_SERVICE
     trap_collect();
+#else
+    reset_info_init();
 #endif
 
     // the stored settings, before anything reads one (a flash read only)
@@ -359,6 +363,9 @@ int main(void)
     // say hello, trevor ("hello, trevor")
     dbgcons_init();
     apply_report_watchdog_reboot();
+#ifndef USB_DEVICE_BRINGUP_SERVICE
+    ahprintf("[boot] started by: %s\n", reset_info_reason());
+#endif
     dbgcons_mode(run_mode_name(run_mode_get()));
     dbgcons_amiga_power(amiga_sense_is_on());
 
@@ -421,45 +428,61 @@ int main(void)
     // bring-up breadcrumbs through the first pass of the loop only
     bool first_pass = true;
 #define LOOP_STAGE(name) do { if (first_pass) boot_stage(name); } while (0)
+// where the loop is, should the watchdog have to restart the board
+#ifdef USB_DEVICE_BRINGUP_SERVICE
+#define AT(stage)
+#else
+#define AT(stage) reset_info_stage(stage)
+#endif
 
     while (1) {
         LOOP_STAGE("L tuh");
         // run host mode jobs (hotplug events, packet io callbacks)
+        AT(RESET_STAGE_USB_HOST);
         tuh_task();
 
         LOOP_STAGE("L usbd");
         // device mode jobs on the usb-c port, which follows its vbus
+        AT(RESET_STAGE_USB_DEVICE);
 #ifndef USB_DEVICE_BRINGUP_SERVICE
         usb_device_task(io_expander_vbus_present());
 #endif
         usb_c_status_task();
 
         // commands typed on the usb-c console
+        AT(RESET_STAGE_CONSOLE);
         console_cmd_task();
 
         // the settings menu: a held help key opens it
+        AT(RESET_STAGE_MENU);
         menu_task();
 
         // pads: usb pad start-up and leds, players, outputs
+        AT(RESET_STAGE_PADS);
         hid_app_task();
         pads_task();
         de9_task();
 
         // the watchdog, if the settings ask for one
+        AT(RESET_STAGE_APPLY);
         apply_task();
 
 #ifdef ENABLE_BLUETOOTH_HID
+        AT(RESET_STAGE_BLUETOOTH);
         bt_hid_task();
 #endif
         // wi-fi: follow the settings, store a save from the page
+        AT(RESET_STAGE_WIFI);
         wifi_task();
 
         // firmware updates: accept this one after a clean start, write an
         // uploaded one to the free slot
+        AT(RESET_STAGE_OTA);
         ota_task();
 
         LOOP_STAGE("L kbd");
         // drain + inject any keycodes from the real amiga keyboard
+        AT(RESET_STAGE_AMIGA);
         amiga_keyboard_recv_task();
 
         LOOP_STAGE("L power");
@@ -472,6 +495,7 @@ int main(void)
 
         LOOP_STAGE("L ctl");
         // encoder, vbus sense and the BOOT button
+        AT(RESET_STAGE_CONTROLS);
         board_controls_task();
 
         LOOP_STAGE("L led");

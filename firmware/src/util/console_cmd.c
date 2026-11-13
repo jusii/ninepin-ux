@@ -32,6 +32,7 @@
 #include "settings.h"
 #include "usb_device.h"
 #include "util/output.h"
+#include "util/reset_info.h"
 #ifdef HAS_WIFI
 #include "wifi.h"
 #endif
@@ -89,7 +90,11 @@ static void cmd_info(char const *arg)
     boot_info_t boot;
 
     (void)arg;
+    char running[96];
+
     ahprintf("firmware built %s, board %s\n", ahp_build_stamp, PICO_BOARD);
+    reset_info_status(running, sizeof(running));
+    ahprintf("running %s\n", running);
 #if !PICO_RP2040
     ahprintf("chip rp2350 rev a%u\n", rp2350_chip_version());
     if (rom_get_boot_info(&boot)) {

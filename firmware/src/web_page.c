@@ -33,6 +33,7 @@
 #include "profiles.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
+#include "util/reset_info.h"
 #include "web_auth.h"
 #include "wifi.h"
 
@@ -396,6 +397,14 @@ size_t web_page_render(char *out, size_t size)
     snprintf(line, sizeof(line), "%s, slot %s%s", ahp_build_stamp, boot_slot, ota_trial() ? ", on trial" : "");
     put_status_row(&w, "Firmware", line, sizeof(line));
     put_status_row(&w, "Update", ota_status(), 48);
+    {
+        char running[96];
+
+        reset_info_status(running, sizeof(running));
+        put_status_row(&w, "Running", running, sizeof(running));
+    }
+    reset_info_status(line, sizeof(line));
+    put_status_row(&w, "Running", line, sizeof(line));
     for (uint8_t player = 0; player < 2; player++) {
         pad_player_t const *p = pads_player(player);
 
