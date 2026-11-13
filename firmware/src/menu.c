@@ -29,6 +29,7 @@
 #include "platform/amiga/keyboard.h"
 #include "platform/amiga/de9.h"
 #include "platform/amiga/keyboard_recv.h"
+#include "net_update.h"
 #include "ota.h"
 #include "settings.h"
 #include "settings_names.h"
@@ -92,6 +93,7 @@ static void action_page_password_show(void);
 static void action_page_password_new(void);
 #endif
 static void action_previous_firmware(void);
+static void action_net_update(void);
 
 #define CHOICE(group, label, field, names, visible) \
     { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, group, false }
@@ -162,6 +164,7 @@ static const menu_item_t items[] = {
     CHOICE(G_BOARD, "Display",          display,        names_display,      NULL),
     CHOICE(G_BOARD, "Watchdog",         watchdog,       names_watchdog,     NULL),
     CHOICE(G_BOARD, "Updates need BOOT", ota_needs_boot, names_no_yes,      NULL),
+    ACTION(G_BOARD, "Check for update", action_net_update),
     ACTION(G_BOARD, "Previous firmware", action_previous_firmware),
     ACTION(G_BOARD, "Factory defaults", action_defaults),
 
@@ -302,6 +305,9 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
         else
             snprintf(lines[2], MENU_COLS + 1, " %s > %s", keyboard_map_hid_name(remap->source),
                 keyboard_map_amiga_name(remap->target));
+    } else if ((item->kind == ITEM_ACTION) && (item->action == action_net_update)) {
+        // how the look for a release stands, in place of the usual hint
+        snprintf(lines[2], MENU_COLS + 1, " %.20s", net_update_status());
     } else if (item->kind == ITEM_GROUP) {
         snprintf(lines[2], MENU_COLS + 1, " > select to open");
     } else if (item->kind == ITEM_BACK) {
@@ -506,6 +512,34 @@ static void action_page_password_new(void)
     notice = page_password_notice;
 }
 #endif
+
+/**
+ * firmware from the internet (net_update.c): the first select looks for the
+ * latest release; if there is one to install, the next asks, and the one
+ * after that installs. works on the board as it runs, not on the edits
+ */
+static void action_net_update(void)
+{
+    uint32_t now = now_ms();
+
+    if (net_update_busy()) {
+        notice = "busy: wait";
+        return;
+    }
+    // nothing found yet, or nothing to install: look (again)
+    if (!net_update_latest()[0] || (net_update_newer() == 0)) {
+        confirm_since = 0;
+        notice = net_update_check() ? "asking GitHub" : "not now";
+        return;
+    }
+    if (confirm_since && ((uint32_t)(now - confirm_since) < MENU_CONFIRM_MS)) {
+        confirm_since = 0;
+        notice = net_update_install() ? "downloading" : "not now";
+        return;
+    }
+    confirm_since = now;
+    notice = (net_update_newer() > 0) ? "select again: install" : "again: install older";
+}
 
 /**
  * back to the firmware before the last update, if it was saved; asks twice
@@ -1005,8 +1039,18 @@ void menu_task(void)
 {
     uint32_t now = now_ms();
 
-    if (open)
+    if (open) {
+        // the update entry shows a look for a release as it goes on
+        static char shown[24];
+
+        if ((items[cursor].kind == ITEM_ACTION) && (items[cursor].action == action_net_update)
+            && (strncmp(shown, net_update_status(), sizeof(shown) - 1) != 0)) {
+            snprintf(shown, sizeof(shown), "%s", net_update_status());
+            notice = NULL;
+            draw();
+        }
         return;
+    }
 
     for (unsigned slot = 0; slot < INPUT_BRIDGE_MAX_SLOTS; slot++) {
         if (hid_help_since[slot] && ((uint32_t)(now - hid_help_since[slot]) >= MENU_HOLD_OPEN_MS)) {

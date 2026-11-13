@@ -97,6 +97,19 @@ static uint8_t signature[NU_SIGNATURE_MAX];
 static size_t signature_len;
 static mbedtls_sha256_context hash;
 
+// the release a download handed to the update side, until that has installed
+// it or let it go; and, in ram the restart leaves alone, the one being
+// restarted into: if another firmware then finds it there, it fell back
+static char handed_over[NU_TAG_MAX];
+#define ATTEMPT_MAGIC 0x4e557064u
+
+typedef struct {
+    uint32_t magic;
+    char version[NU_TAG_MAX];
+} attempt_t;
+
+static attempt_t __uninitialized_ram(update_attempt);
+
 static char latest[NU_TAG_MAX];     // "0.9.1"
 static char latest_tag[NU_TAG_MAX]; // "fw-v0.9.1"
 static char status[72] = "not checked";
@@ -161,6 +174,11 @@ char const *net_update_status(void)
 bool net_update_busy(void)
 {
     return want_check || want_install || (job != JOB_NONE);
+}
+
+bool net_update_checking(void)
+{
+    return want_check || (job == JOB_CHECK);
 }
 
 //--------------------------------------------------------------------+
@@ -297,8 +315,10 @@ static void image_complete(void)
         return;
     }
 
-    if (ota_finish(message, sizeof(message)))
+    if (ota_finish(message, sizeof(message))) {
         snprintf(status, sizeof(status), "%s downloaded, signature good", latest);
+        snprintf(handed_over, sizeof(handed_over), "%s", latest);
+    }
     else
         snprintf(status, sizeof(status), "failed: %.60s", message);
     ahprintf("[net] update: %s\n", status);
@@ -697,6 +717,32 @@ bool net_update_quiet(void)
 
 void net_update_task(void)
 {
+    static bool looked;
+
+    // once after start: is this the firmware the last download restarted into?
+    if (!looked) {
+        looked = true;
+        if (update_attempt.magic == ATTEMPT_MAGIC) {
+            update_attempt.version[sizeof(update_attempt.version) - 1] = 0;
+            if (strcmp(update_attempt.version, ahp_version) != 0) {
+                snprintf(status, sizeof(status), "%.20s was installed and fell back", update_attempt.version);
+                ahprintf("[net] update: %s\n", status);
+            }
+        }
+        update_attempt.magic = 0;
+    }
+
+    // a downloaded release on its way in: note it for the firmware that starts next
+    if (handed_over[0]) {
+        if (ota_installing()) {
+            update_attempt.magic = ATTEMPT_MAGIC;
+            snprintf(update_attempt.version, sizeof(update_attempt.version), "%s", handed_over);
+            handed_over[0] = 0;
+        } else if (!ota_busy()) {
+            handed_over[0] = 0;     // refused, or no BOOT press
+        }
+    }
+
     if (want_check || want_install) {
         bool install = want_install;
 
@@ -749,6 +795,7 @@ void net_update_task(void)
 bool net_update_check(void) { return false; }
 bool net_update_install(void) { return false; }
 bool net_update_busy(void) { return false; }
+bool net_update_checking(void) { return false; }
 char const *net_update_status(void) { return "no Wi-Fi in this firmware"; }
 char const *net_update_latest(void) { return ""; }
 int net_update_newer(void) { return 0; }

@@ -71,6 +71,11 @@ void ota_abandon(char const *why);
 bool ota_busy(void);
 
 /**
+ * @return true once an update is checked and the restart into it is on its way
+ */
+bool ota_installing(void);
+
+/**
  * @return true whilst the update side wants the upload's tcp window kept shut,
  *         so that it can write flash with nothing on its way. Any context.
  */

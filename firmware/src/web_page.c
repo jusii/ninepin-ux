@@ -34,6 +34,7 @@
 #include "settings_names.h"
 #include "util/run_mode.h"
 #include "util/reset_info.h"
+#include "net_update.h"
 #include "web_auth.h"
 #include "wifi.h"
 
@@ -412,7 +413,7 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
     put_text(&w, wifi_name(), 32);
     put(&w, "</h1>");
     // the note goes where the save was made; at the top if that is nowhere
-    if (at && (!strcmp(at, "combos") || !strcmp(at, "save")))
+    if (at && (!strcmp(at, "combos") || !strcmp(at, "save") || !strcmp(at, "update")))
         placed = true;
     for (size_t i = 0; at && !placed && (i < CHOICE_COUNT); i++)
         placed = choices[i].group && (strcmp(at, choices[i].key) == 0);
@@ -548,7 +549,26 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
             "<p><button>Log out</button></form>", http_server_token());
 
     // firmware
-    put(&w, "<h2>Firmware update</h2>"
+    put(&w, "<h2 id=update>Firmware update</h2>"
+        "<form method=post action=/update-check><input type=hidden name=t value=%s>"
+        "<p>This firmware: <b>%s</b>. Latest release: <b>%s</b>. ", http_server_token(), ahp_version,
+        net_update_latest()[0] ? net_update_latest() : "not looked for yet");
+    put_text(&w, net_update_status(), 72);
+    put(&w, "<p><button>Check for update</button>");
+    // a newer release installs; an older one, or over a build that is no
+    // release, only on purpose
+    if (net_update_latest()[0] && !net_update_busy()) {
+        if (net_update_newer() > 0)
+            put(&w, " <button formaction=/update-install>Install %s</button>", net_update_latest());
+        else if (net_update_newer() < 0)
+            put(&w, " <button formaction=/update-install>Install release %s</button> "
+                "<small>(replaces a newer or self-built firmware)</small>", net_update_latest());
+    }
+    put(&w, "</form><p><small>From <a href=https://github.com/jusii/ninepin-ux/releases>the releases on "
+        "GitHub</a>, in join mode, only when asked for; a release is checked against our signature "
+        "before it is installed. Input may stutter for a few seconds whilst the board talks to "
+        "GitHub.</small>"
+        "<p>Or a file from this computer:"
         "<form method=post action=\"/update?t=%s\" enctype=multipart/form-data>"
         "<input type=file name=firmware accept=.uf2> <button>Upload</button></form>"
         "<p><small>Updates need a BOOT press: %s (Board, above).</small>",

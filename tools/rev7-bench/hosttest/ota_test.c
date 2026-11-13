@@ -145,6 +145,14 @@ pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }
 char const *reset_info_detail(void) { return ""; }
 bool net_update_quiet(void) { return true; }
+static int net_checks, net_installs; static bool net_checking_now; static char const *net_latest = ""; static int net_newer;
+bool net_update_check(void) { net_checks++; return true; }
+bool net_update_install(void) { if (!net_latest[0]) return false; net_installs++; return true; }
+bool net_update_busy(void) { return net_checking_now; }
+bool net_update_checking(void) { return net_checking_now; }
+char const *net_update_status(void) { return net_latest[0] ? "0.9.1 is available" : "not checked"; }
+char const *net_update_latest(void) { return net_latest; }
+int net_update_newer(void) { return net_newer; }
 static bool page_busy_now;
 bool wifi_page_busy(void) { return page_busy_now; }
 settings_t const *wifi_page_storing(void) { return NULL; }

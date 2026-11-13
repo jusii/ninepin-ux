@@ -365,6 +365,11 @@ void ota_abandon(char const *why)
         abandon_why = why;
 }
 
+bool ota_installing(void)
+{
+    return state == OTA_INSTALL;
+}
+
 bool ota_busy(void)
 {
     return (state == OTA_RECEIVING) || (state == OTA_CONFIRM) || (state == OTA_INSTALL);

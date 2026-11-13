@@ -43,6 +43,11 @@ bool net_update_install(void);
 bool net_update_busy(void);
 
 /**
+ * @return true whilst a check runs (a matter of seconds; the page waits for it)
+ */
+bool net_update_checking(void);
+
+/**
  * @return one line on what is going on or how the last request went
  */
 char const *net_update_status(void);

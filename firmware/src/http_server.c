@@ -70,6 +70,8 @@ typedef enum {
     FORM_PROFILE_LOAD,
     FORM_PROFILE_DELETE,
     FORM_BT_PAIR,       // the settings form again, for its token only
+    FORM_UPDATE_CHECK,  // the firmware section's buttons
+    FORM_UPDATE_INSTALL,
 } form_kind_t;
 
 typedef struct {
@@ -477,6 +479,25 @@ static bool page_send(http_conn_t *c, char const *at, char const *note)
  * that went, in that group; if the main loop is still at it, the answer waits
  * for it (http_server_task()), so no browser has to ask twice
  */
+/**
+ * what a page that came back to a group has to wait for: a save still being
+ * stored, or (the firmware section) a look for the latest release
+ */
+static bool page_waits(char const *at)
+{
+    if (at && (strcmp(at, "update") == 0))
+        return net_update_checking();
+    return wifi_page_busy() && !wifi_page_storing();
+}
+
+static char const *page_note(char const *at)
+{
+    // the firmware section says how things stand itself
+    if (at && (strcmp(at, "update") == 0))
+        return NULL;
+    return wifi_page_storing() ? "Saved." : wifi_page_result();
+}
+
 static bool respond_page(http_conn_t *c, char const *query)
 {
     char const *at = NULL, *note = NULL;
@@ -485,12 +506,12 @@ static bool respond_page(http_conn_t *c, char const *query)
         if ((query[5] == '=') && at_ok(query + 6))
             at = query + 6;
         // a plain save shows at once, from what is being stored
-        if (wifi_page_busy() && !wifi_page_storing()) {
+        if (page_waits(at)) {
             snprintf(c->page_at, sizeof(c->page_at), "%s", at ? at : "");
             c->phase = CONN_PAGE_WAIT;
             return true;
         }
-        note = wifi_page_storing() ? "Saved." : wifi_page_result();
+        note = page_note(at);
     }
 
     return page_send(c, at, note);
@@ -588,6 +609,23 @@ static bool handle_bt_pair(http_conn_t *c, char const *body)
 #else
     return respond_message(c, 409, "Not opened", "This firmware has no Bluetooth.", NULL);
 #endif
+}
+
+/**
+ * the firmware section: look for the latest release / install it. the answer
+ * is the page again, at that section, once the look is over
+ */
+static bool handle_net_update(http_conn_t *c, char const *body, bool install)
+{
+    if (!token_given(body))
+        return respond_message(c, 400, "Not done", "The page is out of date: reload it and try again.", NULL);
+    if (install ? !net_update_install() : !net_update_check())
+        return respond_message(c, 409, "Not now", install
+            ? "The board is busy with a release already, or has not found one yet: check first."
+            : "The board is busy with a release already.", NULL);
+    ahprintf("[web] firmware from the internet: %s\n", install ? "install" : "check");
+    return respond_message(c, 303, install ? "Downloading" : "Checking", "The settings follow.",
+        saved_location("Location: ", "update"));
 }
 
 /**
@@ -689,6 +727,8 @@ static bool handle_form(http_conn_t *c)
         case FORM_LOGOUT:   return handle_logout(c, body);
         case FORM_PASSWORD: return handle_password(c, body);
         case FORM_BT_PAIR:  return handle_bt_pair(c, body);
+        case FORM_UPDATE_CHECK:     return handle_net_update(c, body, false);
+        case FORM_UPDATE_INSTALL:   return handle_net_update(c, body, true);
         case FORM_PROFILE_LOAD:     return handle_profile(c, body, true);
         case FORM_PROFILE_DELETE:   return handle_profile(c, body, false);
         default:            break;
@@ -1153,6 +1193,10 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_PROFILE_DELETE);
     if (strcmp(target, "/bt-pair") == 0)
         return form_begin(c, FORM_BT_PAIR);
+    if (strcmp(target, "/update-check") == 0)
+        return form_begin(c, FORM_UPDATE_CHECK);
+    if (strcmp(target, "/update-install") == 0)
+        return form_begin(c, FORM_UPDATE_INSTALL);
 
     if (strcmp(target, "/update") == 0) {
         if (!has_length)
@@ -1392,9 +1436,13 @@ static err_t on_poll(void *arg, struct tcp_pcb *pcb)
     if (c->phase == CONN_API_WAIT)
         c->idle_polls = 0;
 
-    // a page waiting for a save that never ends is sent as things are
-    if ((c->phase == CONN_PAGE_WAIT) && (c->idle_polls >= 1))
-        return page_send(c, c->page_at[0] ? c->page_at : NULL, wifi_page_result()) ? ERR_OK : ERR_ABRT;
+    // a page waiting for something that never ends is sent as things are (a
+    // save takes a moment, a look at the releases up to its own timeout)
+    if ((c->phase == CONN_PAGE_WAIT) && (c->idle_polls >= (strcmp(c->page_at, "update") ? 1 : 12))) {
+        char const *at = c->page_at[0] ? c->page_at : NULL;
+
+        return page_send(c, at, page_note(at)) ? ERR_OK : ERR_ABRT;
+    }
 
     if (++c->idle_polls >= HTTP_IDLE_POLLS) {
         if (c->phase == CONN_UPLOAD)
@@ -1488,16 +1536,17 @@ void http_server_task(void)
             waiting = true;
     }
 
-    // the save is stored: the pages that waited for it
-    if (waiting && !wifi_page_busy()) {
+    // what they waited for is done: the pages that waited
+    if (waiting) {
         cyw43_arch_lwip_begin();
         for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
             http_conn_t *c = &conns[i];
+            char const *at = c->page_at[0] ? c->page_at : NULL;
 
-            if (c->phase != CONN_PAGE_WAIT)
+            if ((c->phase != CONN_PAGE_WAIT) || page_waits(at))
                 continue;
             // (a send that fails has aborted the connection itself)
-            page_send(c, c->page_at[0] ? c->page_at : NULL, wifi_page_result());
+            page_send(c, at, page_note(at));
         }
         cyw43_arch_lwip_end();
     }

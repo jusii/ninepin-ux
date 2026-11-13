@@ -139,6 +139,14 @@ pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
 char const *reset_info_detail(void) { return ""; }
 bool net_update_quiet(void) { return true; }
+static int net_checks, net_installs; static bool net_checking_now; static char const *net_latest = ""; static int net_newer;
+bool net_update_check(void) { net_checks++; return true; }
+bool net_update_install(void) { if (!net_latest[0]) return false; net_installs++; return true; }
+bool net_update_busy(void) { return net_checking_now; }
+bool net_update_checking(void) { return net_checking_now; }
+char const *net_update_status(void) { return net_latest[0] ? "0.9.1 is available" : "not checked"; }
+char const *net_update_latest(void) { return net_latest; }
+int net_update_newer(void) { return net_newer; }
 static bool page_busy_now;
 bool wifi_page_busy(void) { return page_busy_now; }
 settings_t const *wifi_page_storing(void) { return NULL; }
@@ -334,6 +342,26 @@ int main(void)
         assert(pair_windows == 1);
         snprintf(r, sizeof(r), "GET / HTTP/1.1\r\n%s\r\n", cookie);
         request(r, 1000, 200, "formaction=/bt-pair");
+
+        // firmware from the internet: check, then the page offers what was found
+        request(r, 1000, 200, "Latest release: <b>not looked for yet</b>");
+        assert(!strstr(last_out, "formaction=/update-install"));
+        post("/update-check", cookie, "t=bad", 400, NULL);
+        post("/update-install", cookie, body, 409, "check first");
+        assert(net_checks == 0 && net_installs == 0);
+        post("/update-check", cookie, body, 303, "Location: /?saved=update#update");
+        assert(net_checks == 1);
+        net_latest = "0.9.1"; net_newer = 1;
+        request(r, 1000, 200, "<button formaction=/update-install>Install 0.9.1</button>");
+        net_newer = 0;
+        request(r, 1000, 200, "Latest release: <b>0.9.1</b>");
+        assert(!strstr(last_out, "formaction=/update-install"));
+        net_newer = -1;
+        request(r, 1000, 200, "Install release 0.9.1</button>");
+        post("/update-install", cookie, body, 303, "Location: /?saved=update#update");
+        assert(net_installs == 1);
+        post("/update-install", NULL, body, 401, NULL);
+        net_latest = ""; net_newer = 0;
 
         // log out
         snprintf(body, sizeof(body), "t=%s", token);
