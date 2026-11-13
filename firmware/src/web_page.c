@@ -405,7 +405,7 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
     writer_t w = { out, size, 0, false };
     // a save still on its way into flash already shows
     settings_t const *s = wifi_page_storing() ? wifi_page_storing() : settings_get();
-    char line[48];
+    char line[72];
 
     put_head(&w, wifi_name());
     put(&w, "<h1>");
@@ -425,7 +425,8 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
     // status
     put(&w, "<h2>Status</h2><table>");
     put_status_row(&w, "Mode", run_mode_name(run_mode_get()), 16);
-    snprintf(line, sizeof(line), "%s, slot %s%s", ahp_build_stamp, boot_slot, ota_trial() ? ", on trial" : "");
+    snprintf(line, sizeof(line), "%s, built %s, slot %s%s", ahp_version, ahp_build_stamp, boot_slot,
+        ota_trial() ? ", on trial" : "");
     put_status_row(&w, "Firmware", line, sizeof(line));
     put_status_row(&w, "Update", ota_status(), 48);
     {

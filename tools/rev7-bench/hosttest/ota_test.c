@@ -68,6 +68,7 @@ int rom_explicit_buy(uint8_t *b, uint32_t s) { (void)b; (void)s; buys++; return 
 int rom_reboot(uint32_t flags, uint32_t d, uint32_t p0, uint32_t p1) { (void)d; (void)p1; reboots++; reboot_flags = flags; reboot_addr = p0; return 0; }
 
 char const ahp_build_stamp[] = "test";
+char const ahp_version[] = "dev";
 bool ota_trial(void);
 
 // ---------------- fake lwip

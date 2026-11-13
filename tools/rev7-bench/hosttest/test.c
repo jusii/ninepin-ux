@@ -21,6 +21,7 @@
 int fake_lwip_locked;
 uint64_t fake_now_us = 1000000;
 char const ahp_build_stamp[] = "test";
+char const ahp_version[] = "dev";
 bool ota_trial(void) { return false; }
 char const *ota_status(void) { return "idle"; }
 bool rom_get_boot_info(boot_info_t *b) { b->partition = 1; b->tbyb_and_update_info = 0; b->boot_type = 0; return true; }

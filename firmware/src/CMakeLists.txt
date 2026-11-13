@@ -34,10 +34,15 @@ if (ENABLE_BLUETOOTH_HID)
   )
 endif ()
 
-# the build time, stamped on every build (build_stamp.h)
+# the release version and the build time, stamped on every build (build_stamp.h).
+# a release build passes its number (CI: the fw-v* tag without "fw-v")
+set(NINEPIN_VERSION "dev" CACHE STRING "release version of this firmware, e.g. 0.9.0; dev: not a release")
+if (NOT NINEPIN_VERSION MATCHES "^(dev|[0-9]+\\.[0-9]+\\.[0-9]+)$")
+  message(FATAL_ERROR "NINEPIN_VERSION must be dev or N.N.N, not '${NINEPIN_VERSION}'")
+endif ()
 set(AHP_STAMP_C ${CMAKE_CURRENT_BINARY_DIR}/build_stamp.c)
 add_custom_target(ninepin-ux-build-stamp
-  COMMAND ${CMAKE_COMMAND} -DOUT=${AHP_STAMP_C} -P ${CMAKE_CURRENT_LIST_DIR}/build_stamp.cmake
+  COMMAND ${CMAKE_COMMAND} -DOUT=${AHP_STAMP_C} -DVERSION=${NINEPIN_VERSION} -P ${CMAKE_CURRENT_LIST_DIR}/build_stamp.cmake
   BYPRODUCTS ${AHP_STAMP_C}
   VERBATIM)
 target_sources(ninepin-ux PRIVATE ${AHP_STAMP_C})

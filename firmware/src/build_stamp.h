@@ -14,4 +14,7 @@
 
 extern char const ahp_build_stamp[];
 
+// the release this firmware is: "0.9.0"; "dev" for a build that is none
+extern char const ahp_version[];
+
 #endif // _BUILD_STAMP_H

@@ -40,7 +40,10 @@ jobs:
           submodules: recursive
 
       - name: Configure
-        run: cmake -S firmware -B build -DCMAKE_BUILD_TYPE=Release ${{ matrix.cmake-args }}
+        # a fw-v* tag builds the release of that number; anything else is "dev"
+        run: |
+          if test "${{ github.ref_type }}" = "tag"; then version="${GITHUB_REF_NAME#fw-v}"; else version=dev; fi
+          cmake -S firmware -B build -DCMAKE_BUILD_TYPE=Release -DNINEPIN_VERSION="$version" ${{ matrix.cmake-args }}
 
       - name: Build
         run: cmake --build build

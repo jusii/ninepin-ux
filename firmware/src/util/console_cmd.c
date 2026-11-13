@@ -92,7 +92,7 @@ static void cmd_info(char const *arg)
     (void)arg;
     char running[96];
 
-    ahprintf("firmware built %s, board %s\n", ahp_build_stamp, PICO_BOARD);
+    ahprintf("firmware %s, built %s, board %s\n", ahp_version, ahp_build_stamp, PICO_BOARD);
     reset_info_status(running, sizeof(running));
     ahprintf("running %s\n", running);
     if (reset_info_detail()[0])
