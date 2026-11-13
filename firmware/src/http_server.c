@@ -55,6 +55,7 @@ typedef enum {
     CONN_DRAIN,         // reading a body to drop it, then the response
     CONN_API,           // reading an api request's body (kvmd_api.c)
     CONN_API_WAIT,      // an api answer comes later (a print being typed)
+    CONN_PAGE_WAIT,     // the page after a save, once the main loop has stored it
     CONN_SEND,          // sending the response; anything read is dropped
 } conn_phase_t;
 
@@ -79,6 +80,7 @@ typedef struct {
     // an api request (kvmd_api.c): where its parts are in request[]
     char const *api_method, *api_path, *api_query;
     uint32_t wait_id;                       // CONN_API_WAIT: the answer's ticket
+    char page_at[24];                       // CONN_PAGE_WAIT: the group to come back to
 
     // the request
     char request[HTTP_REQUEST_MAX + 1];
@@ -453,21 +455,9 @@ static char const *saved_location(char const *header, char const *at)
  * the settings page. after a save ("?saved", "?saved=<group>") it waits for
  * the main loop to have stored it, then says how that went, in that group
  */
-static bool respond_page(http_conn_t *c, char const *query)
+static bool page_send(http_conn_t *c, char const *at, char const *note)
 {
     size_t length;
-    char const *at = NULL, *note = NULL;
-
-    if (query && (strncmp(query, "saved", 5) == 0) && ((query[5] == 0) || (query[5] == '='))) {
-        if ((query[5] == '=') && at_ok(query + 6))
-            at = query + 6;
-        // a plain save shows from what is being stored; anything else (a
-        // profile step) is asked for again in a moment
-        if (wifi_page_busy() && !wifi_page_storing())
-            return respond_message(c, 200, "Storing", "The board is storing that; the settings follow.",
-                saved_location("Refresh: 0; url=", at));
-        note = wifi_page_storing() ? "Saved." : wifi_page_result();
-    }
 
     if (page_owner && page_owner != c)
         return respond_message(c, 503, "Busy", "Another page is on its way out; reload in a moment.", "Retry-After: 1\r\n");
@@ -479,6 +469,30 @@ static bool respond_page(http_conn_t *c, char const *query)
         return respond_message(c, 503, "Too big", "The page did not fit its buffer.", NULL);
     }
     return respond_with(c, 200, page, length, NULL);
+}
+
+/**
+ * the settings page. after a save ("?saved", "?saved=<group>") it says how
+ * that went, in that group; if the main loop is still at it, the answer waits
+ * for it (http_server_task()), so no browser has to ask twice
+ */
+static bool respond_page(http_conn_t *c, char const *query)
+{
+    char const *at = NULL, *note = NULL;
+
+    if (query && (strncmp(query, "saved", 5) == 0) && ((query[5] == 0) || (query[5] == '='))) {
+        if ((query[5] == '=') && at_ok(query + 6))
+            at = query + 6;
+        // a plain save shows at once, from what is being stored
+        if (wifi_page_busy() && !wifi_page_storing()) {
+            snprintf(c->page_at, sizeof(c->page_at), "%s", at ? at : "");
+            c->phase = CONN_PAGE_WAIT;
+            return true;
+        }
+        note = wifi_page_storing() ? "Saved." : wifi_page_result();
+    }
+
+    return page_send(c, at, note);
 }
 
 /**
@@ -1377,6 +1391,10 @@ static err_t on_poll(void *arg, struct tcp_pcb *pcb)
     if (c->phase == CONN_API_WAIT)
         c->idle_polls = 0;
 
+    // a page waiting for a save that never ends is sent as things are
+    if ((c->phase == CONN_PAGE_WAIT) && (c->idle_polls >= 1))
+        return page_send(c, c->page_at[0] ? c->page_at : NULL, wifi_page_result()) ? ERR_OK : ERR_ABRT;
+
     if (++c->idle_polls >= HTTP_IDLE_POLLS) {
         if (c->phase == CONN_UPLOAD)
             ahprintf("[web] update: stalled after %lu bytes, closing\n", (unsigned long)c->offset);
@@ -1459,11 +1477,29 @@ bool http_server_upload_quiet(void)
 
 void http_server_task(void)
 {
-    bool owing = false;
+    bool owing = false, waiting = false;
 
-    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++)
+    for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
         if (conns[i].owed)
             owing = true;
+        if (conns[i].phase == CONN_PAGE_WAIT)
+            waiting = true;
+    }
+
+    // the save is stored: the pages that waited for it
+    if (waiting && !wifi_page_busy()) {
+        cyw43_arch_lwip_begin();
+        for (unsigned i = 0; i < HTTP_CONNECTIONS; i++) {
+            http_conn_t *c = &conns[i];
+
+            if (c->phase != CONN_PAGE_WAIT)
+                continue;
+            // (a send that fails has aborted the connection itself)
+            page_send(c, c->page_at[0] ? c->page_at : NULL, wifi_page_result());
+        }
+        cyw43_arch_lwip_end();
+    }
+
     if (!owing)
         return;
 

@@ -397,10 +397,8 @@ int main(void)
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
         request(req, 1000, 303, "Location: /?saved\r\n");
         assert(!strstr(last_out, "X-Bad"));
-        // the main loop still at it: asked again in a moment, to the same place
+        // the main loop still at it: a plain page is not held up (the held one is tried on the board)
         page_busy_now = true;
-        request("GET /?saved=combos HTTP/1.1\r\n\r\n", 1000, 200, "Refresh: 0; url=/?saved=combos#combos");
-        assert(strstr(last_out, "content=\"0; url=/?saved=combos#combos\""));
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2>Settings</h2>");
         page_busy_now = false;
         assert(submitted.pad_combo[5].button == 9 && submitted.pad_combo[5].key == 0x2c);
