@@ -5,6 +5,7 @@ add_executable(ninepin-ux
   input_bridge.c
   keyboard_map.c
   main.c
+  net_update.c
   ota.c
   menu.c
   pads.c
@@ -41,6 +42,14 @@ if (NOT NINEPIN_VERSION MATCHES "^(dev|[0-9]+\\.[0-9]+\\.[0-9]+)$")
   message(FATAL_ERROR "NINEPIN_VERSION must be dev or N.N.N, not '${NINEPIN_VERSION}'")
 endif ()
 set(AHP_STAMP_C ${CMAKE_CURRENT_BINARY_DIR}/build_stamp.c)
+
+# where the firmware looks for releases (net_update.c). empty: github. a bench
+# build names a test server here
+set(NET_UPDATE_HOST "" CACHE STRING "test server for firmware downloads instead of github.com")
+set(NET_UPDATE_PORT "443" CACHE STRING "its port")
+if (NET_UPDATE_HOST)
+  target_compile_definitions(ninepin-ux PRIVATE NET_UPDATE_HOST="${NET_UPDATE_HOST}" NET_UPDATE_PORT=${NET_UPDATE_PORT})
+endif ()
 add_custom_target(ninepin-ux-build-stamp
   COMMAND ${CMAKE_COMMAND} -DOUT=${AHP_STAMP_C} -DVERSION=${NINEPIN_VERSION} -P ${CMAKE_CURRENT_LIST_DIR}/build_stamp.cmake
   BYPRODUCTS ${AHP_STAMP_C}
@@ -94,6 +103,8 @@ if (ENABLE_BLUETOOTH_HID)
   # lwip (lwipopts.h) in the same background context as btstack
   target_link_libraries(ninepin-ux PUBLIC
     pico_cyw43_arch_lwip_threadsafe_background
+    pico_lwip_mbedtls
+    pico_mbedtls
     pico_lwip_mdns
     pico_rand
   )

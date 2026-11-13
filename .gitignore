@@ -15,3 +15,6 @@ __pycache__/
 # local only
 CLAUDE.md
 /_local/
+
+# release signing keys never belong here (tools/release/)
+*.pem

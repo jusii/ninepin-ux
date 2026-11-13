@@ -138,6 +138,7 @@ static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
 char const *reset_info_detail(void) { return ""; }
+bool net_update_quiet(void) { return true; }
 static bool page_busy_now;
 bool wifi_page_busy(void) { return page_busy_now; }
 settings_t const *wifi_page_storing(void) { return NULL; }

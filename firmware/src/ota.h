@@ -58,6 +58,19 @@ bool ota_receive(uint32_t offset, uint8_t const *data, size_t len);
 bool ota_finish(char *message, size_t size);
 
 /**
+ * @brief Give up the upload in progress in place of ota_finish(): what was
+ *        written is dropped. Any context.
+ *
+ * @param why   for the status line; must stay valid (a string constant)
+ */
+void ota_abandon(char const *why);
+
+/**
+ * @return true whilst an update is being received, waits for BOOT or installs
+ */
+bool ota_busy(void);
+
+/**
  * @return true whilst the update side wants the upload's tcp window kept shut,
  *         so that it can write flash with nothing on its way. Any context.
  */

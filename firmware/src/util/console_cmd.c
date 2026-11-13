@@ -33,6 +33,7 @@
 #include "usb_device.h"
 #include "util/output.h"
 #include "util/reset_info.h"
+#include "net_update.h"
 #ifdef HAS_WIFI
 #include "wifi.h"
 #endif
@@ -72,7 +73,7 @@ static const console_cmd_t commands[] = {
     { "bt",       cmd_bt,       "bt [pair|forget]: bluetooth state, bonds; open pairing 2 min; forget all bonds" },
     { "pads",     cmd_pads,     "pads, players and what goes out" },
     { "wifi",     cmd_wifi,     "wifi [off|ap|join <ssid> [password]]: wi-fi state, page password; set the mode" },
-    { "ota",      cmd_ota,      "ota [previous]: firmware slots and updates; restart into the previous firmware" },
+    { "ota",      cmd_ota,      "ota [previous|check|install]: firmware slots and updates; the previous firmware; the latest release" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
@@ -353,10 +354,20 @@ static void cmd_ota(char const *arg)
             ahprintf("not done: %s\n", message);
         return;
     }
-    if (*arg) {
-        ahprintf("ota [previous]\n");
+    if (strcmp(arg, "check") == 0) {
+        ahprintf(net_update_check() ? "asking for the latest release\n" : "not now: busy\n");
         return;
     }
+    if (strcmp(arg, "install") == 0) {
+        ahprintf(net_update_install() ? "downloading\n" : "not now: busy, or no release found yet (ota check)\n");
+        return;
+    }
+    if (*arg) {
+        ahprintf("ota [previous|check|install]\n");
+        return;
+    }
+    ahprintf("this firmware: %s; latest release: %s; %s\n", ahp_version,
+        net_update_latest()[0] ? net_update_latest() : "?", net_update_status());
     ahprintf("update: %s\n", ota_status());
     ahprintf("this firmware: %s\n", ota_trial() ? "on trial (accepts itself 10 s after boot)" : "accepted");
     ahprintf("previous firmware: %s\n", ota_previous_available() ? "can be booted again (ota previous)" : "none");

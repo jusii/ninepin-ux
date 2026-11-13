@@ -26,13 +26,16 @@
 #define MEM_LIBC_MALLOC             0
 #define MEM_ALIGNMENT               4
 // the page goes out with TCP_WRITE_FLAG_COPY, a send buffer at a time
-#define MEM_SIZE                    24000
+// plus what a tls connection takes whilst a firmware download runs
+// (net_update.c): mbed tls allocates here too, a 16K record buffer, the
+// handshake and the servers' certificates
+#define MEM_SIZE                    (24000 + 64000)
 #define MEMP_NUM_TCP_SEG            32
 #define MEMP_NUM_ARP_QUEUE          10
 // receive buffers for the radio driver: a full tcp window plus out-of-order
 // segments after a loss, with room to spare (when they run out, the driver
 // drops every frame, retransmissions too)
-#define PBUF_POOL_SIZE              32
+#define PBUF_POOL_SIZE              40
 #define MEMP_NUM_TCP_PCB            8
 #define MEMP_NUM_TCP_PCB_LISTEN     2
 #define MEMP_NUM_UDP_PCB            6
@@ -47,10 +50,22 @@
 #define LWIP_IPV6                   0
 #define LWIP_TCP                    1
 #define LWIP_UDP                    1
-#define LWIP_DNS                    0
+// names: github's, for a firmware download (net_update.c)
+#define LWIP_DNS                    1
+#define DNS_TABLE_SIZE              2
+#define DNS_MAX_NAME_LENGTH         64
+
+// tls for that download (pico_lwip_mbedtls, mbedtls_config.h). no certificate
+// is verified: the firmware's own signature is what counts
+#define LWIP_ALTCP                  1
+#define LWIP_ALTCP_TLS              1
+#define LWIP_ALTCP_TLS_MBEDTLS      1
+#define ALTCP_MBEDTLS_AUTHMODE      MBEDTLS_SSL_VERIFY_NONE
 
 #define TCP_MSS                     1460
-#define TCP_WND                     (8 * TCP_MSS)
+// a whole tls record (16K and its trimmings) must fit the window: it is only
+// given back once the record is through
+#define TCP_WND                     (16 * TCP_MSS)
 #define TCP_SND_BUF                 (8 * TCP_MSS)
 #define TCP_SND_QUEUELEN            ((4 * (TCP_SND_BUF) + (TCP_MSS - 1)) / (TCP_MSS))
 #define TCP_LISTEN_BACKLOG          1

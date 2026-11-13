@@ -92,6 +92,11 @@ settings_t const *wifi_page_storing(void);
 bool wifi_page_busy(void);
 
 /**
+ * @return true if the board is on a network it joined, with an address
+ */
+bool wifi_joined(void);
+
+/**
  * @brief The state for the console's wifi command. Main loop.
  */
 void wifi_describe(void);

@@ -37,6 +37,7 @@
 #include "pad.h"
 #include "profiles.h"
 #include "util/reset_info.h"
+#include "net_update.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -481,6 +482,7 @@ int main(void)
         // uploaded one to the free slot
         AT(RESET_STAGE_OTA);
         ota_task();
+        net_update_task();
 
         LOOP_STAGE("L kbd");
         // drain + inject any keycodes from the real amiga keyboard

@@ -180,6 +180,11 @@ static void set_state(wifi_state_t new_state)
     show();
 }
 
+bool wifi_joined(void)
+{
+    return state == WIFI_STATE_JOINED;
+}
+
 char const *wifi_status(void)
 {
     return status_text;

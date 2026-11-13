@@ -26,6 +26,7 @@
 
 #include "config.h"
 #include "ota.h"
+#include "lwipopts.h"
 
 #include <stddef.h>
 #include <stdio.h>
@@ -56,7 +57,10 @@
 #define UF2_BLOCK               512u
 #define UF2_PAYLOAD             256u
 
-#define OTA_RING                32768u  // more than a tcp window (http_server.c)
+// half of it must be more than a tcp window (lwipopts.h): the window only
+// reopens for what the ring has room for beyond a window's worth still on its
+// way, and flash is only written once half the ring is waiting
+#define OTA_RING                65536u
 #define OTA_MAX_BLOCKS          (4096u * 1024u / UF2_PAYLOAD)
 #define OTA_CONFIRM_MS          30000u
 #define OTA_INSTALL_DELAY_MS    1500u   // the page's answer goes out first
@@ -93,6 +97,7 @@ static volatile ota_state_t state;
 static char status_text[48] = "idle";
 
 // upload ring: written in network callbacks, read in the main loop
+_Static_assert(OTA_RING / 2 > TCP_WND + 512, "half the upload ring must hold more than a tcp window");
 static uint8_t ring[OTA_RING];
 static volatile uint32_t ring_head, ring_tail;
 static volatile bool upload_done;
@@ -118,9 +123,12 @@ static uint32_t erase_next, erase_end;     // slot offsets
 // and then. so flash is only touched whilst nothing can be on its way: once
 // half the ring is waiting, the window stays shut (ota_hold_window()) until
 // the sender has filled it, the ring is written out, and the window reopens.
-// one round trip per 16K, and no flash pause ever overlaps incoming data
+// one round trip per 32K, and no flash pause ever overlaps incoming data
 #define OTA_QUIET_WAIT_MS       300u    // the sender sent less than a window: go anyway
 static volatile bool flash_wanted;
+// the sender gave an upload up part way (net_update.c: a signature that does
+// not match): the main loop drops what has been written
+static char const *volatile abandon_why;
 static uint32_t wanted_since;
 
 /**
@@ -325,6 +333,7 @@ bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
         }
         ring_head = ring_tail = 0;
         upload_done = false;
+        abandon_why = NULL;
         target_size = 0;        // the main loop sets the slot up afresh
         last_data_ms = now_ms();
         state = OTA_RECEIVING;
@@ -348,6 +357,17 @@ bool ota_receive(uint32_t offset, uint8_t const *data, size_t len)
     }
     last_data_ms = now_ms();
     return true;
+}
+
+void ota_abandon(char const *why)
+{
+    if (state == OTA_RECEIVING)
+        abandon_why = why;
+}
+
+bool ota_busy(void)
+{
+    return (state == OTA_RECEIVING) || (state == OTA_CONFIRM) || (state == OTA_INSTALL);
 }
 
 bool ota_finish(char *message, size_t size)
@@ -701,6 +721,15 @@ static void receive_task(void)
     // written out: the window reopens
     if (flash_wanted && (ring_used() < UF2_BLOCK))
         flash_wanted = false;
+
+    if (abandon_why) {
+        char const *why = abandon_why;
+
+        abandon_why = NULL;
+        invalidate_target();
+        fail(why);
+        return;
+    }
 
     if (!upload_done) {
         // signed: a chunk may arrive (and stamp a newer time) between the

@@ -25,6 +25,7 @@
 #include "lwip/tcp.h"
 
 #include "kvmd_api.h"
+#include "net_update.h"
 #include "ota.h"
 #include "profiles.h"
 #include "settings.h"
@@ -1472,7 +1473,8 @@ bool http_server_upload_quiet(void)
             quiet = false;
     }
     cyw43_arch_lwip_end();
-    return quiet;
+    // a download from the internet feeds the update side too (net_update.c)
+    return quiet && net_update_quiet();
 }
 
 void http_server_task(void)
