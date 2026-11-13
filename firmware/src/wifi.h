@@ -80,6 +80,12 @@ char const *wifi_status(void);
 char const *wifi_page_result(void);
 
 /**
+ * @return the settings of a save the page handed over and the main loop has
+ *         not finished storing, or NULL. Cyw43 background context.
+ */
+settings_t const *wifi_page_storing(void);
+
+/**
  * @brief The state for the console's wifi command. Main loop.
  */
 void wifi_describe(void);

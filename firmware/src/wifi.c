@@ -94,6 +94,10 @@ static wifi_profile_op_t page_pending_op;
 static char page_pending_name[PROFILE_NAME_LEN];
 static unsigned page_pending_slot;
 static volatile bool page_pending_ready;
+// a save's settings from the moment the page hands them over until they are
+// stored: what the page shows meanwhile (lwip context reads, main loop clears)
+static settings_t page_storing;
+static volatile bool page_storing_valid;
 static char password_pending[SETTINGS_PAGE_PASSWORD_LEN];   // empty: keep the password
 static bool password_pending_open;
 static volatile bool password_pending_ready;
@@ -540,12 +544,22 @@ static void follow_settings(void)
 // a save from the page
 //--------------------------------------------------------------------+
 
+settings_t const *wifi_page_storing(void)
+{
+    return page_storing_valid ? &page_storing : NULL;
+}
+
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, char const *name, unsigned slot)
 {
     if (page_pending_ready)
         return false;
     if (settings)
         page_pending = *settings;
+    // a plain save is what the settings will be; a profile step changes more
+    if (settings && (op == WIFI_PROFILE_NONE)) {
+        page_storing = *settings;
+        page_storing_valid = true;
+    }
     page_pending_op = op;
     snprintf(page_pending_name, sizeof(page_pending_name), "%s", name ? name : "");
     page_pending_slot = slot;
@@ -610,7 +624,7 @@ static void page_password_task(void)
     page_result_set(open ? "page password switched off" : "page password stored");
 }
 
-static void page_save_task(void)
+static void page_save_work(void)
 {
     settings_t settings;
     uint32_t interrupts;
@@ -702,6 +716,14 @@ static void page_save_task(void)
     }
     ahprintf("[web] settings %s\n", result);
     page_result_set(result);
+}
+
+static void page_save_task(void)
+{
+    if (!page_pending_ready)
+        return;
+    page_save_work();
+    page_storing_valid = false;
 }
 
 //--------------------------------------------------------------------+

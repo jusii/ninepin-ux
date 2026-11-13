@@ -31,7 +31,7 @@ void web_page_init(void);
  *
  * @return its length, or 0 if it did not fit
  */
-size_t web_page_render(char *out, size_t size);
+size_t web_page_render(char *out, size_t size, char const *note);
 
 /**
  * @brief A short page: a title, one paragraph of text (escaped here), a link
@@ -39,7 +39,7 @@ size_t web_page_render(char *out, size_t size);
  *
  * @return its length (cut short if it did not fit)
  */
-size_t web_page_message(char *out, size_t size, char const *title, char const *text);
+size_t web_page_message(char *out, size_t size, char const *title, char const *text, bool back);
 
 /**
  * @brief The log-in page (join mode asks for the page password).

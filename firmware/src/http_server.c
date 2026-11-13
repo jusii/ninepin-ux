@@ -408,12 +408,13 @@ static bool respond_with(http_conn_t *c, int status, char const *body, size_t bo
  */
 static bool respond_message(http_conn_t *c, int status, char const *title, char const *message, char const *extra_head)
 {
-    size_t body_len = web_page_message(c->small, sizeof(c->small) - 320, title, message);
+    size_t body_len = web_page_message(c->small, sizeof(c->small) - 320, title, message,
+        extra_head && strstr(extra_head, "Refresh:"));
 
     return respond_with(c, status, c->small, body_len, extra_head);
 }
 
-static bool respond_page(http_conn_t *c)
+static bool respond_page(http_conn_t *c, char const *note)
 {
     size_t length;
 
@@ -421,7 +422,7 @@ static bool respond_page(http_conn_t *c)
         return respond_message(c, 503, "Busy", "Another page is on its way out; reload in a moment.", "Retry-After: 1\r\n");
 
     page_owner = c;
-    length = web_page_render(page, sizeof(page));
+    length = web_page_render(page, sizeof(page), note);
     if (!length) {
         page_owner = NULL;
         return respond_message(c, 503, "Too big", "The page did not fit its buffer.", NULL);
@@ -677,6 +678,9 @@ static bool handle_form(http_conn_t *c)
     else
         snprintf(text, sizeof(text), "The board stores and applies the settings now.");
 
+    // a plain save goes straight back to the settings, which show it at once
+    if (!wifi_changed && (c->form == FORM_SETTINGS))
+        return respond_message(c, 303, "Saved", text, "Location: /?saved\r\n");
     return respond_message(c, 200, "Saved", text, wifi_changed ? NULL : "Refresh: 2; url=/\r\n");
 }
 
@@ -1056,7 +1060,7 @@ static bool handle_head(http_conn_t *c)
 
     if (is_get) {
         if (strcmp(target, "/") == 0)
-            return respond_page(c);
+            return respond_page(c, (query && !strcmp(query, "saved")) ? "Saved." : NULL);
         return respond_after_body(c, 404, "Not found", "There is only the settings page here.", NULL);
     }
 

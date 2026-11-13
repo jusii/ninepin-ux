@@ -381,16 +381,22 @@ static void put_combos(writer_t *w, settings_t const *s)
 // the page
 //--------------------------------------------------------------------+
 
-size_t web_page_render(char *out, size_t size)
+size_t web_page_render(char *out, size_t size, char const *note)
 {
     writer_t w = { out, size, 0, false };
-    settings_t const *s = settings_get();
+    // a save still on its way into flash already shows
+    settings_t const *s = wifi_page_storing() ? wifi_page_storing() : settings_get();
     char line[48];
 
     put_head(&w, wifi_name());
     put(&w, "<h1>");
     put_text(&w, wifi_name(), 32);
     put(&w, "</h1>");
+    if (note) {
+        put(&w, "<p><b>");
+        put_text(&w, note, 64);
+        put(&w, "</b>");
+    }
 
     // status
     put(&w, "<h2>Status</h2><table>");
@@ -516,11 +522,14 @@ size_t web_page_render(char *out, size_t size)
     return w.full ? 0 : w.len;
 }
 
-size_t web_page_message(char *out, size_t size, char const *title, char const *text)
+size_t web_page_message(char *out, size_t size, char const *title, char const *text, bool back)
 {
     writer_t w = { out, size, 0, false };
 
     put_head(&w, title);
+    // back by itself, for browsers that ignore the Refresh header
+    if (back)
+        put(&w, "<meta http-equiv=refresh content=\"2;url=/\">");
     put(&w, "<h1>");
     put_text(&w, title, 64);
     put(&w, "</h1><p>");

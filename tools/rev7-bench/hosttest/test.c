@@ -137,6 +137,7 @@ static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
 char const *reset_info_detail(void) { return ""; }
+settings_t const *wifi_page_storing(void) { return NULL; }
 void reset_info_status(char *out, size_t size) { snprintf(out, size, "0:00:07 since: power on"); }
 static int pair_windows;
 void bt_hid_pair_window(void) { pair_windows++; }
@@ -377,11 +378,12 @@ int main(void)
         current.pad_combo[5].button = 9; current.pad_combo[5].key = 0x2c;
         snprintf(body, sizeof(body), "t=%s&mode=1", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
-        request(req, 1000, 200, NULL);
+        request(req, 1000, 303, "Location: /?saved");
+        request("GET /?saved HTTP/1.1\r\n\r\n", 1000, 200, "<b>Saved.</b>");
         assert(submitted.pad_combo[5].button == 9 && submitted.pad_combo[5].key == 0x2c);
         snprintf(body, sizeof(body), "t=%s&combos=1&c1b=6&c1d=1&c1f=1&c1k=&c2b=7&c2k=+Space&c3b=0&c3u=1&c3k=f1&c4b=16&c4k=0x64&c5b=1&c5k=Q", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
-        request(req, 17, 200, NULL);
+        request(req, 17, 303, NULL);
         assert(submitted.pad_combo[0].button == 6 && submitted.pad_combo[0].outputs == (2 | 16) && submitted.pad_combo[0].key == 0);
         assert(submitted.pad_combo[1].button == 7 && submitted.pad_combo[1].outputs == 0 && submitted.pad_combo[1].key == 0x2c);
         assert(submitted.pad_combo[2].button == 0 && submitted.pad_combo[2].outputs == 0 && submitted.pad_combo[2].key == 0);
