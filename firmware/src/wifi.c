@@ -658,6 +658,9 @@ static void page_save_task(void)
             }
             if (settings.pad_profile == profile_slot + 1)
                 settings.pad_profile = 0;
+            for (unsigned m = 0; m < SETTINGS_MODE_COUNT; m++)
+                if (settings.pad_profile_mode[m] == profile_slot + 1)
+                    settings.pad_profile_mode[m] = 0;
             snprintf(what, sizeof(what), "profile %s deleted, ", profile_name);
         }
     } else {
@@ -671,7 +674,8 @@ static void page_save_task(void)
         profile_t profile;
         int slot;
 
-        profiles_from_settings(&profile, profile_name, &settings);
+        // on a save the slot carries the machine the profile is for
+        profiles_from_settings(&profile, profile_name, (uint8_t)profile_slot, &settings);
         cyw43_arch_lwip_begin();
         slot = profiles_put(&profile);
         cyw43_arch_lwip_end();

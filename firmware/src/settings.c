@@ -18,6 +18,7 @@
  */
 
 #include "settings.h"
+#include "profiles.h"
 #include "config.h"
 
 #include <stddef.h>
@@ -159,6 +160,8 @@ bool settings_valid(settings_t const *s)
         && (s->mouse_speed < SETTINGS_MOUSE_SPEED_COUNT)
         && (s->display < SETTINGS_DISPLAY_COUNT) && (s->watchdog < SETTINGS_WATCHDOG_COUNT)
         && (s->page_open <= 1) && (s->pad_profile <= SETTINGS_PAD_PROFILES)
+        && (s->pad_profile_mode[0] <= SETTINGS_PAD_PROFILES) && (s->pad_profile_mode[1] <= SETTINGS_PAD_PROFILES)
+        && (s->pad_profile_mode[2] <= SETTINGS_PAD_PROFILES)
         && (s->net_control <= 1) && (s->net_screen < SETTINGS_NET_SCREEN_COUNT)
         && (s->net_scale < SETTINGS_NET_SCALE_COUNT)
         && string_ok(s->wifi_ssid, sizeof(s->wifi_ssid))
@@ -264,16 +267,22 @@ static void publish(settings_t const *settings)
     restore_interrupts(interrupts);
 }
 
-bool settings_save(settings_t const *settings)
+bool settings_save(settings_t const *given)
 {
+    settings_t adjusted;
+    settings_t const *settings = &adjusted;
     settings_t stored_values;
     settings_write_t write;
     settings_record_t record;
     unsigned bank;
     int result;
 
-    if (!settings_valid(settings))
+    if (!settings_valid(given))
         return false;
+
+    // each mode keeps its own pad profile: a change of mode brings its one back
+    adjusted = *given;
+    profiles_follow_mode(&adjusted, settings_get());
 
     // unchanged: no flash wear
     if ((current_bank >= 0) && record_decode(bank_record((unsigned)current_bank), &stored_values)

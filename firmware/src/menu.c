@@ -282,7 +282,7 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
         // the pad profiles are made on the page; here one is picked
         profile_t const *profile = edited.pad_profile ? profiles_get(edited.pad_profile - 1u) : NULL;
 
-        if (!profiles_count())
+        if (!profiles_count_shown(edited.mode))
             snprintf(lines[2], MENU_COLS + 1, " (none saved)");
         else
             snprintf(lines[2], MENU_COLS + 1, editing ? " [ %s%s ]" : " < %s%s >", profile ? profile->name : "-",
@@ -569,7 +569,7 @@ static void change(int step)
 
             slot = (slot + ((step > 0) ? 1u : PROFILES_MAX - 1u)) % PROFILES_MAX;
             profile = profiles_get(slot);
-            if (profile) {
+            if (profile && profiles_shown(profile, edited.mode)) {
                 edited.pad_profile = (uint8_t)(slot + 1);
                 profiles_to_settings(profile, &edited);
                 dirty = true;

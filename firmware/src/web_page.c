@@ -310,12 +310,12 @@ static void put_profiles(writer_t *w, settings_t const *s)
         put(w, "none");
     }
 
-    if (profiles_count()) {
+    if (profiles_count_shown(s->mode)) {
         put(w, "<label>Saved profiles <span><select name=profile>");
         for (unsigned i = 0; i < PROFILES_MAX; i++) {
             profile_t const *p = profiles_get(i);
 
-            if (!p)
+            if (!p || !profiles_shown(p, s->mode))
                 continue;
             put(w, "<option value=%u%s>", i + 1, (p == loaded) ? " selected" : "");
             put_text(w, p->name, PROFILE_NAME_LEN);
@@ -326,7 +326,15 @@ static void put_profiles(writer_t *w, settings_t const *s)
     put(w, "<label>Save as <span><input name=profile_name size=12 maxlength=12 value=\"");
     if (loaded)
         put_text(w, loaded->name, PROFILE_NAME_LEN);
-    put(w, "\"> <button formaction=/profile-save>Save as profile</button></span></label>");
+    put(w, "\"> <select name=profile_for>");
+    {
+        static char const *const names[PROFILE_FOR_COUNT] = { "any machine", "Amiga", "C64" };
+        uint8_t machine = loaded ? loaded->machine : profiles_machine_of(s->mode);
+
+        for (unsigned m = 0; m < PROFILE_FOR_COUNT; m++)
+            put(w, "<option value=%u%s>%s", m, (m == machine) ? " selected" : "", names[m]);
+    }
+    put(w, "</select> <button formaction=/profile-save>Save as profile</button></span></label>");
 }
 
 static void put_combos(writer_t *w, settings_t const *s)
@@ -362,7 +370,9 @@ static void put_combos(writer_t *w, settings_t const *s)
         "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
         "the list. A profile keeps the combos, Pad directions and Triangle button under a name: Save as "
-        "stores the whole form and the profile, Load puts a profile back.</small></details>");
+        "stores the whole form and the profile, Load puts a profile back. A profile for the Amiga or "
+        "the C64 is offered in that mode only, and each mode comes back with the profile it had last."
+        "</small></details>");
 }
 
 //--------------------------------------------------------------------+

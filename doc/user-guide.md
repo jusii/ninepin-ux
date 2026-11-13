@@ -140,13 +140,18 @@ L2 = space.
 
 ### profiles
 
-A profile keeps the combos, Pad directions and Triangle button under a name (up to 16 profiles,
+A profile keeps the combos, Pad directions and Triangle button under a name (up to 32 profiles,
 names up to 12 characters), one per game.
 
 * Page: type a name, Save as profile (stores the whole form too); Load and Delete for saved ones.
   Saving under an existing name replaces it.
 * Menu: Pad profile picks a saved one; Save & exit stores it.
 * A profile is a copy: loading one writes it into the settings. Factory defaults keep the profiles.
+* A profile is for the Amiga, the C64 or any machine (chosen beside the name; a new one takes the
+  current mode). It is offered in that mode only; usb mode offers them all.
+* Each mode remembers the profile it had last and loads it when the mode is switched to. A mode
+  that had none comes up without combos if the other mode had a profile. Combos edited but not
+  saved as a profile are lost on a mode switch.
 
 ## Bluetooth
 

@@ -111,7 +111,8 @@ typedef enum {
  *
  * @param settings  WIFI_PROFILE_SAVE: the form's settings; else NULL
  * @param name      WIFI_PROFILE_SAVE: the profile's name, checked
- * @param slot      WIFI_PROFILE_LOAD, WIFI_PROFILE_DELETE: the profile
+ * @param slot      WIFI_PROFILE_LOAD, WIFI_PROFILE_DELETE: the profile;
+ *                  WIFI_PROFILE_SAVE: the machine it is for (PROFILE_FOR_*)
  * @return false if a previous save is still waiting
  */
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, char const *name, unsigned slot);

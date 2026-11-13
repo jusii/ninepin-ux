@@ -81,7 +81,7 @@ void pads_profile_step(int step)
     profile_t const *profile = NULL;
     char text[22];
 
-    if (!profiles_count()) {
+    if (!profiles_count_shown(s.mode)) {
         dbgcons_notice("no pad profiles");
         return;
     }
@@ -89,8 +89,9 @@ void pads_profile_step(int step)
     for (unsigned tries = 0; tries <= PROFILES_MAX; tries++) {
         at = (at + PROFILES_MAX + 1u + ((step > 0) ? 1u : PROFILES_MAX)) % (PROFILES_MAX + 1u);
         profile = at ? profiles_get(at - 1u) : NULL;
-        if (!at || profile)
+        if (!at || (profile && profiles_shown(profile, s.mode)))
             break;
+        profile = NULL;
     }
 
     if (profile) {

@@ -27,11 +27,16 @@
 #define PROFILES_MAX        SETTINGS_PAD_PROFILES
 #define PROFILE_NAME_LEN    13      // 12 + nul
 
+// the machine a profile is for: it is offered in that mode only (and in usb
+// mode, which offers them all)
+enum { PROFILE_FOR_ANY = 0, PROFILE_FOR_AMIGA, PROFILE_FOR_C64, PROFILE_FOR_COUNT };
+
 typedef struct {
     char name[PROFILE_NAME_LEN];    // empty: slot unused
     uint8_t pad_triangle;
     uint8_t pad_directions;
     settings_combo_t combo[SETTINGS_PAD_COMBOS];
+    uint8_t machine;                // PROFILE_FOR_*
 } profile_t;
 
 /**
@@ -62,9 +67,31 @@ bool profiles_name_ok(char const *name);
 unsigned profiles_count(void);
 
 /**
+ * @return true if the profile is offered in this mode (SETTINGS_MODE_*)
+ */
+bool profiles_shown(profile_t const *profile, uint8_t mode);
+
+/**
+ * @return how many profiles are offered in this mode
+ */
+unsigned profiles_count_shown(uint8_t mode);
+
+/**
+ * @return the tag a profile saved in this mode gets unless told otherwise
+ */
+uint8_t profiles_machine_of(uint8_t mode);
+
+/**
+ * @brief Settings about to be stored: note the pad profile for the mode it
+ *        was used in, and on a change of mode bring the new mode's own back
+ *        (none: no combos, if there was a profile). settings.c.
+ */
+void profiles_follow_mode(settings_t *next, settings_t const *stored);
+
+/**
  * @brief Copy the pad settings into a profile / a profile into the settings.
  */
-void profiles_from_settings(profile_t *profile, char const *name, settings_t const *settings);
+void profiles_from_settings(profile_t *profile, char const *name, uint8_t machine, settings_t const *settings);
 void profiles_to_settings(profile_t const *profile, settings_t *settings);
 
 /**

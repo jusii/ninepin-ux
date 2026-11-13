@@ -13,6 +13,7 @@
 #include "kvmd_api.h"
 #include "pad.h"
 #include "profiles.h"
+#include "flash_map.h"
 #include "wifi.h"
 #include "util/run_mode.h"
 
@@ -118,7 +119,7 @@ bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char co
     if (op == WIFI_PROFILE_SAVE) {
         profile_t p;
         int at;
-        profiles_from_settings(&p, name, s);
+        profiles_from_settings(&p, name, (uint8_t)slot, s);
         at = profiles_put(&p);
         assert(at >= 0);
         current = *s;
@@ -399,27 +400,65 @@ int main(void)
 
         // pad profiles: save the form's pad part under a name, load, delete
         memset(fake_flash, 0xff, sizeof(fake_flash));
+        {
+            // a record as the 16-slot firmware wrote it is carried over, for any machine
+            uint8_t old[16 + 16 * 33 + 4]; uint32_t head[4] = { 0x50484141u, 1, 16 * 33, 7 }, crc = UINT32_MAX;
+            profile_t fresh;
+            memset(old, 0, sizeof(old)); memcpy(old, head, 16);
+            strcpy((char *)old + 16 + 2 * 33, "Old one"); old[16 + 2 * 33 + 13] = 1; old[16 + 2 * 33 + 15] = 6; old[16 + 2 * 33 + 16] = 0x12;
+            for (size_t k = 0; k < sizeof(old) - 4; k++) { crc ^= old[k]; for (int b = 0; b < 8; b++) crc = (crc >> 1) ^ ((crc & 1u) ? 0xedb88320u : 0); }
+            crc = ~crc; memcpy(old + sizeof(old) - 4, &crc, 4);
+            memcpy(fake_flash + FLASH_MAP_PROFILES_OFFSET + 4096, old, sizeof(old));
+            profiles_init();
+            assert(profiles_count() == 1 && profiles_find("Old one") == 2 && profiles_get(2)->machine == PROFILE_FOR_ANY);
+            assert(profiles_get(2)->pad_triangle == 1 && profiles_get(2)->combo[0].button == 6 && profiles_get(2)->combo[0].outputs == 0x12);
+            profiles_from_settings(&fresh, "New one", PROFILE_FOR_C64, &current);
+            assert(profiles_put(&fresh) == 0);
+            profiles_init();
+            assert(profiles_count() == 2 && profiles_find("Old one") == 2 && profiles_get(0)->machine == PROFILE_FOR_C64);
+            // offered by machine: the c64 one not in amiga mode, both in c64 and usb mode
+            assert(!profiles_shown(profiles_get(0), SETTINGS_MODE_AMIGA) && profiles_shown(profiles_get(0), SETTINGS_MODE_C64)
+                && profiles_shown(profiles_get(0), SETTINGS_MODE_USB) && profiles_shown(profiles_get(2), SETTINGS_MODE_AMIGA));
+            assert(profiles_count_shown(SETTINGS_MODE_AMIGA) == 1 && profiles_count_shown(SETTINGS_MODE_C64) == 2);
+            {
+                // each mode has its own: c64 with "New one", over to the amiga (none: the combos go), and back
+                settings_t was = current, next;
+                was.mode = SETTINGS_MODE_C64; was.pad_profile = 1; was.pad_combo[0].button = 3; memset(was.pad_profile_mode, 0, 3);
+                next = was; next.mode = SETTINGS_MODE_AMIGA; profiles_follow_mode(&next, &was);
+                assert(next.pad_profile == 0 && next.pad_combo[0].button == 0 && next.pad_profile_mode[SETTINGS_MODE_C64] == 1);
+                was = next; next.mode = SETTINGS_MODE_C64; profiles_follow_mode(&next, &was);
+                assert(next.pad_profile == 1 && next.pad_profile_mode[SETTINGS_MODE_AMIGA] == 0);
+                // no profiles in play: a change of mode leaves the combos alone
+                was = current; was.pad_profile = 0; was.pad_combo[0].button = 3; memset(was.pad_profile_mode, 0, 3);
+                next = was; next.mode = (uint8_t)!was.mode; profiles_follow_mode(&next, &was);
+                assert(next.pad_combo[0].button == 3 && next.pad_profile == 0);
+                // the same mode: just noted
+                was = current; next = was; next.pad_profile = 3; profiles_follow_mode(&next, &was);
+                assert(next.pad_profile_mode[was.mode] == 3);
+            }
+            memset(fake_flash, 0xff, sizeof(fake_flash));
+        }
         profiles_init();
         assert(profiles_count() == 0);
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "Profile: none");
         assert(!strstr(last_out, "formaction=/profile-load") && strstr(last_out, "formaction=/profile-save"));
-        snprintf(body, sizeof(body), "t=%s&pad_triangle=1&pad_directions=2&combos=1&c1b=6&c1d=1&c1f=1&c2b=7&c2k=space&profile_name=Blue+Max", token);
+        snprintf(body, sizeof(body), "t=%s&pad_triangle=1&pad_directions=2&combos=1&c1b=6&c1d=1&c1f=1&c2b=7&c2k=space&profile_for=0&profile_name=Blue+Max", token);
         post("/profile-save", NULL, body, 200, "as the profile Blue Max");
         assert(profiles_count() == 1 && current.pad_profile == 1 && current.pad_triangle == 1 && current.pad_combo[1].key == 0x2c);
-        snprintf(body, sizeof(body), "t=%s&pad_triangle=0&pad_directions=0&combos=1&c1b=5&c1u=1&profile_name=jumper", token);
+        snprintf(body, sizeof(body), "t=%s&pad_triangle=0&pad_directions=0&combos=1&c1b=5&c1u=1&profile_for=0&profile_name=jumper", token);
         post("/profile-save", NULL, body, 200, "as the profile jumper");
         assert(profiles_count() == 2 && current.pad_profile == 2 && current.pad_combo[0].button == 5 && current.pad_combo[1].button == 0);
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "Profile: <b>jumper</b><label>");
         assert(strstr(last_out, "<option value=1>Blue Max<option value=2 selected>jumper</select>"));
         // the same name again: saved over, not a third
-        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=5&c1u=1&c1f=1&profile_name=jumper", token);
+        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=5&c1u=1&c1f=1&profile_for=0&profile_name=jumper", token);
         post("/profile-save", NULL, body, 200, NULL);
         assert(profiles_count() == 2 && profiles_get(1)->combo[0].outputs == (1 | 16));
         // edited without saving the profile: the page says so
         current.pad_combo[0].outputs = 1;
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<b>jumper</b> (changed since)");
         // load the other one
-        snprintf(body, sizeof(body), "t=%s&mode=2&profile=1&profile_name=ignored", token);
+        snprintf(body, sizeof(body), "t=%s&mode=2&profile=1&profile_for=0&profile_name=ignored", token);
         post("/profile-load", NULL, body, 200, "loads the pad profile Blue Max");
         assert(current.pad_profile == 1 && current.pad_triangle == 1 && current.pad_directions == 2 && current.mode == 0);
         assert(current.pad_combo[0].button == 6 && current.pad_combo[0].outputs == (2 | 16) && current.pad_combo[1].key == 0x2c);
@@ -427,13 +466,17 @@ int main(void)
         profiles_init();
         assert(profiles_count() == 2 && !strcmp(profiles_get(0)->name, "Blue Max") && profiles_find("jumper") == 1);
         // refusals
-        snprintf(body, sizeof(body), "t=%s&profile_name=", token);
+        snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=", token);
         post("/profile-save", NULL, body, 400, "1 to 12");
-        snprintf(body, sizeof(body), "t=%s&profile_name=thirteen-char", token);
+        snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=thirteen-char", token);
         post("/profile-save", NULL, body, 400, "1 to 12");
-        snprintf(body, sizeof(body), "t=%s&profile_name=a%%3Cb", token);
+        snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=a%%3Cb", token);
         post("/profile-save", NULL, body, 400, "1 to 12");
-        snprintf(body, sizeof(body), "t=bad&profile_name=x");
+        snprintf(body, sizeof(body), "t=%s&profile_name=nomachine", token);
+        post("/profile-save", NULL, body, 400, "which machine");
+        snprintf(body, sizeof(body), "t=%s&profile_for=3&profile_name=nomachine", token);
+        post("/profile-save", NULL, body, 400, "which machine");
+        snprintf(body, sizeof(body), "t=bad&profile_for=0&profile_name=x");
         post("/profile-save", NULL, body, 400, "out of date");
         snprintf(body, sizeof(body), "t=%s&profile=7", token);
         post("/profile-load", NULL, body, 400, "no such pad profile");
@@ -445,20 +488,20 @@ int main(void)
         snprintf(body, sizeof(body), "t=%s&profile=1", token);
         post("/profile-delete", NULL, body, 200, "deletes the pad profile Blue Max");
         assert(profiles_count() == 1 && current.pad_profile == 0 && current.pad_combo[0].button == 6);
-        // sixteen fit, the seventeenth is refused, saving over one still goes
-        for (int i = 0; i < 15; i++) {
-            snprintf(body, sizeof(body), "t=%s&profile_name=game+%d", token, i);
+        // thirty-two fit, the next is refused, saving over one still goes
+        for (int i = 0; i < 31; i++) {
+            snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=game+%d", token, i);
             post("/profile-save", NULL, body, 200, NULL);
         }
-        assert(profiles_count() == 16);
-        snprintf(body, sizeof(body), "t=%s&profile_name=one+too+many", token);
+        assert(profiles_count() == 32);
+        snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=one+too+many", token);
         post("/profile-save", NULL, body, 400, "slot is in use");
-        snprintf(body, sizeof(body), "t=%s&profile_name=game+3", token);
+        snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=game+3", token);
         post("/profile-save", NULL, body, 200, NULL);
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<b>game 3</b>");
-        printf("  page with 16 profiles: %zu bytes\n", strlen(last_out));
+        printf("  page with 32 profiles: %zu bytes\n", strlen(last_out));
         profiles_init();
-        assert(profiles_count() == 16);
+        assert(profiles_count() == 32);
         memset(current.pad_combo, 0, sizeof(current.pad_combo));
         current.pad_profile = 0; current.pad_triangle = 0; current.pad_directions = 0;
 

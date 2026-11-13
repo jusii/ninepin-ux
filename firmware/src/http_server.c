@@ -610,6 +610,8 @@ static bool handle_form(http_conn_t *c)
     settings_t const *current = settings_get();
     char const *new_name;
     char profile_name[PROFILE_NAME_LEN + 4] = "";
+    char profile_for[4] = "";
+    unsigned machine = PROFILE_FOR_ANY;
     bool wifi_changed, renamed;
 
     body[c->content_length] = 0;
@@ -631,6 +633,11 @@ static bool handle_form(http_conn_t *c)
         if (!profiles_name_ok(profile_name))
             return respond_message(c, 400, "Not saved", "A profile's name has 1 to 12 letters, digits, "
                 "spaces and - _ . +", NULL);
+        if (web_page_field(body, "profile_for", profile_for, sizeof(profile_for)) && (profile_for[0] >= '0')
+            && (profile_for[0] < '0' + PROFILE_FOR_COUNT) && !profile_for[1])
+            machine = (unsigned)(profile_for[0] - '0');
+        else
+            return respond_message(c, 400, "Not saved", "Say which machine the profile is for.", NULL);
         if ((profiles_find(profile_name) < 0) && (profiles_count() >= PROFILES_MAX))
             return respond_message(c, 400, "Not saved", "Every pad profile slot is in use: delete one, "
                 "or save over one by its name.", NULL);
@@ -642,7 +649,7 @@ static bool handle_form(http_conn_t *c)
         return respond_message(c, 400, "Not saved", error, NULL);
 
     if (!wifi_page_profile_submit((c->form == FORM_PROFILE_SAVE) ? WIFI_PROFILE_SAVE : WIFI_PROFILE_NONE,
-            &submitted, profile_name, 0))
+            &submitted, profile_name, machine))
         return respond_message(c, 503, "Not saved", "The previous save is still being stored; try again.", NULL);
 
     renamed = strcmp(submitted.device_name, current->device_name) != 0;
