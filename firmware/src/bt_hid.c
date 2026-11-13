@@ -909,8 +909,6 @@ static void bt_classic_descriptor_ready(uint8_t slot)
 
     connection->has_gamepad = (connection->pad_kind != BT_PAD_GENERIC)
         || hid_gamepad_parse(&connection->gamepad, descriptor, length);
-    if (connection->has_gamepad)
-        bt_classic_pad_arrived();
 
     // a playstation-like pad neither decoder knows (a dualsense whose
     // descriptor hides its 0x31, say): its buttons in the playstation order,
@@ -932,6 +930,7 @@ static void bt_classic_descriptor_ready(uint8_t slot)
         bt_hid_enqueue_pad_connect(bt_classic_input_slot(slot), connection->address, connection->pad_kind);
         if ((connection->pad_kind != BT_PAD_GENERIC) || connection->sony_layout)
             bt_classic_start_setup(connection);
+        bt_classic_pad_arrived();
     }
 
     ahprintf("[bt] classic descriptor %u bytes, %s%s\n", length,
@@ -973,13 +972,13 @@ static void bt_classic_become(uint8_t slot, bt_pad_kind_t kind)
     connection->pad_kind = kind;
     connection->sony_layout = false;
     connection->has_gamepad = true;
-    bt_classic_pad_arrived();
     connection->gamepad_device = true;
     // it already sends its full report: nothing to ask for
     connection->setup_requested = true;
     connection->setup_done = true;
     bt_classic_stop_inquiry();
     bt_hid_enqueue_pad_connect(input_slot, connection->address, kind);
+    bt_classic_pad_arrived();
     bt_hid_update_status();
 }
 
