@@ -16,6 +16,7 @@
 
 // ---------------- stubs added since the test was written
 int fake_lwip_locked;
+uint64_t fake_now_us = 1000000;
 char const ahp_build_stamp[] = "test";
 bool ota_trial(void) { return false; }
 char const *ota_status(void) { return "idle"; }
@@ -52,7 +53,7 @@ void tcp_abort(struct tcp_pcb *pcb) { pcb->aborted = 1; }
 void tcp_recved(struct tcp_pcb *pcb, u16_t len) { pcb->recved += len; }
 u8_t pbuf_free(struct pbuf *p) { (void)p; return 1; }
 char *ipaddr_ntoa(const ip_addr_t *a) { (void)a; return "192.168.4.16"; }
-uint32_t get_rand_32(void) { return 0x12345678u; }
+uint32_t get_rand_32(void) { static uint32_t n = 0x12345678u; return n += 0x9e3779b9u; }
 
 // ---------------- stubs of the firmware around it
 static settings_t current;
@@ -61,8 +62,26 @@ settings_t const *settings_get(void) { return &current; }
 bool settings_valid(settings_t const *s) { return s->mode < SETTINGS_MODE_COUNT && s->wifi_mode < SETTINGS_WIFI_COUNT; }
 void ahprintf(const char *fmt, ...) { va_list a; va_start(a, fmt); printf("    log: "); vprintf(fmt, a); va_end(a); }
 static int join_mode;
-bool wifi_page_needs_password(void) { return join_mode; }
+bool wifi_page_needs_password(void) { return join_mode && !current.page_open; }
 char const *wifi_name(void) { return "ninepin-64f6"; }
+char const *wifi_default_name(void) { return "ninepin-64f6"; }
+bool settings_device_name_ok(char const *n)
+{
+    size_t l = strlen(n);
+    if (l > 15) return false;
+    for (size_t i = 0; i < l; i++)
+        if (!((n[i] >= 'a' && n[i] <= 'z') || (n[i] >= '0' && n[i] <= '9') || (n[i] == '-' && i && i + 1 < l))) return false;
+    return true;
+}
+static char new_password[32]; static int new_open = -1, password_submits;
+bool wifi_page_password_submit(char const *p, bool open)
+{
+    snprintf(new_password, sizeof(new_password), "%s", p ? p : ""); new_open = open; password_submits++;
+    // as the main loop would
+    if (new_password[0]) strcpy(current.page_password, new_password);
+    current.page_open = open;
+    return true;
+}
 
 // the network-control api is not under test here: answer every call 404
 void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
@@ -142,11 +161,31 @@ static void check_response(struct tcp_pcb *p, int status, char const *must)
     printf("  ok %d (%zu bytes)%s%s\n", status, p->out_len, must ? ", has " : "", must ? must : "");
 }
 
+static char last_out[70000];
 static void request(char const *req, size_t chunk, int status, char const *must)
 {
     struct tcp_pcb *p = conn_new();
     deliver(p, req, strlen(req), chunk);
     check_response(p, status, must);
+    memcpy(last_out, p->out, p->out_len + 1);
+}
+
+static void post(char const *path, char const *extra_head, char const *body, int status, char const *must)
+{
+    char r[4096];
+    snprintf(r, sizeof(r), "POST %s HTTP/1.1\r\n%sContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n%s",
+        path, extra_head ? extra_head : "", strlen(body), body);
+    request(r, 11, status, must);
+}
+
+// the session cookie of the last response, as a request header line
+static char *cookie_line(void)
+{
+    static char line[128];
+    char *c = strstr(last_out, "Set-Cookie: auth_token=");
+    assert(c);
+    snprintf(line, sizeof(line), "Cookie: a=b; auth_token=%.16s; z=1\r\n", c + 23);
+    return line;
 }
 
 int main(void)
@@ -159,6 +198,7 @@ int main(void)
     strcpy(current.wifi_ssid, "a<b>\"c");
     strcpy(players[0].name, "DualSense");
     players[0].active = true;
+    players[0].input.buttons = (1u << 4) | (1u << 6);
     current.kb_remap[0].source = 4; current.kb_remap[0].target = 5;
 
     assert(http_server_start());
@@ -168,7 +208,7 @@ int main(void)
     printf("GET / (ap mode), various chunkings\n");
     request("GET / HTTP/1.1\r\nHost: x\r\n\r\n", 1, 200, "<select name=wifi_mode>");
     request("GET / HTTP/1.1\r\nHost: x\r\n\r\n", 7, 200, "a&lt;b&gt;&quot;c");
-    request("GET /?x=1 HTTP/1.1\r\nHost: x\r\n\r\n", 1000, 200, "DualSense");
+    request("GET /?x=1 HTTP/1.1\r\nHost: x\r\n\r\n", 1000, 200, "DualSense, holding button 5 7");
     request("GET /favicon.ico HTTP/1.1\r\n\r\n", 1000, 404, NULL);
     request("PUT / HTTP/1.1\r\nContent-Length: 3\r\n\r\nabc", 1000, 405, NULL);
     request("garbage\r\n\r\n", 1000, 400, NULL);
@@ -183,17 +223,91 @@ int main(void)
         fclose(f);
     }
 
-    printf("join mode: basic auth\n");
+    printf("join mode: log-in form, sessions, basic auth\n");
     join_mode = 1;
-    request("GET / HTTP/1.1\r\n\r\n", 1000, 401, "WWW-Authenticate: Basic realm=\"ninepin-64f6\"");
+    request("GET / HTTP/1.1\r\n\r\n", 1000, 303, "Location: /login");
+    assert(!strstr(last_out, "WWW-Authenticate"));
+    request("GET /login HTTP/1.1\r\n\r\n", 1000, 200, "autocomplete=current-password");
     // "x:d37qtsp979" -> eDpkMzdxdHNwOTc5
     request("GET / HTTP/1.1\r\nAuthorization: Basic eDpkMzdxdHNwOTc5\r\n\r\n", 1000, 200, "<h1>ninepin-64f6</h1>");
     // ":d37qtsp979" -> OmQzN3F0c3A5Nzk=
     request("GET / HTTP/1.1\r\nauthorization: basic OmQzN3F0c3A5Nzk=\r\n\r\n", 5, 200, NULL);
     // "x:d37qtsp97" -> eDpkMzdxdHNwOTc=
-    request("GET / HTTP/1.1\r\nAuthorization: Basic eDpkMzdxdHNwOTc=\r\n\r\n", 1000, 401, NULL);
+    request("GET / HTTP/1.1\r\nAuthorization: Basic eDpkMzdxdHNwOTc=\r\n\r\n", 1000, 303, NULL);
     // a post body behind a 401 is read first
     request("POST /settings HTTP/1.1\r\nContent-Length: 5\r\n\r\nabcde", 2, 401, NULL);
+    request("GET /favicon.ico HTTP/1.1\r\n\r\n", 1000, 401, NULL);
+    {
+        char *cookie, r[512], body[256];
+
+        post("/login", NULL, "username=ninepin-64f6&password=wrong", 403, "not the page password");
+        post("/login", NULL, "username=ninepin-64f6", 403, "not the page password");
+        post("/login", NULL, "username=ninepin-64f6&password=d37qtsp979", 303, "Location: /\r\n");
+        cookie = cookie_line();
+        assert(strstr(last_out, "HttpOnly; SameSite=Strict"));
+        snprintf(r, sizeof(r), "GET / HTTP/1.1\r\n%s\r\n", cookie);
+        request(r, 9, 200, "action=/logout");
+        request("GET / HTTP/1.1\r\nCookie: auth_token=0000000000000000\r\n\r\n", 1000, 303, NULL);
+        request("GET / HTTP/1.1\r\nCookie: auth_token=\r\n\r\n", 1000, 303, NULL);
+        // logged in already: /login leads to the page
+        snprintf(r, sizeof(r), "GET /login HTTP/1.1\r\n%s\r\n", cookie);
+        request(r, 1000, 303, "Location: /\r\n");
+
+        // the password form
+        snprintf(body, sizeof(body), "t=%s&new=short&again=short&open=0", token);
+        post("/password", cookie, body, 400, "8 to 16");
+        snprintf(body, sizeof(body), "t=%s&new=longenough1&again=longenough2&open=0", token);
+        post("/password", cookie, body, 400, "not the same");
+        snprintf(body, sizeof(body), "t=%s&new=has+space+in&again=has+space+in&open=0", token);
+        post("/password", cookie, body, 400, "without spaces");
+        snprintf(body, sizeof(body), "t=%s&new=12345678901234567&again=12345678901234567&open=0", token);
+        post("/password", cookie, body, 400, "8 to 16");
+        snprintf(body, sizeof(body), "t=nope&new=longenough1&again=longenough1&open=0");
+        post("/password", cookie, body, 400, "out of date");
+        snprintf(body, sizeof(body), "t=%s&new=&again=&open=0", token);
+        post("/password", cookie, body, 200, "Nothing to change");
+        assert(password_submits == 0);
+        snprintf(body, sizeof(body), "t=%s&new=longenough1&again=longenough1&open=0", token);
+        post("/password", NULL, body, 401, NULL);
+        assert(password_submits == 0);
+        post("/password", cookie, body, 200, "Set-Cookie: auth_token=");
+        assert(password_submits == 1 && !strcmp(new_password, "longenough1") && new_open == 0);
+        // the old session is gone, the new one and the new password work
+        snprintf(r, sizeof(r), "GET / HTTP/1.1\r\n%s\r\n", cookie);
+        cookie = cookie_line();
+        request(r, 1000, 303, NULL);
+        snprintf(r, sizeof(r), "GET / HTTP/1.1\r\n%s\r\n", cookie);
+        request(r, 1000, 200, NULL);
+        post("/login", NULL, "password=d37qtsp979", 403, NULL);
+        post("/login", NULL, "password=longenough1", 303, NULL);
+
+        // log out
+        snprintf(body, sizeof(body), "t=%s", token);
+        post("/logout", cookie, "t=bad", 400, NULL);
+        post("/logout", cookie, body, 303, "Location: /\r\n");
+        request(r, 1000, 303, "Location: /login");
+
+        // no password asked for: everything is open, and back
+        post("/login", NULL, "password=longenough1", 303, NULL);
+        cookie = cookie_line();
+        snprintf(body, sizeof(body), "t=%s&new=&again=&open=1", token);
+        post("/password", cookie, body, 200, "no longer asks");
+        assert(password_submits == 2 && new_open == 1 && !strcmp(current.page_password, "longenough1"));
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<option value=1 selected>no password");
+        assert(!strstr(last_out, "action=/logout"));
+        request("GET /login HTTP/1.1\r\n\r\n", 1000, 303, "Location: /\r\n");
+        snprintf(body, sizeof(body), "t=%s&open=0", token);
+        post("/password", NULL, body, 200, "asks for the page password");
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 303, NULL);
+
+        // five wrong passwords lock the address out
+        for (int i = 0; i < 5; i++)
+            post("/login", NULL, "password=wrongwrong", 403, "not the page password");
+        post("/login", NULL, "password=longenough1", 403, "Too many wrong");
+        fake_now_us += 31000000ull;
+        post("/login", NULL, "password=longenough1", 303, NULL);
+    }
+    strcpy(current.page_password, "d37qtsp979");
     join_mode = 0;
 
     printf("POST /settings\n");
@@ -208,6 +322,50 @@ int main(void)
         assert(strcmp(submitted.wifi_password, "secret&123") == 0);
         assert(submitted.ota_needs_boot == 1);
         assert(strcmp(submitted.page_password, "d37qtsp979") == 0);
+
+        // pad combos: the form carries them whole; a partial form leaves them be
+        current.pad_combo[5].button = 9; current.pad_combo[5].key = 0x2c;
+        snprintf(body, sizeof(body), "t=%s&mode=1", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 200, NULL);
+        assert(submitted.pad_combo[5].button == 9 && submitted.pad_combo[5].key == 0x2c);
+        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=6&c1d=1&c1f=1&c1k=&c2b=7&c2k=+Space&c3b=0&c3u=1&c3k=f1&c4b=16&c4k=0x64&c5b=1&c5k=Q", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 17, 200, NULL);
+        assert(submitted.pad_combo[0].button == 6 && submitted.pad_combo[0].outputs == (2 | 16) && submitted.pad_combo[0].key == 0);
+        assert(submitted.pad_combo[1].button == 7 && submitted.pad_combo[1].outputs == 0 && submitted.pad_combo[1].key == 0x2c);
+        assert(submitted.pad_combo[2].button == 0 && submitted.pad_combo[2].outputs == 0 && submitted.pad_combo[2].key == 0);
+        assert(submitted.pad_combo[3].button == 16 && submitted.pad_combo[3].key == 0x64);
+        assert(submitted.pad_combo[4].button == 1 && submitted.pad_combo[4].key == 0x14);
+        assert(submitted.pad_combo[5].button == 0 && submitted.pad_combo[5].key == 0);
+        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=17", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 400, "no such pad button");
+        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=1&c1k=spce", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 400, "no such key");
+        // the page shows them
+        current.pad_combo[0] = submitted.pad_combo[0]; current.pad_combo[1] = submitted.pad_combo[1];
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<option value=6 selected>6 R1");
+        assert(strstr(last_out, "name=c1d value=1 checked") && strstr(last_out, "name=c1f value=1 checked"));
+        assert(!strstr(last_out, "name=c1u value=1 checked") && strstr(last_out, "name=c2k size=7 maxlength=9 list=keys value=\"space\""));
+        memset(current.pad_combo, 0, sizeof(current.pad_combo));
+
+        // the device name
+        snprintf(body, sizeof(body), "t=%s&wifi_mode=1&device_name=Amiga-4000", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 200, "access point amiga-4000");
+        assert(!strcmp(submitted.device_name, "amiga-4000"));
+        snprintf(body, sizeof(body), "t=%s&device_name=-bad", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 400, "device name");
+        snprintf(body, sizeof(body), "t=%s&device_name=a+b", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 400, "device name");
+        snprintf(body, sizeof(body), "t=%s&device_name=sixteen-chars-xx", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 400, "device name");
+        submits = 1;
 
         snprintf(body, sizeof(body), "t=%s&mode=9", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);

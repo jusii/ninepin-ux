@@ -32,7 +32,10 @@
 // wi-fi); reserved on every board, empty without wi-fi
 #define INPUT_BRIDGE_NET_SLOTS        1
 #define INPUT_BRIDGE_NET_SLOT         (INPUT_BRIDGE_REAL_KBD_SLOT + INPUT_BRIDGE_REAL_KBD_SLOTS)
-#define INPUT_BRIDGE_MAX_SLOTS        (INPUT_BRIDGE_NET_SLOT + INPUT_BRIDGE_NET_SLOTS)
+
+// one slot for the keys pad buttons stand for (pads.c, the pad combos)
+#define INPUT_BRIDGE_PAD_KEY_SLOT     (INPUT_BRIDGE_NET_SLOT + INPUT_BRIDGE_NET_SLOTS)
+#define INPUT_BRIDGE_MAX_SLOTS        (INPUT_BRIDGE_PAD_KEY_SLOT + 1)
 
 void input_bridge_reset(uint8_t slot);
 void input_bridge_disconnect(uint8_t slot);

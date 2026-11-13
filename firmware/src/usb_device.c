@@ -23,6 +23,7 @@
 
 #include "input_bridge_bt.h"
 #include "usb_device.h"
+#include "util/debug_cons.h"
 #include "pad.h"
 #include "util/output.h"
 
@@ -466,6 +467,10 @@ void usb_device_mouse(uint8_t slot, hid_mouse_report_t const *report)
         slot_buttons[slot] = report->buttons;
         mouse_buttons_dirty = true;
     }
+
+    // what the mouse sends per click differs from mouse to mouse: show it
+    if (report->wheel)
+        dbgcons_mouse_wheel(report->wheel);
 
     mouse_dx += report->x;
     mouse_dy += report->y;

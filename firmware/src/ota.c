@@ -149,6 +149,17 @@ static uint32_t now_ms(void)
     return to_ms_since_boot(get_absolute_time());
 }
 
+/**
+ * an update waits for a BOOT press if the settings say so, and always when
+ * the page takes requests from the network without its password
+ */
+static bool needs_boot(void)
+{
+    settings_t const *s = settings_get();
+
+    return s->ota_needs_boot || (s->page_open && (s->wifi_mode == SETTINGS_WIFI_JOIN));
+}
+
 static uint32_t ring_used(void)
 {
     return (ring_head - ring_tail) % OTA_RING;
@@ -349,7 +360,7 @@ bool ota_finish(char *message, size_t size)
         return false;
     }
     upload_done = true;
-    snprintf(message, size, settings_get()->ota_needs_boot
+    snprintf(message, size, needs_boot()
         ? "Received. The board checks it now; when its screen says so, press BOOT within 30 s to install."
         : "Received. The board checks it now, then installs it and restarts; its screen says how it went.");
     return true;
@@ -717,7 +728,7 @@ static void receive_task(void)
     } else if (blocks_seen != blocks_expected) {
         invalidate_target();
         fail("the image is incomplete");
-    } else if (settings_get()->ota_needs_boot) {
+    } else if (needs_boot()) {
         radio_for_upload(false);
         state = OTA_CONFIRM;
         since_ms = now_ms();

@@ -127,6 +127,7 @@ static const menu_item_t items[] = {
 #endif
     CHOICE("Wi-Fi",             wifi_mode,      names_wifi,         NULL),
 #ifdef HAS_WIFI
+    CHOICE("Page password",     page_open,      names_page_open,    NULL),
     ACTION("Show page password", action_page_password_show),
     ACTION("New page password", action_page_password_new),
 #endif
@@ -423,6 +424,7 @@ static void action_page_password_new(void)
         return;
     }
     memcpy(edited.page_password, settings_get()->page_password, sizeof(edited.page_password));
+    edited.page_open = settings_get()->page_open;
     snprintf(page_password_notice, sizeof(page_password_notice), "new: %s", settings_get()->page_password);
     notice = page_password_notice;
 }

@@ -27,6 +27,7 @@ if (ENABLE_BLUETOOTH_HID)
     http_server.c
     kvmd_api.c
     kvmd_keys.c
+    web_auth.c
     web_page.c
     wifi.c
   )

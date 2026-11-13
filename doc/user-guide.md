@@ -89,7 +89,7 @@ Defaults in **bold**.
 
 **Board**
 * Mouse speed: **300 us**, 200 us, 150 us, 100 us
-* Display: **status**, hid diag, mouse diag, off
+* Display: **status**, hid diag, mouse diag (shows what a mouse sends, wheel counts included), off
 * Watchdog: off, 2 s, **5 s**
 
 **Bluetooth**
@@ -100,7 +100,8 @@ Defaults in **bold**.
 
 **Wi-Fi**
 * Wi-Fi: **off**, access point, join network
-* Show page password, New page password
+* Page password: **asked for**, off (join mode; see Wi-Fi)
+* Show page password, New page password (a random one; also switches it back on)
 * Network control: **off**, on (see below)
 * Net screen: the target's screen size for absolute moves on DE9: **640x256** ... 1920x1080
 * Net mouse scale: mouse counts per screen pixel on DE9: 50%, 75%, **100%**, 150%, 200%
@@ -123,6 +124,20 @@ pads.
 * The first pad is player 1, the next player 2. A pad that drops out keeps its player for 30 s.
 * Hold PS 1 s: menu.
 
+### combos
+
+Six slots on the page (Pad button combos): one pad button stands for directions and fire buttons
+held together, a keyboard key, or both. Example: R1 = down + fire 1 (the bomb in Blue Max),
+L2 = space.
+
+* A combo's direction wins over the stick; the pad button no longer does what it did.
+* Directions and fire go to the DE9 ports. The key goes wherever keyboards go, in every mode.
+* Button names are a PlayStation pad's. For other pads, hold the button and reload the page:
+  Status shows its number.
+* Keys: a letter, a digit, `f1`-`f12`, or `space enter esc backspace tab up down left right del
+  insert home end pgup pgdn lshift rshift lctrl lalt ralt lgui rgui capslock minus equals comma
+  period slash`.
+
 ## Bluetooth
 
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.
@@ -136,9 +151,16 @@ pads.
 * **Access point:** open network `ninepin-xxxx`, page at `http://192.168.4.1/`. Off after 15 min
   without a client; any save or a restart brings it back.
 * **Join network:** set the network on the page, then Wi-Fi = join network. Page at
-  `http://ninepin-xxxx.local/`; any user name, password from Show page password.
+  `http://ninepin-xxxx.local/`; log in with the page password (menu: Show page password).
+* **Device name:** set on the page; it replaces `ninepin-xxxx` as the access point's name and
+  the `.local` address. Letters, digits and `-`, up to 15; empty goes back to `ninepin-xxxx`.
+* **Page password:** change it on the page (8 to 16 characters), or switch it off there or in
+  the menu. Without it everyone on the network can change settings and use network control;
+  a firmware update then always waits for a BOOT press. New page password in the menu makes a
+  random one and switches it back on. Scripts can still use HTTP Basic (any user name).
 
-The page shows the status and every menu setting except Updates need BOOT (remaps read-only).
+The page shows the status and every menu setting except Updates need BOOT (remaps read-only),
+plus the pad combos, the device name and the page password.
 
 ## network control
 
@@ -148,7 +170,8 @@ capture device or an IP KVM; the board has no video.
 
 1. Wi-Fi = join network, Network control = on. Not available in access point mode.
 2. Base URL `http://ninepin-xxxx.local/api/`. Auth: any user name and the page password, as
-   `X-KVMD-User` / `X-KVMD-Passwd` headers, HTTP Basic, or `POST /api/auth/login`.
+   `X-KVMD-User` / `X-KVMD-Passwd` headers, HTTP Basic, or `POST /api/auth/login`. None with
+   the page password switched off.
 3. Plain HTTP only.
 
 ```shell
@@ -174,7 +197,8 @@ curl -u admin:PASSWORD -X POST 'http://ninepin-xxxx.local/api/hid/events/send_mo
 ## updates
 
 Copy `ninepin-ux.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
-= yes, press BOOT within 30 s when the OLED shows `BOOT: install`.
+= yes (and always with the page password switched off), press BOOT within 30 s when the OLED
+shows `BOOT: install`.
 
 A new firmware runs on trial and keeps itself after 10 s; if it hangs, the previous one boots.
 Previous firmware in the menu goes back one update. A running board enters BOOTSEL on a 1200 baud

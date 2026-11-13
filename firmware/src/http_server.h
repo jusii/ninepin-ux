@@ -11,10 +11,14 @@
  *   GET  /            status and the settings form (web_page.c)
  *   POST /settings    the form; handed to the main loop (wifi_page_submit())
  *   POST /update      a firmware file, streamed to ota_receive() (ota.h)
+ *   GET  /login       the log-in form; POST /login opens a session
+ *   POST /password    a new page password, or none asked for
+ *   POST /logout      ends the session
  *
- * in join mode every request needs http basic auth with the page password
- * (any user name). posts carry a per-boot token from the page, so another
- * site open in the same browser cannot post to the board.
+ * in join mode every request needs the page password, unless it is switched
+ * off: a session cookie from the log-in form (web_auth.h), or http basic
+ * auth (any user name) for scripts. posts carry a per-boot token from the
+ * page, so another site open in the same browser cannot post to the board.
  *
  * everything runs in the cyw43 background context.
  */

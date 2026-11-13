@@ -15,7 +15,8 @@
  *                  with the next settings save or the next boot
  *   join network   station on wifi_ssid / wifi_password, address by dhcp,
  *                  answering as ninepin-xxxx.local (mdns); every request needs
- *                  the page password (http basic auth, any user name)
+ *                  the page password (a login form, or http basic auth with
+ *                  any user name) unless page_open switches it off
  *
  * the mode follows the settings live. everything network-side runs in the
  * cyw43 background context; the page hands a save to the main loop
@@ -48,16 +49,23 @@ void wifi_init(void);
 void wifi_task(void);
 
 /**
- * @brief Make a new page password, store it. Main loop.
+ * @brief Make a new page password, store it, ask for it again (if it was
+ *        switched off) and end every session. Main loop.
  *
  * @return true if stored
  */
 bool wifi_new_page_password(void);
 
 /**
- * @return "ninepin-xxxx": the access point's name, the mdns host name
+ * @return the access point's name and the mdns host name: the settings'
+ *         device name, or wifi_default_name()
  */
 char const *wifi_name(void);
+
+/**
+ * @return "ninepin-xxxx", from the board's id
+ */
+char const *wifi_default_name(void);
 
 /**
  * @return the state in a line ("access point ninepin-1a2b, 1 client",
@@ -77,7 +85,8 @@ char const *wifi_page_result(void);
 void wifi_describe(void);
 
 /**
- * @return true if requests need the page password (join mode)
+ * @return true if requests need the page password (join mode, unless the
+ *         password is switched off)
  */
 bool wifi_page_needs_password(void);
 
@@ -88,6 +97,17 @@ bool wifi_page_needs_password(void);
  * @return false if a previous save is still waiting
  */
 bool wifi_page_submit(settings_t const *settings);
+
+/**
+ * @brief Hand a page password change to the main loop, which stores it.
+ *        Cyw43 background context.
+ *
+ * @param password  the new one, checked (web_auth_password_fault()); NULL or
+ *                  empty keeps the stored one
+ * @param open      true: join mode stops asking for it
+ * @return false if a previous change is still waiting
+ */
+bool wifi_page_password_submit(char const *password, bool open);
 
 #else
 

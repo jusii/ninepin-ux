@@ -21,6 +21,7 @@
 #include "tusb.h"
 
 #include "input_bridge.h"
+#include "input_bridge_bt.h"
 #include "menu.h"
 #include "settings.h"
 #include "util/output.h"
@@ -38,6 +39,7 @@ typedef struct {
     pad_player_hook_t hook;
     pad_input_t input;
     uint16_t state;                 // digital, under the settings
+    uint8_t keys[SETTINGS_PAD_COMBOS]; // the keys its held combo buttons stand for (0: none)
     uint32_t home_since;            // 0: not held
     uint8_t touch_buttons;
 } pad_slot_t;
@@ -58,6 +60,7 @@ static int16_t latest_slot = -1;    // the pad that reported last (merge, usb)
 static uint16_t sent_de9[PADS_PLAYERS];
 static pad_player_t sent_usb[PADS_PLAYERS];
 static bool usb_routed;
+static hid_keyboard_report_t sent_keys;
 
 void __attribute__((weak)) pads_output_de9(uint8_t player, uint16_t state)
 {
@@ -94,15 +97,41 @@ static uint8_t stick_directions(int8_t x, int8_t y)
     return dirs;
 }
 
-static uint16_t pad_digital(pad_input_t const *in)
+/**
+ * @param keys  the keys the held combo buttons stand for, a slot each (0: none)
+ */
+static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COMBOS])
 {
     settings_t const *s = settings_get();
     uint16_t state = 0;
+    uint16_t combo_buttons = 0;     // the pad buttons the combos have taken
+    uint16_t combo = 0;             // what the held ones stand for
+
+    for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++) {
+        settings_combo_t const *c = &s->pad_combo[i];
+        uint16_t bit;
+
+        keys[i] = 0;
+        if ((c->button < 1) || (c->button > SETTINGS_PAD_COMBO_BUTTONS))
+            continue;
+        bit = (uint16_t)(1u << (c->button - 1));
+        combo_buttons |= bit;
+        if (in->buttons & bit) {
+            combo |= c->outputs & SETTINGS_PAD_COMBO_OUTPUTS;
+            keys[i] = c->key;
+        }
+    }
 
     if (s->pad_directions != SETTINGS_PAD_DIR_STICK)
         state |= in->dpad;
     if (s->pad_directions != SETTINGS_PAD_DIR_DPAD)
         state |= stick_directions(in->lx, in->ly);
+
+    // a combo's directions win over the stick, an axis at a time
+    if (combo & (PAD_UP | PAD_DOWN))
+        state = (uint16_t)((state & ~(PAD_UP | PAD_DOWN)) | (combo & (PAD_UP | PAD_DOWN)));
+    if (combo & (PAD_LEFT | PAD_RIGHT))
+        state = (uint16_t)((state & ~(PAD_LEFT | PAD_RIGHT)) | (combo & (PAD_LEFT | PAD_RIGHT)));
 
     // opposite directions cancel
     if ((state & (PAD_UP | PAD_DOWN)) == (PAD_UP | PAD_DOWN))
@@ -110,14 +139,55 @@ static uint16_t pad_digital(pad_input_t const *in)
     if ((state & (PAD_LEFT | PAD_RIGHT)) == (PAD_LEFT | PAD_RIGHT))
         state &= (uint16_t)~(PAD_LEFT | PAD_RIGHT);
 
+    // a button a combo has taken no longer does what it did
     for (unsigned i = 0; i < PAD_LOGICAL_BUTTONS; i++) {
         unsigned own = s->pad_buttons[i] ? s->pad_buttons[i] : in->defaults[i];
 
-        if ((own >= 1) && (own <= 16) && (in->buttons & (1u << (own - 1))))
+        if ((own >= 1) && (own <= 16) && (in->buttons & (1u << (own - 1))) && !(combo_buttons & (1u << (own - 1))))
             state |= (uint16_t)(PAD_FIRE << i);
     }
 
-    return state;
+    return (uint16_t)(state | (combo & PAD_BUTTONS));
+}
+
+static bool pad_holds_keys(pad_slot_t const *pad)
+{
+    for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++)
+        if (pad->keys[i])
+            return true;
+    return false;
+}
+
+/**
+ * the combo keys every pad holds, as one keyboard: it goes wherever the
+ * keyboards go, in every mode
+ */
+static void route_keys(bool captured)
+{
+    hid_keyboard_report_t report;
+    unsigned count = 0;
+
+    memset(&report, 0, sizeof(report));
+    for (unsigned i = 0; !captured && (i < INPUT_BRIDGE_MAX_SLOTS); i++) {
+        if (!slots[i].present || slots[i].quarantine)
+            continue;
+        for (unsigned k = 0; k < SETTINGS_PAD_COMBOS; k++) {
+            uint8_t key = slots[i].keys[k];
+
+            if (!key)
+                continue;
+            if ((key >= HID_KEY_CONTROL_LEFT) && (key <= HID_KEY_GUI_RIGHT)) {
+                report.modifier |= (uint8_t)(1u << (key - HID_KEY_CONTROL_LEFT));
+            } else if ((count < 6) && !memchr(report.keycode, key, count)) {
+                report.keycode[count++] = key;
+            }
+        }
+    }
+
+    if (memcmp(&report, &sent_keys, sizeof(report)) == 0)
+        return;
+    sent_keys = report;
+    input_bridge_handle_keyboard(INPUT_BRIDGE_PAD_KEY_SLOT, &report, NULL);
 }
 
 //--------------------------------------------------------------------+
@@ -177,6 +247,8 @@ static void route(void)
         next[0] = next[1];
         next[1] = t;
     }
+
+    route_keys(captured);
 
     for (unsigned p = 0; p < PADS_PLAYERS; p++) {
         if (captured) {
@@ -326,7 +398,7 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad = &slots[slot];
     before = pad->state;
     pad->input = *input;
-    pad->state = pad_digital(input);
+    pad->state = pad_digital(input, pad->keys);
     latest_slot = slot;
 
     // home held: open the menu (pads_task() times it)
@@ -340,7 +412,7 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad_menu(slot, before, pad->state);
 
     // a pad let go of everything leaves quarantine
-    if (pad->quarantine && !pad->state && !input->home)
+    if (pad->quarantine && !pad->state && !input->home && !pad_holds_keys(pad))
         pad->quarantine = false;
 
     // the touchpad as a mouse, through the same path as any mouse

@@ -7,17 +7,20 @@
  *
  * the settings page's html; see web_page.h. every choice is a <select> whose
  * values are the setting's numbers, named as in the oled menu
- * (settings_names.c); the remap slots are listed, not edited.
+ * (settings_names.c); the remap slots are listed, not edited. the pad combos
+ * and the page password are set here only.
  */
 
 #include "web_page.h"
 #include "config.h"
 
+#include <ctype.h>
 #include <stdarg.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
 #include "pico/bootrom.h"
 
@@ -29,6 +32,7 @@
 #include "pad.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
+#include "web_auth.h"
 #include "wifi.h"
 
 //--------------------------------------------------------------------+
@@ -93,6 +97,86 @@ void web_page_init(void)
 }
 
 //--------------------------------------------------------------------+
+// the pad combos: buttons and keys by name
+//--------------------------------------------------------------------+
+
+// a pad's own buttons; the names are the playstation pads' (ds5.c, bt_ds4.c)
+static char const *const combo_buttons[SETTINGS_PAD_COMBO_BUTTONS + 1] = {
+    "-", "1 square", "2 cross", "3 circle", "4 triangle", "5 L1", "6 R1", "7 L2", "8 R2",
+    "9 create", "10 options", "11 L3", "12 R3", "13 PS", "14 touchpad", "15 mute", "16",
+};
+
+// the form's fields for a combo's outputs: c<slot><letter>, in pad.h's bit order
+static char const combo_letters[] = "udlrfgh";
+static char const *const combo_heads[] = { "&uarr;", "&darr;", "&larr;", "&rarr;", "F1", "F2", "F3" };
+
+typedef struct {
+    char const *name;
+    uint8_t usage;
+} web_key_t;
+
+// hid keyboard usages; letters, digits, f1..f12 and 0xNN are worked out
+static const web_key_t keys[] = {
+    { "space", 0x2c }, { "enter", 0x28 }, { "esc", 0x29 }, { "backspace", 0x2a }, { "tab", 0x2b },
+    { "up", 0x52 }, { "down", 0x51 }, { "left", 0x50 }, { "right", 0x4f },
+    { "del", 0x4c }, { "insert", 0x49 }, { "home", 0x4a }, { "end", 0x4d }, { "pgup", 0x4b }, { "pgdn", 0x4e },
+    { "lshift", 0xe1 }, { "rshift", 0xe5 }, { "lctrl", 0xe0 }, { "lalt", 0xe2 }, { "ralt", 0xe6 },
+    { "lgui", 0xe3 }, { "rgui", 0xe7 }, { "capslock", 0x39 },
+    { "minus", 0x2d }, { "equals", 0x2e }, { "comma", 0x36 }, { "period", 0x37 }, { "slash", 0x38 },
+};
+
+#define KEY_COUNT (sizeof(keys) / sizeof(keys[0]))
+
+static char const *key_name(uint8_t usage, char buf[8])
+{
+    for (size_t i = 0; i < KEY_COUNT; i++)
+        if (keys[i].usage == usage)
+            return keys[i].name;
+
+    if (!usage)
+        buf[0] = 0;
+    else if (usage >= 0x04 && usage <= 0x1d)
+        snprintf(buf, 8, "%c", 'a' + (usage - 0x04));
+    else if (usage >= 0x1e && usage <= 0x27)
+        snprintf(buf, 8, "%c", (usage == 0x27) ? '0' : '1' + (usage - 0x1e));
+    else if (usage >= 0x3a && usage <= 0x45)
+        snprintf(buf, 8, "f%u", usage - 0x3a + 1u);
+    else
+        snprintf(buf, 8, "0x%02x", usage);
+    return buf;
+}
+
+/**
+ * @return the usage a key name stands for, 0 for none (empty), -1 if there is no such key
+ */
+static int key_usage(char const *name)
+{
+    size_t length = strlen(name);
+    char *end;
+    unsigned long number;
+
+    if (!length)
+        return 0;
+    for (size_t i = 0; i < KEY_COUNT; i++)
+        if (strcasecmp(name, keys[i].name) == 0)
+            return keys[i].usage;
+
+    if (length == 1 && isalpha((unsigned char)name[0]))
+        return 0x04 + (tolower((unsigned char)name[0]) - 'a');
+    if (length == 1 && isdigit((unsigned char)name[0]))
+        return (name[0] == '0') ? 0x27 : 0x1e + (name[0] - '1');
+    if ((name[0] == 'f' || name[0] == 'F') && isdigit((unsigned char)name[1])) {
+        number = strtoul(name + 1, &end, 10);
+        return (!*end && number >= 1 && number <= 12) ? (int)(0x3a + number - 1) : -1;
+    }
+    if (name[0] == '0' && (name[1] == 'x' || name[1] == 'X') && name[2]) {
+        number = strtoul(name + 2, &end, 16);
+        return (!*end && number >= 0x04 && number <= 0xe7) ? (int)number : -1;
+    }
+    return -1;
+}
+
+//--------------------------------------------------------------------+
 // writing html
 //--------------------------------------------------------------------+
 
@@ -147,7 +231,8 @@ static void put_head(writer_t *w, char const *title)
         "body{font-family:sans-serif;max-width:36em;margin:1em auto;padding:0 1em;line-height:1.4}"
         "fieldset{margin:.8em 0;border:1px solid #999}"
         "label{display:flex;justify-content:space-between;gap:1em;margin:.3em 0}"
-        "td{padding:.1em 1em .1em 0;vertical-align:top}"
+        "td,th{padding:.1em 1em .1em 0;vertical-align:top;text-align:left}"
+        ".c td,.c th{padding-right:.5em}"
         "small{color:#666}"
         "</style></head><body>");
 }
@@ -182,6 +267,63 @@ static void put_remaps(writer_t *w, settings_remap_t const *remap, bool from_ami
     put(w, "%s</small>", any ? "" : "none");
 }
 
+/**
+ * the wi-fi group continues: the board's name, the network to join
+ */
+static void put_wifi(writer_t *w, settings_t const *s)
+{
+    put(w, "<label>Device name <input name=device_name maxlength=15 pattern=\"[A-Za-z0-9\\-]*\" value=\"");
+    put_text(w, s->device_name, sizeof(s->device_name));
+    put(w, "\" placeholder=\"");
+    put_text(w, wifi_default_name(), 32);
+    put(w, "\"></label>");
+    put(w, "<label>Network (join) <input name=wifi_ssid maxlength=32 value=\"");
+    put_text(w, s->wifi_ssid, sizeof(s->wifi_ssid));
+    put(w, "\"></label>"
+        "<label>Its password <input type=password name=wifi_password maxlength=63 autocomplete=off "
+        "placeholder=\"%s\"></label>"
+        "<label>Open network, no password <input type=checkbox name=wifi_open value=1></label>"
+        "<p><small>The device name is the access point's name and the address in join mode (letters, "
+        "digits and -, up to 15; empty: the board's own). Join mode answers at http://",
+        s->wifi_password[0] ? "(stored; empty keeps it)" : "(none)");
+    put_text(w, wifi_name(), 32);
+    put(w, ".local/ and asks for the page password (below). "
+        "The access point is open and switches off after 15 minutes without a client.</small>");
+}
+
+static void put_combos(writer_t *w, settings_t const *s)
+{
+    char buf[8];
+
+    put(w, "<fieldset><legend>Pad button combos</legend><input type=hidden name=combos value=1>"
+        "<table class=c><tr><th>Pad button");
+    for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
+        put(w, "<th>%s", combo_heads[o]);
+    put(w, "<th>Key");
+
+    for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++) {
+        settings_combo_t const *c = &s->pad_combo[i];
+
+        put(w, "<tr><td><select name=c%ub>", i + 1);
+        for (unsigned b = 0; b <= SETTINGS_PAD_COMBO_BUTTONS; b++)
+            put(w, "<option value=%u%s>%s", b, (b == c->button) ? " selected" : "", combo_buttons[b]);
+        put(w, "</select>");
+        for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
+            put(w, "<td><input type=checkbox name=c%u%c value=1%s>", i + 1, combo_letters[o],
+                (c->outputs & (1u << o)) ? " checked" : "");
+        put(w, "<td><input name=c%uk size=7 maxlength=9 list=keys value=\"%s\">", i + 1, key_name(c->key, buf));
+    }
+
+    put(w, "</table><datalist id=keys>");
+    for (size_t i = 0; i < KEY_COUNT; i++)
+        put(w, "<option>%s", keys[i].name);
+    put(w, "</datalist><p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
+        "held together (a direction wins over the stick), and the key is down on the keyboard. The button "
+        "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
+        "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
+        "the list.</small></fieldset>");
+}
+
 //--------------------------------------------------------------------+
 // the page
 //--------------------------------------------------------------------+
@@ -207,10 +349,18 @@ size_t web_page_render(char *out, size_t size)
         pad_player_t const *p = pads_player(player);
 
         put(&w, "<tr><td>Player %u<td>", player + 1);
-        if (p && p->active)
+        if (p && p->active) {
             put_text(&w, p->name, PAD_NAME_LEN - 1);
-        else
+            // the numbers the pad combos go by
+            if (p->input.buttons) {
+                put(&w, ", holding button");
+                for (unsigned b = 0; b < 16; b++)
+                    if (p->input.buttons & (1u << b))
+                        put(&w, " %u", b + 1);
+            }
+        } else {
             put(&w, "-");
+        }
     }
     put_status_row(&w, "Bluetooth", bt_hid_status(), 32);
     put_status_row(&w, "Wi-Fi", wifi_status(), 48);
@@ -228,6 +378,9 @@ size_t web_page_render(char *out, size_t size)
         if (c->group) {
             if (i)
                 put(&w, "</fieldset>");
+            // the combos follow the pads
+            if (strcmp(c->key, "wheel_enabled") == 0)
+                put_combos(&w, s);
             put(&w, "<fieldset><legend>%s</legend>", c->group);
         }
 
@@ -243,27 +396,43 @@ size_t web_page_render(char *out, size_t size)
             put_remaps(&w, s->kb_remap, false);
         else if (strcmp(c->key, "ak_cad") == 0)
             put_remaps(&w, s->ak_remap, true);
+        else if (strcmp(c->key, "wifi_mode") == 0)
+            put_wifi(&w, s);
     }
 
-    // the wi-fi group continues: the network to join
-    put(&w, "<label>Network (join) <input name=wifi_ssid maxlength=32 value=\"");
-    put_text(&w, s->wifi_ssid, sizeof(s->wifi_ssid));
-    put(&w, "\"></label>"
-        "<label>Its password <input type=password name=wifi_password maxlength=63 autocomplete=off "
-        "placeholder=\"%s\"></label>"
-        "<label>Open network, no password <input type=checkbox name=wifi_open value=1></label>"
-        "<p><small>Join mode answers at http://", s->wifi_password[0] ? "(stored; empty keeps it)" : "(none)");
+    put(&w, "</fieldset><p><button>Save</button></form>");
+
+    // the page password
+    put(&w, "<h2>Page password</h2><form method=post action=/password>"
+        "<input type=hidden name=t value=%s>"
+        "<input name=username autocomplete=username value=\"", http_server_token());
     put_text(&w, wifi_name(), 32);
-    put(&w, ".local/ and asks for the page password (board menu: Show page password; any user name). "
-        "The access point is open and switches off after 15 minutes without a client.</small>"
-        "</fieldset><p><button>Save</button></form>");
+    put(&w, "\" hidden>"
+        "<label>New password <input type=password name=new maxlength=16 autocomplete=new-password "
+        "placeholder=\"(empty keeps it)\"></label>"
+        "<label>Again <input type=password name=again maxlength=16 autocomplete=new-password></label>"
+        "<label>In join mode <select name=open>"
+        "<option value=0%s>ask for the password"
+        "<option value=1%s>no password"
+        "</select></label>"
+        "<p><small>%u to 16 characters. Without a password everyone on your network can change these "
+        "settings and, with network control on, type on the machine; a firmware update then always waits "
+        "for a BOOT press. The board menu shows the password (Show page password), makes a new one and "
+        "switches it back on.</small>"
+        "<p><button>Change</button></form>",
+        s->page_open ? "" : " selected", s->page_open ? " selected" : "", WEB_AUTH_PASSWORD_MIN);
+    if (wifi_page_needs_password())
+        put(&w, "<form method=post action=/logout><input type=hidden name=t value=%s>"
+            "<p><button>Log out</button></form>", http_server_token());
 
     // firmware
     put(&w, "<h2>Firmware update</h2>"
         "<form method=post action=\"/update?t=%s\" enctype=multipart/form-data>"
         "<input type=file name=firmware accept=.uf2> <button>Upload</button></form>"
-        "<p><small>Updates need a BOOT press: %s (set on the board only).</small>",
-        http_server_token(), s->ota_needs_boot ? "yes" : "no");
+        "<p><small>Updates need a BOOT press: %s (set on the board only; always yes without a page "
+        "password).</small>",
+        http_server_token(),
+        (s->ota_needs_boot || (s->page_open && s->wifi_mode == SETTINGS_WIFI_JOIN)) ? "yes" : "no");
 
     put(&w, "</body></html>");
 
@@ -287,6 +456,30 @@ size_t web_page_message(char *out, size_t size, char const *title, char const *t
         out[w.len] = 0;
     }
     return w.len;
+}
+
+size_t web_page_login(char *out, size_t size, char const *note)
+{
+    writer_t w = { out, size, 0, false };
+
+    put_head(&w, wifi_name());
+    put(&w, "<h1>");
+    put_text(&w, wifi_name(), 32);
+    put(&w, "</h1>");
+    if (note) {
+        put(&w, "<p><b>");
+        put_text(&w, note, 96);
+        put(&w, "</b>");
+    }
+    put(&w, "<form method=post action=/login><label>Board <input name=username autocomplete=username value=\"");
+    put_text(&w, wifi_name(), 32);
+    put(&w, "\" readonly></label>"
+        "<label>Page password <input type=password name=password maxlength=16 "
+        "autocomplete=current-password autofocus required></label>"
+        "<p><button>Log in</button></form>"
+        "<p><small>The board shows it: menu, Show page password.</small></body></html>");
+
+    return w.full ? 0 : w.len;
 }
 
 //--------------------------------------------------------------------+
@@ -321,6 +514,67 @@ static void url_decode(char *text)
     *out = 0;
 }
 
+bool web_page_field(char const *body, char const *name, char *out, size_t size)
+{
+    size_t name_len = strlen(name);
+
+    while (body && *body) {
+        char const *end = strchr(body, '&');
+        size_t len = end ? (size_t)(end - body) : strlen(body);
+
+        if ((len > name_len) && strncmp(body, name, name_len) == 0 && body[name_len] == '=') {
+            size_t value_len = len - name_len - 1;
+
+            if (value_len >= size)
+                return false;
+            memcpy(out, body + name_len + 1, value_len);
+            out[value_len] = 0;
+            url_decode(out);
+            return true;
+        }
+        body = end ? end + 1 : NULL;
+    }
+    return false;
+}
+
+/**
+ * one field of a pad combo, "c<slot><letter>"
+ *
+ * @return false with error filled in if its value will not do
+ */
+static bool parse_combo(char const *pair, char const *value, settings_t *settings, char *error, size_t error_size)
+{
+    unsigned slot = (unsigned)(pair[1] - '1');
+    settings_combo_t *c = &settings->pad_combo[slot];
+    char const *letter = strchr(combo_letters, pair[2]);
+
+    if (pair[2] == 'b') {
+        char *end;
+        unsigned long number = strtoul(value, &end, 10);
+
+        if (!*value || *end || number > SETTINGS_PAD_COMBO_BUTTONS) {
+            snprintf(error, error_size, "Combo %u: no such pad button.", slot + 1);
+            return false;
+        }
+        c->button = (uint8_t)number;
+    } else if (pair[2] == 'k') {
+        int usage;
+
+        // spaces around a typed name do not matter
+        while (*value == ' ')
+            value++;
+        usage = key_usage(value);
+        if (usage < 0) {
+            snprintf(error, error_size, "Combo %u: no such key.", slot + 1);
+            return false;
+        }
+        c->key = (uint8_t)usage;
+    } else if (letter && strcmp(value, "1") == 0) {
+        c->outputs |= (uint8_t)(1u << (letter - combo_letters));
+    }
+    return true;
+}
+
 bool web_page_parse(char *body, settings_t *settings, char *error, size_t error_size)
 {
     settings_t const *current = settings_get();
@@ -350,10 +604,26 @@ bool web_page_parse(char *body, settings_t *settings, char *error, size_t error_
                 }
                 memset(settings->wifi_ssid, 0, sizeof(settings->wifi_ssid));
                 strcpy(settings->wifi_ssid, value);
+            } else if (strcmp(pair, "device_name") == 0) {
+                for (char *c = value; *c; c++)
+                    *c = (char)tolower((unsigned char)*c);
+                if (!settings_device_name_ok(value)) {
+                    snprintf(error, error_size, "A device name has up to 15 letters, digits and -, "
+                        "and no - at either end.");
+                    return false;
+                }
+                memset(settings->device_name, 0, sizeof(settings->device_name));
+                strcpy(settings->device_name, value);
             } else if (strcmp(pair, "wifi_password") == 0) {
                 password = value;
             } else if (strcmp(pair, "wifi_open") == 0) {
                 open_network = strcmp(value, "1") == 0;
+            } else if (strcmp(pair, "combos") == 0) {
+                // the combos follow, whole: a box not ticked is not sent
+                memset(settings->pad_combo, 0, sizeof(settings->pad_combo));
+            } else if (pair[0] == 'c' && pair[1] >= '1' && pair[1] < '1' + SETTINGS_PAD_COMBOS && pair[2] && !pair[3]) {
+                if (!parse_combo(pair, value, settings, error, error_size))
+                    return false;
             } else {
                 for (size_t i = 0; i < CHOICE_COUNT; i++) {
                     char *end;
@@ -393,8 +663,14 @@ bool web_page_parse(char *body, settings_t *settings, char *error, size_t error_
         strcpy(settings->wifi_password, password);
     }
 
-    // board only, and the page password is the board's to set
+    // a combo without its pad button is an empty slot
+    for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++)
+        if (!settings->pad_combo[i].button)
+            memset(&settings->pad_combo[i], 0, sizeof(settings->pad_combo[i]));
+
+    // board only; the page password has its own form
     settings->ota_needs_boot = current->ota_needs_boot;
+    settings->page_open = current->page_open;
     memcpy(settings->page_password, current->page_password, sizeof(settings->page_password));
 
     if (!settings_valid(settings)) {

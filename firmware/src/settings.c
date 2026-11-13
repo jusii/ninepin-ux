@@ -101,6 +101,21 @@ static bool string_ok(char const *s, size_t size)
     return memchr(s, 0, size) != NULL;
 }
 
+bool settings_device_name_ok(char const *name)
+{
+    size_t length = strlen(name);
+
+    if (length >= SETTINGS_DEVICE_NAME_LEN)
+        return false;
+    for (size_t i = 0; i < length; i++) {
+        char c = name[i];
+
+        if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || (c == '-' && i && (i + 1 < length))))
+            return false;
+    }
+    return true;
+}
+
 static bool remaps_ok(settings_remap_t const *remap)
 {
     for (unsigned i = 0; i < SETTINGS_REMAP_SLOTS; i++) {
@@ -126,6 +141,11 @@ bool settings_valid(settings_t const *s)
         if (s->pad_buttons[i] > SETTINGS_PAD_BUTTON_MAX)
             return false;
 
+    for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++)
+        if ((s->pad_combo[i].button > SETTINGS_PAD_COMBO_BUTTONS)
+            || (s->pad_combo[i].outputs & (uint8_t)~SETTINGS_PAD_COMBO_OUTPUTS))
+            return false;
+
     for (unsigned i = 0; i < sizeof(s->reserved); i++)
         if (s->reserved[i])
             return false;
@@ -145,11 +165,13 @@ bool settings_valid(settings_t const *s)
         && (s->wheel_enabled <= 1) && (s->wheel_reverse <= 1)
         && (s->mouse_speed < SETTINGS_MOUSE_SPEED_COUNT)
         && (s->display < SETTINGS_DISPLAY_COUNT) && (s->watchdog < SETTINGS_WATCHDOG_COUNT)
+        && (s->page_open <= 1)
         && (s->net_control <= 1) && (s->net_screen < SETTINGS_NET_SCREEN_COUNT)
         && (s->net_scale < SETTINGS_NET_SCALE_COUNT)
         && string_ok(s->wifi_ssid, sizeof(s->wifi_ssid))
         && string_ok(s->wifi_password, sizeof(s->wifi_password))
-        && string_ok(s->page_password, sizeof(s->page_password));
+        && string_ok(s->page_password, sizeof(s->page_password))
+        && string_ok(s->device_name, sizeof(s->device_name)) && settings_device_name_ok(s->device_name);
 }
 
 static uint32_t record_crc(settings_record_t const *record)

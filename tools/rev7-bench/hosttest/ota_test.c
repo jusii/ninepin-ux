@@ -123,6 +123,9 @@ void apply_watchdog(void) {}
 void bt_hid_pause_scanning(bool p) { (void)p; }
 bool wifi_page_needs_password(void) { return false; }
 char const *wifi_name(void) { return "ninepin-64f6"; }
+char const *wifi_default_name(void) { return "ninepin-64f6"; }
+bool settings_device_name_ok(char const *n) { (void)n; return true; }
+bool wifi_page_password_submit(char const *p, bool open) { (void)p; (void)open; return true; }
 
 // the network-control api is not under test here: answer every call 404
 void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)

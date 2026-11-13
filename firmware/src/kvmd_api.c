@@ -35,6 +35,7 @@
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
+#include "web_auth.h"
 #include "wifi.h"
 
 #define KVMD_QUEUE              64
@@ -42,10 +43,6 @@
 #define KVMD_PRINT_LIMIT        1024    // characters, kvmd's default limit
 #define KVMD_HOLD_RELEASE_MS    60000u  // held input released without requests
 #define KVMD_ACTIVE_MS          10000u  // "net ctl" on the oled after input
-#define KVMD_TOKENS             4
-#define KVMD_LOCKOUT_SLOTS      8
-#define KVMD_LOCKOUT_FAILS      5
-#define KVMD_LOCKOUT_MS         30000u
 #define KVMD_IDLE_CHECKS        2       // output idle seen this many passes in a row
 #define KVMD_SLOW_DELAY_MS      20
 #define KVMD_BUTTON_MS          50      // shortest press or release of a mouse button
@@ -89,15 +86,7 @@ static unsigned print_skipped;
 
 static volatile uint32_t last_request_ms;
 static volatile uint32_t last_input_ms;
-static char tokens[KVMD_TOKENS][17];
 static char mouse_output[12] = "usb";
-
-typedef struct {
-    uint32_t ip;
-    uint8_t fails;
-    uint32_t until;
-} lockout_t;
-static lockout_t lockouts[KVMD_LOCKOUT_SLOTS];
 
 // main loop state: what the network side holds
 static uint8_t held_mod;
@@ -212,104 +201,26 @@ static long clamp(long v, long lo, long hi)
 // authentication
 //--------------------------------------------------------------------+
 
-static bool same(char const *a, size_t a_len, char const *b)
-{
-    size_t b_len = strlen(b);
-    uint8_t diff = 0;
-
-    for (size_t i = 0; i < b_len; i++)
-        diff |= (uint8_t)(b[i] ^ ((i < a_len) ? a[i] : 0));
-    return !diff && (a_len == b_len);
-}
-
-static lockout_t *lockout_for(uint32_t ip, bool create)
-{
-    lockout_t *spare = NULL;
-
-    for (unsigned i = 0; i < KVMD_LOCKOUT_SLOTS; i++) {
-        if (lockouts[i].ip == ip)
-            return &lockouts[i];
-        if (!spare && !lockouts[i].fails && (int32_t)(now_ms() - lockouts[i].until) >= 0)
-            spare = &lockouts[i];
-    }
-    if (create && spare) {
-        memset(spare, 0, sizeof(*spare));
-        spare->ip = ip;
-        return spare;
-    }
-    return NULL;
-}
-
-static bool locked_out(uint32_t ip)
-{
-    lockout_t *l = lockout_for(ip, false);
-
-    return l && l->until && (int32_t)(now_ms() - l->until) < 0;
-}
-
-static void auth_result(uint32_t ip, bool ok)
-{
-    lockout_t *l = lockout_for(ip, !ok);
-
-    if (!l)
-        return;
-    if (ok) {
-        l->fails = 0;
-        return;
-    }
-    if (++l->fails >= KVMD_LOCKOUT_FAILS) {
-        l->fails = 0;
-        l->until = now_ms() + KVMD_LOCKOUT_MS;
-        ahprintf("[api] too many wrong passwords from %lu.%lu.%lu.%lu: locked out for 30 s\n",
-            (unsigned long)(ip & 0xff), (unsigned long)((ip >> 8) & 0xff),
-            (unsigned long)((ip >> 16) & 0xff), (unsigned long)(ip >> 24));
-    }
-}
-
-static bool cookie_token(kvmd_request_t const *req)
-{
-    size_t len;
-    char const *cookie = req->header(req->ctx, "Cookie", &len);
-
-    while (cookie && len) {
-        char const *p = memchr(cookie, '=', len);
-        char const *end = memchr(cookie, ';', len);
-        size_t vlen;
-
-        if (!p)
-            break;
-        if (!end)
-            end = cookie + len;
-        while (*cookie == ' ')
-            cookie++;
-        vlen = (size_t)(end - p - 1);
-        if ((size_t)(p - cookie) == 10 && !strncmp(cookie, "auth_token", 10))
-            for (unsigned i = 0; i < KVMD_TOKENS; i++)
-                if (tokens[i][0] && same(p + 1, vlen, tokens[i]))
-                    return true;
-        if (end >= cookie + len)
-            break;
-        len -= (size_t)(end + 1 - cookie);
-        cookie = end + 1;
-    }
-    return false;
-}
-
 /**
  * @return 1 authenticated, 0 credentials missing, -1 wrong
  */
 static int authenticate(kvmd_request_t const *req)
 {
-    char const *password = settings_get()->page_password;
     size_t len;
     char const *given = req->header(req->ctx, "X-KVMD-Passwd", &len);
+    char const *cookie;
+    size_t cookie_len;
 
-    if (!*password)
+    // the page password switched off: the network is trusted
+    if (!wifi_page_needs_password())
+        return 1;
+    if (!settings_get()->page_password[0])
         return -1;
-    if (req->basic_ok || cookie_token(req))
+    cookie = req->header(req->ctx, "Cookie", &cookie_len);
+    if (req->basic_ok || (cookie && web_auth_session(cookie, cookie_len)))
         return 1;
     if (given)
-        return same(given, len, password) ? 1 : -1;
+        return web_auth_password(given, len) ? 1 : -1;
     if (req->header(req->ctx, "Authorization", &len))
         return -1;
     return 0;
@@ -393,26 +304,16 @@ static void keymaps(kvmd_response_t *resp)
 static void login(kvmd_request_t const *req, kvmd_response_t *resp)
 {
     char given[64];
-    char const *password = settings_get()->page_password;
-    unsigned slot = 0;
 
-    if (!param(req->body, "passwd", given, sizeof(given)) || !*password || !same(given, strlen(given), password)) {
-        auth_result(req->remote_ip, false);
+    if (wifi_page_needs_password()
+        && (!param(req->body, "passwd", given, sizeof(given)) || !web_auth_password(given, strlen(given)))) {
+        web_auth_result(req->remote_ip, false);
         fail(resp, 403, "ForbiddenError", "wrong credentials");
         return;
     }
-    auth_result(req->remote_ip, true);
-    for (unsigned i = 0; i < KVMD_TOKENS; i++)
-        if (!tokens[i][0]) {
-            slot = i;
-            break;
-        }
-    if (tokens[slot][0])
-        slot = get_rand_32() % KVMD_TOKENS;
-    snprintf(tokens[slot], sizeof(tokens[slot]), "%08lx%08lx", (unsigned long)get_rand_32(),
-        (unsigned long)get_rand_32());
+    web_auth_result(req->remote_ip, true);
     snprintf(resp->extra_head, sizeof(resp->extra_head),
-        "Set-Cookie: auth_token=%s; Path=/; HttpOnly; SameSite=Strict\r\n", tokens[slot]);
+        "Set-Cookie: auth_token=%s; Path=/; HttpOnly; SameSite=Strict\r\n", web_auth_session_open());
     reply(resp, 200, NULL);
 }
 
@@ -421,16 +322,8 @@ static void logout(kvmd_request_t const *req, kvmd_response_t *resp)
     size_t len;
     char const *cookie = req->header(req->ctx, "Cookie", &len);
 
-    for (unsigned i = 0; i < KVMD_TOKENS; i++) {
-        size_t t = strlen(tokens[i]);
-        char const *p;
-
-        if (!t || !cookie)
-            continue;
-        p = strstr(cookie, tokens[i]);
-        if (p && (size_t)(p - cookie) + t <= len)
-            tokens[i][0] = 0;
-    }
+    if (cookie)
+        web_auth_session_close(cookie, len);
     reply(resp, 200, NULL);
 }
 
@@ -618,7 +511,7 @@ void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
         fail(resp, 503, "UnavailableError", "network control is off on the board");
         return;
     }
-    if (locked_out(req->remote_ip)) {
+    if (web_auth_locked_out(req->remote_ip)) {
         fail(resp, 403, "ForbiddenError", "too many wrong passwords; try again in 30 s");
         return;
     }
@@ -635,12 +528,12 @@ void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
     auth = authenticate(req);
     if (auth != 1) {
         if (auth < 0)
-            auth_result(req->remote_ip, false);
+            web_auth_result(req->remote_ip, false);
         fail(resp, auth < 0 ? 403 : 401, auth < 0 ? "ForbiddenError" : "UnauthorizedError",
             auth < 0 ? "wrong credentials" : "credentials required");
         return;
     }
-    auth_result(req->remote_ip, true);
+    web_auth_result(req->remote_ip, true);
 
     if (!strcmp(path, "/api/auth/check")) { reply(resp, 200, NULL); return; }
     if (!strcmp(path, "/api/auth/logout")) { logout(req, resp); return; }

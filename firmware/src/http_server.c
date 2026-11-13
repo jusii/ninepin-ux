@@ -27,14 +27,15 @@
 #include "ota.h"
 #include "settings.h"
 #include "util/output.h"
+#include "web_auth.h"
 #include "web_page.h"
 #include "wifi.h"
 
 #define HTTP_PORT               80
 #define HTTP_CONNECTIONS        4
 #define HTTP_REQUEST_MAX        3072    // the request head and a settings form
-#define HTTP_SMALL_MAX          1536    // a response head and a short page
-#define HTTP_PAGE_MAX           16384   // the settings page
+#define HTTP_SMALL_MAX          2048    // a response head and a short page
+#define HTTP_PAGE_MAX           20480   // the settings page
 #define HTTP_POLL_INTERVAL      4       // tcp_poll ticks of 0.5 s: every 2 s
 #define HTTP_IDLE_POLLS         10      // ~20 s without progress closes
 #define HTTP_BOUNDARY_MAX       70      // rfc 2046
@@ -52,9 +53,18 @@ typedef enum {
     CONN_SEND,          // sending the response; anything read is dropped
 } conn_phase_t;
 
+// what a CONN_FORM body is for
+typedef enum {
+    FORM_SETTINGS = 0,
+    FORM_LOGIN,
+    FORM_PASSWORD,
+    FORM_LOGOUT,
+} form_kind_t;
+
 typedef struct {
     struct tcp_pcb *pcb;
     conn_phase_t phase;
+    form_kind_t form;
     uint8_t idle_polls;
 
     // an api request (kvmd_api.c): where its parts are in request[]
@@ -91,7 +101,7 @@ typedef struct {
     size_t part_pos;
     int status;                             // for the drained body's response
     char const *pending_title, *pending_text;
-    char pending_head[96];                  // an extra response header line
+    char pending_head[128];                 // extra response header lines
 } http_conn_t;
 
 static struct tcp_pcb *listen_pcb;
@@ -100,7 +110,7 @@ static char page[HTTP_PAGE_MAX];
 static http_conn_t *page_owner;
 static http_conn_t *upload_owner;
 static char token[17];
-static char text[256];                      // a response's text, built before the page
+static char text[320];                      // a response's text, built before the page
 static uint32_t next_wait_id = 1;
 
 //--------------------------------------------------------------------+
@@ -116,6 +126,7 @@ static char const *status_text(int status)
 {
     switch (status) {
         case 200: return "OK";
+        case 303: return "See Other";
         case 400: return "Bad Request";
         case 401: return "Unauthorized";
         case 403: return "Forbidden";
@@ -175,14 +186,9 @@ static int base64_decode(char const *in, size_t in_len, char *out, size_t out_si
  */
 static bool authorised(char const *value, size_t length)
 {
-    char const *password = settings_get()->page_password;
     char decoded[96];
     char const *colon;
-    size_t want, got;
-    uint8_t diff = 0;
 
-    if (!*password)
-        return false;   // none yet: wifi_task() makes one
     if (length < 6 || strncasecmp(value, "Basic ", 6) != 0)
         return false;
     value += 6;
@@ -197,13 +203,7 @@ static bool authorised(char const *value, size_t length)
     if (!colon)
         return false;
     colon++;
-
-    // compare without an early way out
-    want = strlen(password);
-    got = strlen(colon);
-    for (size_t i = 0; i < want; i++)
-        diff |= (uint8_t)(password[i] ^ ((i < got) ? colon[i] : 0));
-    return !diff && (want == got);
+    return web_auth_password(colon, strlen(colon));
 }
 
 /**
@@ -444,15 +444,127 @@ static bool respond_after_body(http_conn_t *c, int status, char const *title, ch
 // the settings form
 //--------------------------------------------------------------------+
 
+#define SESSION_COOKIE "Set-Cookie: auth_token=%s; Path=/; HttpOnly; SameSite=Strict\r\n"
+
+static bool respond_login(http_conn_t *c, int status, char const *note)
+{
+    size_t length = web_page_login(c->small, sizeof(c->small) - 320, note);
+
+    return respond_with(c, status, c->small, length, NULL);
+}
+
+static bool token_given(char const *body)
+{
+    char given[sizeof(token)];
+
+    return web_page_field(body, "t", given, sizeof(given)) && strcmp(given, token) == 0;
+}
+
+/**
+ * the log-in form: the right password opens a session and leads to the page
+ */
+static bool handle_login(http_conn_t *c, char const *body)
+{
+    char given[SETTINGS_PAGE_PASSWORD_LEN + 8];
+    char head[128];
+    uint32_t ip = ip_addr_get_ip4_u32(&c->pcb->remote_ip);
+
+    if (web_auth_locked_out(ip))
+        return respond_login(c, 403, "Too many wrong passwords: try again in 30 s.");
+
+    if (!web_page_field(body, "password", given, sizeof(given)) || !web_auth_password(given, strlen(given))) {
+        web_auth_result(ip, false);
+        ahprintf("[web] wrong page password from %s\n", ipaddr_ntoa(&c->pcb->remote_ip));
+        return respond_login(c, 403, "That is not the page password.");
+    }
+
+    web_auth_result(ip, true);
+    snprintf(head, sizeof(head), "Location: /\r\n" SESSION_COOKIE, web_auth_session_open());
+    return respond_message(c, 303, "Logged in", "The settings are this way.", head);
+}
+
+static bool handle_logout(http_conn_t *c, char const *body)
+{
+    size_t length;
+    char const *cookie = header_value(c, "Cookie", &length);
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not logged out", "The page is out of date: reload it and try again.", NULL);
+    if (cookie)
+        web_auth_session_close(cookie, length);
+    return respond_message(c, 303, "Logged out", "The settings ask for the page password again.",
+        "Location: /\r\n");
+}
+
+/**
+ * the page password form: a new password, or none asked for
+ */
+static bool handle_password(http_conn_t *c, char const *body)
+{
+    char fresh[SETTINGS_PAGE_PASSWORD_LEN + 8] = "", again[SETTINGS_PAGE_PASSWORD_LEN + 8] = "", open[4] = "";
+    char head[128] = "";
+    char const *fault;
+    bool is_open;
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not changed", "The page is out of date: reload it and try again.", NULL);
+
+    if (!web_page_field(body, "open", open, sizeof(open)) || (strcmp(open, "0") != 0 && strcmp(open, "1") != 0))
+        return respond_message(c, 400, "Not changed", "Say whether join mode asks for the password.", NULL);
+    is_open = open[0] == '1';
+
+    // a password too long for its buffer is a fault as well
+    if ((strstr(body, "new=") && !web_page_field(body, "new", fresh, sizeof(fresh)))
+        || (strstr(body, "again=") && !web_page_field(body, "again", again, sizeof(again))))
+        return respond_message(c, 400, "Not changed", web_auth_password_fault(""), NULL);
+
+    if (fresh[0] || again[0]) {
+        if (strcmp(fresh, again) != 0)
+            return respond_message(c, 400, "Not changed", "The two passwords are not the same.", NULL);
+        fault = web_auth_password_fault(fresh);
+        if (fault)
+            return respond_message(c, 400, "Not changed", fault, NULL);
+    } else if (is_open == (settings_get()->page_open != 0)) {
+        return respond_message(c, 200, "Nothing to change", "The page password stays as it was.", NULL);
+    }
+
+    if (!wifi_page_password_submit(fresh, is_open))
+        return respond_message(c, 503, "Not changed", "The previous change is still being stored; try again.", NULL);
+
+    // a new password ends every session but this browser's
+    if (fresh[0]) {
+        web_auth_sessions_clear();
+        snprintf(head, sizeof(head), SESSION_COOKIE, web_auth_session_open());
+    }
+    ahprintf("[web] page password from the page\n");
+
+    if (is_open)
+        snprintf(text, sizeof(text), "The board stores that now: join mode no longer asks for the page password%s. "
+            "Firmware updates wait for a BOOT press.", fresh[0] ? " (the new one is kept for when it does)" : "");
+    else
+        snprintf(text, sizeof(text), "The board stores that now: join mode asks for the %spage password.",
+            fresh[0] ? "new " : "");
+    return respond_message(c, 200, "Changed", text, head[0] ? head : NULL);
+}
+
 static bool handle_form(http_conn_t *c)
 {
     static settings_t submitted;    // lwip callbacks do not nest
     char *body = c->request + c->head_len;
     char error[96] = "";
     settings_t const *current = settings_get();
-    bool wifi_changed;
+    char const *new_name;
+    bool wifi_changed, renamed;
 
     body[c->content_length] = 0;
+
+    switch (c->form) {
+        case FORM_LOGIN:    return handle_login(c, body);
+        case FORM_LOGOUT:   return handle_logout(c, body);
+        case FORM_PASSWORD: return handle_password(c, body);
+        default:            break;
+    }
+
     submitted = *current;
 
     if (!web_page_parse(body, &submitted, error, sizeof(error)))
@@ -461,21 +573,25 @@ static bool handle_form(http_conn_t *c)
     if (!wifi_page_submit(&submitted))
         return respond_message(c, 503, "Not saved", "The previous save is still being stored; try again.", NULL);
 
+    renamed = strcmp(submitted.device_name, current->device_name) != 0;
+    new_name = submitted.device_name[0] ? submitted.device_name : wifi_default_name();
     wifi_changed = (submitted.wifi_mode != current->wifi_mode)
         || strcmp(submitted.wifi_ssid, current->wifi_ssid) != 0
-        || strcmp(submitted.wifi_password, current->wifi_password) != 0;
+        || strcmp(submitted.wifi_password, current->wifi_password) != 0
+        || (renamed && submitted.wifi_mode != SETTINGS_WIFI_OFF);
 
     ahprintf("[web] settings from the page\n");
 
     if (wifi_changed && submitted.wifi_mode == SETTINGS_WIFI_JOIN)
         snprintf(text, sizeof(text), "The board stores the settings and joins \"%s\" now; this connection ends. "
-            "Find it again at http://%s.local/ with the page password (board menu: Show page password).",
-            submitted.wifi_ssid, wifi_name());
+            "Find it again at http://%s.local/%s.",
+            submitted.wifi_ssid, new_name,
+            submitted.page_open ? "" : " and log in with the page password (board menu: Show page password)");
     else if (wifi_changed && submitted.wifi_mode == SETTINGS_WIFI_OFF)
         snprintf(text, sizeof(text), "The board stores the settings and switches Wi-Fi off now.");
     else if (wifi_changed)
         snprintf(text, sizeof(text), "The board stores the settings and restarts its access point %s now; "
-            "join it again and open http://192.168.4.1/.", wifi_name());
+            "join it again and open http://192.168.4.1/.", new_name);
     else
         snprintf(text, sizeof(text), "The board stores and applies the settings now.");
 
@@ -762,6 +878,32 @@ void http_server_api_complete(uint32_t wait_id, int status, char const *json)
 //--------------------------------------------------------------------+
 
 /**
+ * @return true if the request carries the page password or a session
+ */
+static bool request_authorised(http_conn_t const *c)
+{
+    size_t length;
+    char const *value = header_value(c, "Authorization", &length);
+
+    if (value && authorised(value, length))
+        return true;
+    value = header_value(c, "Cookie", &length);
+    return value && web_auth_session(value, length);
+}
+
+/**
+ * a form's body follows: keep it in the request buffer
+ */
+static bool form_begin(http_conn_t *c, form_kind_t form)
+{
+    if (c->content_length > HTTP_REQUEST_MAX - c->head_len)
+        return respond_after_body(c, 413, "Too big", "That form is larger than the settings.", NULL);
+    c->form = form;
+    c->phase = CONN_FORM;
+    return true;
+}
+
+/**
  * the head is in: route the request
  */
 static bool handle_head(http_conn_t *c)
@@ -771,6 +913,7 @@ static bool handle_head(http_conn_t *c)
     char const *value;
     size_t length;
     bool has_length = false;
+    bool is_get, is_post, login;
 
     // "METHOD /path?query HTTP/1.1"
     target = strchr(method, ' ');
@@ -810,32 +953,40 @@ static bool handle_head(http_conn_t *c)
     if (!strncmp(target, "/api/", 5) || !strcmp(target, "/api"))
         return api_begin(c, method, target, query);
 
-    if (wifi_page_needs_password()) {
-        value = header_value(c, "Authorization", &length);
-        if (!value || !authorised(value, length)) {
-            char extra[96];
+    is_get = strcmp(method, "GET") == 0;
+    is_post = strcmp(method, "POST") == 0;
+    login = strcmp(target, "/login") == 0;
 
-            snprintf(extra, sizeof(extra), "WWW-Authenticate: Basic realm=\"%s\", charset=\"UTF-8\"\r\n", wifi_name());
-            return respond_after_body(c, 401, "Password needed",
-                "The page password is on the board: menu, Show page password (any user name).", extra);
-        }
+    if (wifi_page_needs_password() && !request_authorised(c)) {
+        if (login && is_get)
+            return respond_login(c, 200, NULL);
+        if (login && is_post)
+            return form_begin(c, FORM_LOGIN);
+        if (is_get && strcmp(target, "/") == 0)
+            return respond_message(c, 303, "Log in", "The settings ask for the page password.", "Location: /login\r\n");
+        return respond_after_body(c, 401, "Log in first",
+            "The settings ask for the page password: log in, then try again.", NULL);
     }
 
-    if (strcmp(method, "GET") == 0) {
+    // nothing to log in to
+    if (login)
+        return respond_after_body(c, 303, "Logged in", "The settings are this way.", "Location: /\r\n");
+
+    if (is_get) {
         if (strcmp(target, "/") == 0)
             return respond_page(c);
         return respond_after_body(c, 404, "Not found", "There is only the settings page here.", NULL);
     }
 
-    if (strcmp(method, "POST") != 0)
+    if (!is_post)
         return respond_after_body(c, 405, "Not allowed", "GET or POST only.", NULL);
 
-    if (strcmp(target, "/settings") == 0) {
-        if (c->content_length > HTTP_REQUEST_MAX - c->head_len)
-            return respond_after_body(c, 413, "Too big", "That form is larger than the settings.", NULL);
-        c->phase = CONN_FORM;
-        return true;
-    }
+    if (strcmp(target, "/settings") == 0)
+        return form_begin(c, FORM_SETTINGS);
+    if (strcmp(target, "/password") == 0)
+        return form_begin(c, FORM_PASSWORD);
+    if (strcmp(target, "/logout") == 0)
+        return form_begin(c, FORM_LOGOUT);
 
     if (strcmp(target, "/update") == 0) {
         if (!has_length)

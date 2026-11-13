@@ -28,6 +28,7 @@ extern const settings_names_t settings_names_deadzone;
 extern const settings_names_t settings_names_directions;
 extern const settings_names_t settings_names_triangle;
 extern const settings_names_t settings_names_wheel_dir;
+extern const settings_names_t settings_names_page_open;
 extern const settings_names_t settings_names_mouse_speed;
 extern const settings_names_t settings_names_display;
 extern const settings_names_t settings_names_watchdog;

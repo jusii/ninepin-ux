@@ -6,8 +6,9 @@
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
  * the settings page's html: the status, a form with every menu setting except
- * the board-only "updates need BOOT" (the remap slots read-only), the firmware
- * upload form; and reading the settings form back. plain server-rendered html,
+ * the board-only "updates need BOOT" (the remap slots read-only) plus the pad
+ * combos, the page password form, the firmware upload form, the log-in page;
+ * and reading the settings form back. plain server-rendered html,
  * no javascript. render and parse run in the cyw43 background context.
  */
 
@@ -41,9 +42,24 @@ size_t web_page_render(char *out, size_t size);
 size_t web_page_message(char *out, size_t size, char const *title, char const *text);
 
 /**
+ * @brief The log-in page (join mode asks for the page password).
+ *
+ * @param note  NULL, or a line to show above the form ("Wrong password.")
+ * @return its length, or 0 if it did not fit
+ */
+size_t web_page_login(char *out, size_t size, char const *note);
+
+/**
+ * @brief One field of a form (application/x-www-form-urlencoded), decoded.
+ *
+ * @return false if it is not there or does not fit
+ */
+bool web_page_field(char const *body, char const *name, char *out, size_t size);
+
+/**
  * @brief Read the settings form (application/x-www-form-urlencoded, decoded in
  *        place) over a copy of the settings in effect. The board-only setting
- *        and the page password are never taken from the form.
+ *        and the page password are never taken from this form.
  *
  * @param error     why not, for the page
  * @return true if settings holds a valid set

@@ -38,6 +38,7 @@
 #include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
+#include "web_auth.h"
 #include "web_page.h"
 
 #define WIFI_POLL_MS            1000    // link and client checks
@@ -64,7 +65,8 @@ static char const *const state_names[] = {
     "joining", "joined", "join failed, retrying",
 };
 
-static char name[14];                   // "ninepin-xxxx"
+static char default_name[14];           // "ninepin-xxxx"
+static char name[SETTINGS_DEVICE_NAME_LEN]; // the settings' device name, or the default
 static wifi_state_t state;
 static uint8_t running;                 // enum settings_wifi actually set up
 static char joined_ssid[SETTINGS_WIFI_SSID_LEN];
@@ -88,6 +90,9 @@ static bool password_tried;
 // the page's save, waiting for the main loop
 static settings_t page_pending;
 static volatile bool page_pending_ready;
+static char password_pending[SETTINGS_PAGE_PASSWORD_LEN];   // empty: keep the password
+static bool password_pending_open;
+static volatile bool password_pending_ready;
 static char page_result[64] = "-";
 
 // what the page shows; written under the lwip lock, which the page's
@@ -128,7 +133,7 @@ static void show(void)
             snprintf(line, sizeof(line), "no radio");
             break;
         case WIFI_STATE_AP:
-            snprintf(oled, sizeof(oled), "wifi ap %s", name);
+            snprintf(oled, sizeof(oled), "ap %s", name);
             snprintf(line, sizeof(line), "access point %s, %u client%s", name, ap_clients, (ap_clients == 1) ? "" : "s");
             break;
         case WIFI_STATE_AP_IDLE:
@@ -181,14 +186,47 @@ char const *wifi_name(void)
     return name;
 }
 
+char const *wifi_default_name(void)
+{
+    return default_name;
+}
+
+/**
+ * take the name from the settings
+ *
+ * @return true if it changed
+ */
+static bool follow_name(void)
+{
+    settings_t const *s = settings_get();
+    char const *wanted = s->device_name[0] ? s->device_name : default_name;
+
+    if (strcmp(wanted, name) == 0)
+        return false;
+    // the page reads it
+    cyw43_arch_lwip_begin();
+    snprintf(name, sizeof(name), "%s", wanted);
+    cyw43_arch_lwip_end();
+    return true;
+}
+
 bool wifi_page_needs_password(void)
 {
-    return (running == SETTINGS_WIFI_JOIN) || (settings_get()->wifi_mode == SETTINGS_WIFI_JOIN);
+    settings_t const *s = settings_get();
+
+    return !s->page_open && ((running == SETTINGS_WIFI_JOIN) || (s->wifi_mode == SETTINGS_WIFI_JOIN));
 }
 
 //--------------------------------------------------------------------+
 // the page password
 //--------------------------------------------------------------------+
+
+static void sessions_clear(void)
+{
+    cyw43_arch_lwip_begin();
+    web_auth_sessions_clear();
+    cyw43_arch_lwip_end();
+}
 
 bool wifi_new_page_password(void)
 {
@@ -197,6 +235,8 @@ bool wifi_new_page_password(void)
     // the largest multiple of the alphabet below 2^32: no bias
     uint32_t const limit = UINT32_MAX - (UINT32_MAX % alphabet);
 
+    // a new password from the board is also the way back in: it is asked for again
+    settings.page_open = 0;
     memset(settings.page_password, 0, sizeof(settings.page_password));
     for (unsigned i = 0; i < WIFI_PAGE_PASSWORD_LEN; i++) {
         uint32_t r;
@@ -211,6 +251,7 @@ bool wifi_new_page_password(void)
         ahprintf("[wifi] could not store a new page password\n");
         return false;
     }
+    sessions_clear();
     ahprintf("[wifi] new page password stored\n");
     return true;
 }
@@ -460,6 +501,7 @@ static void follow_settings(void)
 {
     settings_t const *s = settings_get();
     bool change = false;
+    bool renamed = follow_name();
 
     if (state == WIFI_STATE_NO_RADIO && running == s->wifi_mode)
         return;
@@ -473,6 +515,12 @@ static void follow_settings(void)
         change = true;
     } else if (running == SETTINGS_WIFI_JOIN) {
         change = strcmp(s->wifi_ssid, joined_ssid) != 0 || strcmp(s->wifi_password, joined_password) != 0;
+    }
+
+    // a new name: the access point and the mdns name are set up afresh
+    if (renamed && (running != SETTINGS_WIFI_OFF)) {
+        ahprintf("[wifi] now named %s\n", name);
+        change = true;
     }
 
     if (!change)
@@ -498,6 +546,57 @@ bool wifi_page_submit(settings_t const *settings)
     return true;
 }
 
+bool wifi_page_password_submit(char const *password, bool open)
+{
+    if (password_pending_ready)
+        return false;
+    snprintf(password_pending, sizeof(password_pending), "%s", password ? password : "");
+    password_pending_open = open;
+    __dmb();
+    password_pending_ready = true;
+    return true;
+}
+
+static void page_result_set(char const *result)
+{
+    cyw43_arch_lwip_begin();
+    snprintf(page_result, sizeof(page_result), "%s", result);
+    cyw43_arch_lwip_end();
+}
+
+static void page_password_task(void)
+{
+    settings_t settings;
+    uint32_t interrupts;
+    char password[SETTINGS_PAGE_PASSWORD_LEN];
+    bool open;
+
+    if (!password_pending_ready)
+        return;
+
+    interrupts = save_and_disable_interrupts();
+    memcpy(password, password_pending, sizeof(password));
+    open = password_pending_open;
+    password_pending_ready = false;
+    restore_interrupts(interrupts);
+
+    settings = *settings_get();
+    settings.page_open = open ? 1 : 0;
+    if (password[0]) {
+        memset(settings.page_password, 0, sizeof(settings.page_password));
+        memcpy(settings.page_password, password, strlen(password));
+    }
+
+    if (!settings_valid(&settings) || !settings_save(&settings)) {
+        ahprintf("[web] page password not stored\n");
+        page_result_set("page password not stored: the flash write failed");
+        return;
+    }
+    ahprintf("[web] page password %s%s\n", password[0] ? "changed" : "kept",
+        open ? ", not asked for" : ", asked for");
+    page_result_set(open ? "page password switched off" : "page password stored");
+}
+
 static void page_save_task(void)
 {
     settings_t settings;
@@ -515,6 +614,7 @@ static void page_save_task(void)
 
     // the page never sets these; keep what the board has
     settings.ota_needs_boot = settings_get()->ota_needs_boot;
+    settings.page_open = settings_get()->page_open;
     memcpy(settings.page_password, settings_get()->page_password, sizeof(settings.page_password));
 
     mode_changed = settings.mode != settings_get()->mode;
@@ -548,10 +648,11 @@ void wifi_init(void)
 
     pico_get_unique_board_id_string(id, sizeof(id));
     length = strlen(id);
-    snprintf(name, sizeof(name), "ninepin-%.4s", (length >= 4) ? id + length - 4 : id);
-    for (char *c = name; *c; c++)
+    snprintf(default_name, sizeof(default_name), "ninepin-%.4s", (length >= 4) ? id + length - 4 : id);
+    for (char *c = default_name; *c; c++)
         if (*c >= 'A' && *c <= 'Z')
             *c = (char)(*c - 'A' + 'a');
+    snprintf(name, sizeof(name), "%s", default_name);
 
     web_page_init();
     state = WIFI_STATE_OFF;
@@ -564,6 +665,7 @@ void wifi_task(void)
     uint32_t now = now_ms();
 
     page_save_task();
+    page_password_task();
     // an upload waiting for the flash to catch up
     http_server_task();
     // network keyboard / mouse to the outputs
@@ -617,7 +719,8 @@ void wifi_describe(void)
     if (running == SETTINGS_WIFI_JOIN && state != WIFI_STATE_NO_SSID && state != WIFI_STATE_NO_RADIO)
         ahprintf("link: %s%s%s\n", link_name(last_link), ip_text[0] ? ", ip " : "", ip_text);
 
-    ahprintf("page password: %s\n", s->page_password[0] ? s->page_password : "(none yet)");
+    ahprintf("page password: %s%s\n", s->page_password[0] ? s->page_password : "(none yet)",
+        s->page_open ? " (not asked for)" : "");
     ahprintf("last save from the page: %s\n", page_result);
 }
 

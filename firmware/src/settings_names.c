@@ -27,6 +27,7 @@ NAMES(deadzone,     SETTINGS_DEADZONE_COUNT,    "25%", "50%", "75%");
 NAMES(directions,   SETTINGS_PAD_DIR_COUNT,     "d-pad + stick", "d-pad", "stick");
 NAMES(triangle,     SETTINGS_PAD_TRIANGLE_COUNT, "up (jump)", "autofire", "off");
 NAMES(wheel_dir,    2,                          "normal", "reversed");
+NAMES(page_open,    2,                          "asked for", "off");
 NAMES(mouse_speed,  SETTINGS_MOUSE_SPEED_COUNT, "300 us", "200 us", "150 us", "100 us");
 NAMES(display,      SETTINGS_DISPLAY_COUNT,     "status", "hid diag", "mouse diag", "off");
 NAMES(watchdog,     SETTINGS_WATCHDOG_COUNT,    "off", "2 s", "5 s");

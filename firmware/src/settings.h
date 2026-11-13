@@ -131,14 +131,26 @@ enum settings_display {
 #define SETTINGS_PAD_BUTTONS        7   // fire 1-3 / cd32 red blue green yellow l r play
 #define SETTINGS_PAD_BUTTON_MAX     17  // 0 auto, 1..16 hid button, 17 off
 #define SETTINGS_REMAP_SLOTS        8
+#define SETTINGS_PAD_COMBOS         6
+#define SETTINGS_PAD_COMBO_BUTTONS  16  // a pad's own buttons 1..16
+#define SETTINGS_PAD_COMBO_OUTPUTS  0x7fu // up down left right, fire 1 2 3 (pad.h's bits)
 
 #define SETTINGS_WIFI_SSID_LEN      33  // 32 + nul
 #define SETTINGS_WIFI_PASSWORD_LEN  64  // 63 + nul (wpa2 passphrase)
 #define SETTINGS_PAGE_PASSWORD_LEN  17  // 16 + nul
+#define SETTINGS_DEVICE_NAME_LEN    16  // 15 + nul
 
 typedef struct {
     uint8_t source, target;         // source 0: slot unused
 } settings_remap_t;
+
+// a pad button that stands for directions and fire buttons held together,
+// and / or a keyboard key
+typedef struct {
+    uint8_t button;                 // the pad's own button 1..16; 0: slot unused
+    uint8_t outputs;                // PAD_UP .. PAD_FIRE3 (pad.h)
+    uint8_t key;                    // hid keyboard usage; 0: none
+} settings_combo_t;
 
 typedef struct {
     uint8_t mode;                                   // enum settings_mode
@@ -183,13 +195,24 @@ typedef struct {
     uint8_t net_screen;                             // target screen, for absolute moves on de9
     uint8_t net_scale;                              // mouse counts per screen pixel
 
-    uint8_t reserved[42];                           // zero; pads the struct to 224 bytes
+    uint8_t page_open;                              // 0/1: join mode asks for no page password
+    settings_combo_t pad_combo[SETTINGS_PAD_COMBOS];
+
+    char device_name[SETTINGS_DEVICE_NAME_LEN];     // access point and .local name; empty: ninepin-xxxx
+
+    uint8_t reserved[7];                            // zero; pads the struct to 224 bytes
 } settings_t;
 
 /**
  * @brief Fill in the factory defaults.
  */
 void settings_defaults(settings_t *settings);
+
+/**
+ * @return true if the text can be a device name: empty, or 1 to 15 of a-z,
+ *         0-9 and '-', not starting or ending with '-'
+ */
+bool settings_device_name_ok(char const *name);
 
 /**
  * @return true if every field is in range and every string terminated
