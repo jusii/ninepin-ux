@@ -78,7 +78,8 @@ the setting visited last. Defaults in **bold**.
 **Mouse ›**
 * Mouse wheel: off, **on** (TankMouse / Cocolino protocol)
 * Wheel direction: **normal**, reversed
-* Mouse speed: **300 us**, 200 us, 150 us, 100 us
+* Mouse speed: **300 us**, 200 us, 150 us, 100 us (Amiga: time per step; C64 1351: mouse counts
+  per step 12, 8, 6, 4, so further right is faster on both)
 
 **Keyboard ›**
 * Keyboard preset (PC keyboard to the Amiga): **original**, Y<->Z, A<->Q W<->Z

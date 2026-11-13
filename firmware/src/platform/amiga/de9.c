@@ -190,15 +190,57 @@ static void pot_push(unsigned port)
         pio_sm_put(de9_pio, sm_y, y);
 }
 
+// a usb mouse counts several times finer than a 1351 did, and the c64 reads
+// the 6-bit counters once a frame, so they must move less than half way round
+// (32) between two reads. the motion is scaled down (the mouse speed setting
+// picks by how much), kept as steps still owed, and paid out one a millisecond
+static int32_t owed_1351[2];        // x, y: counter steps not yet made
+static int16_t rest_1351[2];        // x, y: what the scaling left over
+static uint32_t paid_1351_ms;
+
 static void mouse_1351_motion(int16_t dx, int16_t dy)
 {
-    for (unsigned port = 0; port < DE9_PORTS; port++) {
-        if (roles[port] != ROLE_C64_1351)
-            continue;
-        pos_1351[port][0] = (uint8_t)(pos_1351[port][0] + dx);
-        pos_1351[port][1] = (uint8_t)(pos_1351[port][1] - dy);
-        pot_push(port);
+    static int8_t const divisor[SETTINGS_MOUSE_SPEED_COUNT] = { 12, 8, 6, 4 };
+    int div = divisor[settings_get()->mouse_speed % SETTINGS_MOUSE_SPEED_COUNT];
+    int16_t const delta[2] = { dx, (int16_t)-dy };
+
+    for (unsigned axis = 0; axis < 2; axis++) {
+        int total = rest_1351[axis] + delta[axis];
+
+        owed_1351[axis] += total / div;
+        rest_1351[axis] = (int16_t)(total % div);
+        // a pointer far behind the hand is worse than a lost step
+        if (owed_1351[axis] > 400) owed_1351[axis] = 400;
+        if (owed_1351[axis] < -400) owed_1351[axis] = -400;
     }
+}
+
+static void mouse_1351_task(uint32_t now_ms)
+{
+    uint32_t steps = now_ms - paid_1351_ms;
+
+    if (!steps)
+        return;
+    paid_1351_ms = now_ms;
+    if (steps > 4)
+        steps = 4;      // a late loop pass does not jump the counters
+
+    for (unsigned axis = 0; axis < 2; axis++) {
+        int32_t step = owed_1351[axis];
+
+        if (step > (int32_t)steps) step = (int32_t)steps;
+        if (step < -(int32_t)steps) step = -(int32_t)steps;
+        if (!step)
+            continue;
+        owed_1351[axis] -= step;
+        for (unsigned port = 0; port < DE9_PORTS; port++)
+            if (roles[port] == ROLE_C64_1351)
+                pos_1351[port][axis] = (uint8_t)(pos_1351[port][axis] + step);
+    }
+
+    for (unsigned port = 0; port < DE9_PORTS; port++)
+        if (roles[port] == ROLE_C64_1351)
+            pot_push(port);
 }
 
 static void mouse_1351_button(enum amiga_quad_mouse_buttons button, bool pressed)
@@ -393,6 +435,9 @@ void de9_task(void)
 {
     uint32_t now = to_ms_since_boot(get_absolute_time());
     bool yellow = (player_state[0] | player_state[1]) & PAD_FIRE4;
+
+    if (pot_loaded)
+        mouse_1351_task(now);
 
     if (!yellow || (settings_get()->pad_triangle != SETTINGS_PAD_TRIANGLE_AUTOFIRE))
         return;
