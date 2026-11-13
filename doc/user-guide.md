@@ -113,6 +113,7 @@ the setting visited last. Defaults in **bold**.
 * Display: **status**, hid diag, mouse diag (bottom line: movement, buttons `b`, last wheel step `w`, wheel reports counted `n`), off. Takes effect on save, no restart.
 * Watchdog: off, 2 s, **5 s**
 * Updates need BOOT: no, **yes**
+* Check for update: looks for the latest release; select again (twice) to install it
 * Previous firmware: select twice; restarts into the one before the last update
 * Factory defaults
 
@@ -228,7 +229,17 @@ curl -u admin:PASSWORD -X POST 'http://ninepin-xxxx.local/api/hid/events/send_mo
 
 ## updates
 
-Copy `ninepin-ux.uf2` to the BOOTSEL drive, or upload it on the page. With Updates need BOOT
+Three ways:
+
+* **From the internet** (join mode): Check for update on the page (Firmware update) or in the
+  menu (Board). It asks GitHub for the latest release, and only then; Install downloads it,
+  checks our signature on it and installs it. A release older than the firmware, or over a
+  self-built ("dev") firmware, is offered too, labelled as such. Input may stutter for a few
+  seconds while the board talks to GitHub.
+* **Upload** `ninepin-ux.uf2` on the page.
+* **Copy** it to the BOOTSEL drive.
+
+With Updates need BOOT
 = yes, press BOOT within 30 s when the OLED shows `BOOT: install`. The setting is in the menu and
 on the page (Board); with it off, whoever can open the page can replace the firmware.
 

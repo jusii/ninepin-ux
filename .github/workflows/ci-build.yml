@@ -75,11 +75,26 @@ jobs:
           name: ninepin-ux-bt
           path: bt
 
+      - name: Sign the release image
+        # boards install a release from the internet only with this signature
+        # (firmware/src/net_update.c, doc/build.md); the public halves of the
+        # keys are in firmware/src/update_keys.h
+        env:
+          RELEASE_SIGNING_KEY: ${{ secrets.RELEASE_SIGNING_KEY }}
+        run: |
+          test -n "$RELEASE_SIGNING_KEY" || { echo "::error::no RELEASE_SIGNING_KEY secret"; exit 1; }
+          cp bt/ninepin-ux-bt-${{ github.ref_name }}.uf2 ninepin-ux.uf2
+          umask 077
+          printf '%s\n' "$RELEASE_SIGNING_KEY" > key.pem
+          openssl dgst -sha256 -sign key.pem -out ninepin-ux.uf2.sig ninepin-ux.uf2
+          openssl ec -in key.pem -pubout -out pub.pem
+          openssl dgst -sha256 -verify pub.pem -signature ninepin-ux.uf2.sig ninepin-ux.uf2
+          rm -f key.pem
+
       - name: Create the release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp bt/ninepin-ux-bt-${{ github.ref_name }}.uf2 ninepin-ux.uf2
           gh release create "${{ github.ref_name }}" --repo "${{ github.repository }}" \
             --title "Ninepin UX firmware ${{ github.ref_name }}" --generate-notes \
-            ninepin-ux.uf2 bt/partition-table.uf2
+            ninepin-ux.uf2 ninepin-ux.uf2.sig bt/partition-table.uf2

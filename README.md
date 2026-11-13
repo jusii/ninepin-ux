@@ -44,8 +44,8 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
 * **Wi-Fi:** access point or joins a network; settings page (no JavaScript) with every menu
   setting, a log-in with the page password, the board's uptime and why it last restarted.
 * **Network control:** a subset of the PiKVM `kvmd` HTTP API (keys, text in six keymaps, mouse).
-* **Firmware updates:** A/B slots with rollback, upload from the settings page, with or without
-  a press of BOOT on the board.
+* **Firmware updates:** A/B slots with rollback; from the latest signed release on GitHub when
+  asked, or a file uploaded on the settings page; with or without a press of BOOT on the board.
 
 ## docs
 

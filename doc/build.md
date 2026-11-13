@@ -27,12 +27,31 @@ only). An existing clone needs `git submodule update --init --recursive`.
 | `CMAKE_BUILD_TYPE` | `Release` | `Debug` for SWD debugging with openocd / gdb |
 | `DEBUG_KEYBOARD`, `DEBUG_MOUSE`, `DEBUG_HID_STATUS` | `OFF` | per-event debug output on the console |
 | `AHP_BRINGUP` | `OFF` | board bring-up: early USB console, boot-stage breadcrumbs, fault trap |
+| `NINEPIN_VERSION` | `dev` | the release number, `N.N.N`; CI sets it from the tag |
 
 The library submodules in `firmware/lib/` are pinned apart from the pico-sdk. Another checkout:
 `-DPICO_TINYUSB_PATH=...`, `-DPICO_CYW43_DRIVER_PATH=...`, `-DPICO_PIO_USB_PATH=...`.
 
 SWD (J2) works too: openocd with the RP2350 target, see
 [Getting started with Raspberry Pi Pico](https://datasheets.raspberrypi.com/pico/getting-started-with-pico.pdf).
+
+### releases
+
+A `fw-v<N.N.N>` tag makes a release: CI builds it with that version number, signs
+`ninepin-ux.uf2` and attaches the signature as `ninepin-ux.uf2.sig`. Boards find the latest full
+release by themselves when asked (pre-releases are not offered) and install it only if the
+signature matches a key in `firmware/src/update_keys.h`.
+
+* The signing key is an ECDSA P-256 private key in the repository secret `RELEASE_SIGNING_KEY`
+  (PEM). The firmware carries two public keys: that one and a spare whose private half is kept
+  offline, for a release that has to replace the first.
+* New keys: `openssl ecparam -name prime256v1 -genkey -noout -out key.pem`, the public half with
+  `openssl ec -in key.pem -pubout -out key.pub.pem`, then
+  `python3 tools/release/make_update_keys.py main.pub.pem spare.pub.pem`.
+* Signing by hand: `openssl dgst -sha256 -sign key.pem -out ninepin-ux.uf2.sig ninepin-ux.uf2`.
+* A fork that wants its boards to follow its own releases changes `NET_UPDATE_REPO` in
+  `net_update.c` and the keys. A bench server instead of GitHub: `-DNET_UPDATE_HOST=...
+  -DNET_UPDATE_PORT=...`.
 
 ## board
 
