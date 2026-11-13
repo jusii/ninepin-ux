@@ -90,7 +90,7 @@ Defaults in **bold**.
 
 **Board**
 * Mouse speed: **300 us**, 200 us, 150 us, 100 us
-* Display: **status**, hid diag, mouse diag (shows what a mouse sends, wheel counts included), off
+* Display: **status**, hid diag, mouse diag (bottom line: movement, buttons `b`, last wheel step `w`, wheel reports counted `n`), off
 * Watchdog: off, 2 s, **5 s**
 
 **Bluetooth**

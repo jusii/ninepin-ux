@@ -182,6 +182,8 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
     if (menu_is_open())
         return;
 
+    dbgcons_mouse_report(report->x, report->y, report->buttons, report->wheel);
+
     if (run_mode_mouse_usb(run_mode_get())) {
         usb_device_mouse(slot, report);
         status_led_activity();
@@ -204,8 +206,6 @@ void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *report)
         amiga_quad_mouse_button(AQM_RIGHT, true);
     if (!(report->buttons & MOUSE_BUTTON_RIGHT) && (state->mouse.buttons & MOUSE_BUTTON_RIGHT))
         amiga_quad_mouse_button(AQM_RIGHT, false);
-
-    dbgcons_mouse_report(report->x, report->y, report->buttons);
 
     if (report->x || report->y)
         amiga_quad_mouse_set_motion(report->x, report->y);

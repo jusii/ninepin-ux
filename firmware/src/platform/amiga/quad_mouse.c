@@ -356,8 +356,6 @@ void amiga_quad_mouse_button(enum amiga_quad_mouse_buttons button, bool pressed)
 
 void amiga_quad_mouse_wheel(int8_t wheel)
 {
-    dbgcons_mouse_wheel(wheel);
-
     if (button_pressed[AQM_LEFT] || button_pressed[AQM_MIDDLE] || button_pressed[AQM_RIGHT])
         return;
 

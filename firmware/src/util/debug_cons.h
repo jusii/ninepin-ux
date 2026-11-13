@@ -40,9 +40,8 @@ void dbgcons_amiga_key(uint8_t incode, uint8_t outcode, char *updown);
 
 void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol, bool receive_ok, uint8_t report_count, bool mounted);
 
-void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons);
+void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons, int8_t wheel);
 
-void dbgcons_mouse_wheel(int8_t wheel);
 
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses);
 

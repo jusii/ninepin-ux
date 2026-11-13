@@ -468,10 +468,6 @@ void usb_device_mouse(uint8_t slot, hid_mouse_report_t const *report)
         mouse_buttons_dirty = true;
     }
 
-    // what the mouse sends per click differs from mouse to mouse: show it
-    if (report->wheel)
-        dbgcons_mouse_wheel(report->wheel);
-
     mouse_dx += report->x;
     mouse_dy += report->y;
     mouse_wheel += report->wheel;

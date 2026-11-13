@@ -267,59 +267,40 @@ void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol
     }
 }
 
-void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons)
+// the mouse line: movement, buttons, the last wheel step that was not zero and
+// how many reports have carried one (a click of the wheel may send several)
+void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons, int8_t wheel)
 {
-    if (diag_mouse()) {
+    static int8_t last_wheel;
+    static uint8_t wheel_reports;
+
+    if (!diag_mouse())
+        return;
+
+    if (wheel) {
+        last_wheel = wheel;
+        wheel_reports = (uint8_t)((wheel_reports + 1) % 100);
+    }
+
     char linebuf[32] = "";
 
-    snprintf(
-        linebuf,
-        sizeof(linebuf),
-        "m x%+04d y%+04d b%02x",
-        x,
-        y,
-        buttons
-    );
+    snprintf(linebuf, sizeof(linebuf), "%+04d%+04d b%x w%+d n%u", x, y, buttons & 0x0f, last_wheel, wheel_reports);
 
     ahprintf(
         VT_CUP_POS VT_EL_LIN
-        "[mouse] x:%d y:%d buttons:%02x\n",
+        "[mouse] x:%d y:%d buttons:%02x wheel:%d\n",
         6, 1,
         x,
         y,
-        buttons
-    );
-
-#ifdef ENABLE_BLUETOOTH_HID
-    if (!bt_passkey_active)
-        disp_write(0, 3, linebuf);
-#else
-    disp_write(0, 3, linebuf);
-#endif
-    }
-}
-
-void dbgcons_mouse_wheel(int8_t wheel)
-{
-    if (diag_mouse()) {
-    char linebuf[32] = "";
-
-    snprintf(linebuf, sizeof(linebuf), "wheel %+d", wheel);
-
-    ahprintf(
-        VT_CUP_POS VT_EL_LIN
-        "[mouse] wheel:%d\n",
-        7, 1,
+        buttons,
         wheel
     );
 
 #ifdef ENABLE_BLUETOOTH_HID
-    if (!bt_passkey_active)
-        disp_write(0, 4, linebuf);
-#else
-    disp_write(0, 4, linebuf);
+    if (bt_passkey_active)
+        return;
 #endif
-    }
+    dbgcons_write_padded_line(3, linebuf);
 }
 
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses)
