@@ -153,15 +153,21 @@ def label(text, size, origin, xdir, ydir, into):
     return Part.makeCompound([f.extrude(into * (LABEL_DEPTH + 0.01)) for f in sh.Faces])
 X, Y, Z = V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)
 ZL = Z_PLATE_TOP + (Z_BT + 0.3 - Z_PLATE_TOP) / 2 + 0.3          # label line: the band below every opening, same on all walls
+BOOT_SHIFT = 3.5                                               # BOOT sits off its button, away from the USB-C label
 LS = 3.5                                                       # strokes about 0.65 mm: a 0.5 mm nozzle prints them as an inlay
 labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("PORT 2", LS, V(CONN["P2"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("USB", LS, V(CONN["J4"][4] + 3.5, OUT_Y0, ZL), X, Z, Y),
-          label("AMIGA", LS, V(CONN["J10"][4], OUT_Y1, ZL), -X, Z, -Y),
+          label("HOST", LS, V(CONN["J10"][4], OUT_Y1, ZL), -X, Z, -Y),
           label("KEYB", LS, V(CONN["J12"][4], OUT_Y1, ZL), -X, Z, -Y),
-          label("BOOT", LS, V(OUT_X1, ky(SW_STEM[0]), ZL), Y, Z, -X),
-          label("RESET", LS, V(OUT_X1, ky(SW_STEM[1]), ZL), Y, Z, -X),
-          label("5V", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
+          label("BOOT", LS, V(OUT_X1, ky(SW_STEM[0] - BOOT_SHIFT), ZL), Y, Z, -X),
+          label("RST", LS, V(OUT_X1, ky(SW_STEM[1]), ZL), Y, Z, -X),
+          label("USB-C", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
+for i, a in enumerate(labels):                                  # neighbours on a wall keep their distance
+    for b in labels[i + 1:]:
+        d = a.distToShape(b)[0]
+        if d < 8: print("label gap %.2f mm" % d)
+        assert d >= 1.5, "wall labels closer than 1.5 mm"
 label_inlay = Part.makeCompound([s for l in labels for s in cap.common(l).Solids])
 for l in labels: cap = cap.cut(l)
 
