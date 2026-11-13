@@ -447,6 +447,13 @@ size_t web_page_render(char *out, size_t size)
             put_remaps(&w, s->ak_remap, true);
         else if (strcmp(c->key, "wifi_mode") == 0)
             put_wifi(&w, s);
+#ifdef ENABLE_BLUETOOTH_HID
+        else if (strcmp(c->key, "bt_pairing") == 0)
+            put(&w, "<label>New device <button formaction=/bt-pair>Pair (2 min)</button></label>"
+                "<p><small>With a pad in use the board searches for another only for 30 s after that "
+                "pad connected. Pair opens a 2 minute search at any time; then put the device in its "
+                "pairing mode: DualSense Create + PS, DualShock 4 Share + PS.</small>");
+#endif
     }
 
     put(&w, "</details><p><button>Save</button></form>");

@@ -135,6 +135,8 @@ bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char co
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
+static int pair_windows;
+void bt_hid_pair_window(void) { pair_windows++; }
 run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA; }
 char const *run_mode_name(run_mode_t m) { (void)m; return "amiga"; }
 char const *keyboard_map_amiga_name(uint8_t a) { (void)a; return "A<x>"; }
@@ -314,6 +316,16 @@ int main(void)
         request(r, 1000, 200, NULL);
         post("/login", NULL, "password=d37qtsp979", 403, NULL);
         post("/login", NULL, "password=longenough1", 303, NULL);
+
+        // the pair button: needs the log-in and the page's token
+        snprintf(body, sizeof(body), "t=%s&mode=0", token);
+        post("/bt-pair", NULL, body, 401, NULL);
+        post("/bt-pair", cookie, "t=bad", 400, NULL);
+        assert(pair_windows == 0);
+        post("/bt-pair", cookie, body, 200, "Pairing open");
+        assert(pair_windows == 1);
+        snprintf(r, sizeof(r), "GET / HTTP/1.1\r\n%s\r\n", cookie);
+        request(r, 1000, 200, "formaction=/bt-pair");
 
         // log out
         snprintf(body, sizeof(body), "t=%s", token);

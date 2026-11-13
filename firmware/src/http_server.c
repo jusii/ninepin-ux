@@ -32,6 +32,9 @@
 #include "web_auth.h"
 #include "web_page.h"
 #include "wifi.h"
+#ifdef ENABLE_BLUETOOTH_HID
+#include "bt_hid.h"
+#endif
 
 #define HTTP_PORT               80
 #define HTTP_CONNECTIONS        4
@@ -64,6 +67,7 @@ typedef enum {
     FORM_PROFILE_SAVE,  // the settings form, and its pad part as a named profile
     FORM_PROFILE_LOAD,
     FORM_PROFILE_DELETE,
+    FORM_BT_PAIR,       // the settings form again, for its token only
 } form_kind_t;
 
 typedef struct {
@@ -502,6 +506,24 @@ static bool handle_logout(http_conn_t *c, char const *body)
 }
 
 /**
+ * the page's "pair" button: what "BT pair (2 min)" does in the board's menu
+ */
+static bool handle_bt_pair(http_conn_t *c, char const *body)
+{
+    if (!token_given(body))
+        return respond_message(c, 400, "Not opened", "The page is out of date: reload it and try again.", NULL);
+#ifdef ENABLE_BLUETOOTH_HID
+    if (!settings_get()->bt_enabled)
+        return respond_message(c, 409, "Not opened", "Bluetooth is off.", NULL);
+    bt_hid_pair_window();
+    return respond_message(c, 200, "Pairing open", "The board searches for new Bluetooth devices for 2 minutes: "
+        "put the device in its pairing mode now. Nothing on the form was saved.", NULL);
+#else
+    return respond_message(c, 409, "Not opened", "This firmware has no Bluetooth.", NULL);
+#endif
+}
+
+/**
  * the page password form: a new password, or none asked for
  */
 static bool handle_password(http_conn_t *c, char const *body)
@@ -596,6 +618,7 @@ static bool handle_form(http_conn_t *c)
         case FORM_LOGIN:    return handle_login(c, body);
         case FORM_LOGOUT:   return handle_logout(c, body);
         case FORM_PASSWORD: return handle_password(c, body);
+        case FORM_BT_PAIR:  return handle_bt_pair(c, body);
         case FORM_PROFILE_LOAD:     return handle_profile(c, body, true);
         case FORM_PROFILE_DELETE:   return handle_profile(c, body, false);
         default:            break;
@@ -1045,6 +1068,8 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_PROFILE_LOAD);
     if (strcmp(target, "/profile-delete") == 0)
         return form_begin(c, FORM_PROFILE_DELETE);
+    if (strcmp(target, "/bt-pair") == 0)
+        return form_begin(c, FORM_BT_PAIR);
 
     if (strcmp(target, "/update") == 0) {
         if (!has_length)

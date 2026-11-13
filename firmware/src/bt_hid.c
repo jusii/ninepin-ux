@@ -651,9 +651,14 @@ static int8_t bt_classic_find_free_slot(void)
 
 /**
  * look for a classic pad: only with a free slot. with a classic pad connected
- * the search would cost that pad its radio time, so then only whilst a pairing
- * window is open (BT pair): that is how a second pad is paired
+ * the search would cost that pad its radio time, so then only for the first
+ * BT_PAD_SEARCH_MS after a pad connected, and whilst a pairing window is open
+ * (BT pair): that is how a second pad is paired
  */
+#define BT_PAD_SEARCH_MS 30000
+static uint32_t bt_pad_search_until;    // 0: no pad has connected yet
+static uint32_t bt_now_ms(void);
+
 static bool bt_classic_wants_inquiry(void)
 {
     if (!bt_radio_on || !bt_classic_working || bt_scan_paused || (bt_classic_find_free_slot() < 0))
@@ -662,8 +667,20 @@ static bool bt_classic_wants_inquiry(void)
         return true;
     for (unsigned slot = 0; slot < INPUT_BRIDGE_BT_CLASSIC_SLOTS; slot++)
         if (bt_classic_connections[slot].in_use && bt_classic_connections[slot].has_gamepad)
-            return false;
+            return bt_pad_search_until && ((int32_t)(bt_now_ms() - bt_pad_search_until) < 0);
     return true;
+}
+
+/**
+ * a pad has just connected: the second one usually follows it, so the search
+ * goes on for a little while
+ */
+static void bt_classic_pad_arrived(void)
+{
+    bt_pad_search_until = bt_now_ms() + BT_PAD_SEARCH_MS;
+    if (!bt_pad_search_until)
+        bt_pad_search_until = 1;
+    bt_classic_schedule_inquiry(1000);
 }
 
 static void bt_classic_inquiry_timer(btstack_timer_source_t *timer)
@@ -892,6 +909,8 @@ static void bt_classic_descriptor_ready(uint8_t slot)
 
     connection->has_gamepad = (connection->pad_kind != BT_PAD_GENERIC)
         || hid_gamepad_parse(&connection->gamepad, descriptor, length);
+    if (connection->has_gamepad)
+        bt_classic_pad_arrived();
 
     // a playstation-like pad neither decoder knows (a dualsense whose
     // descriptor hides its 0x31, say): its buttons in the playstation order,
@@ -954,6 +973,7 @@ static void bt_classic_become(uint8_t slot, bt_pad_kind_t kind)
     connection->pad_kind = kind;
     connection->sony_layout = false;
     connection->has_gamepad = true;
+    bt_classic_pad_arrived();
     connection->gamepad_device = true;
     // it already sends its full report: nothing to ask for
     connection->setup_requested = true;
