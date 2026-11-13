@@ -31,7 +31,12 @@ void web_page_init(void);
  *
  * @return its length, or 0 if it did not fit
  */
-size_t web_page_render(char *out, size_t size, char const *note);
+/**
+ * @param at    the group to show open and to put the note in (its first
+ *              field's name, "combos", or "save" for the form's foot); NULL: none
+ * @param note  a line about the save just made; NULL: none
+ */
+size_t web_page_render(char *out, size_t size, char const *at, char const *note);
 
 /**
  * @brief A short page: a title, one paragraph of text (escaped here), a link
@@ -39,7 +44,11 @@ size_t web_page_render(char *out, size_t size, char const *note);
  *
  * @return its length (cut short if it did not fit)
  */
-size_t web_page_message(char *out, size_t size, char const *title, char const *text, bool back);
+/**
+ * @param refresh   a meta refresh's content ("2;url=/"), for browsers that
+ *                  ignore the Refresh header; NULL: none
+ */
+size_t web_page_message(char *out, size_t size, char const *title, char const *text, char const *refresh);
 
 /**
  * @brief The log-in page (join mode asks for the page password).

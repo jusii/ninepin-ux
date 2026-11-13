@@ -137,6 +137,8 @@ static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
 char const *reset_info_detail(void) { return ""; }
+static bool page_busy_now;
+bool wifi_page_busy(void) { return page_busy_now; }
 settings_t const *wifi_page_storing(void) { return NULL; }
 void reset_info_status(char *out, size_t size) { snprintf(out, size, "0:00:07 since: power on"); }
 static int pair_windows;
@@ -379,7 +381,28 @@ int main(void)
         snprintf(body, sizeof(body), "t=%s&mode=1", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
         request(req, 1000, 303, "Location: /?saved");
-        request("GET /?saved HTTP/1.1\r\n\r\n", 1000, 200, "<b>Saved.</b>");
+        request("GET /?saved HTTP/1.1\r\n\r\n", 1000, 200, "</h1><p><b>-</b>");
+        // a group's own save button: back to that group, open, with the note in it
+        snprintf(body, sizeof(body), "t=%s&g=display", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 303, "Location: /?saved=display#display");
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<details id=display>");
+        request("GET /?saved=display HTTP/1.1\r\n\r\n", 1000, 200, "<details open id=display>");
+        assert(strstr(last_out, "<button name=g value=display>Save</button> <b>-</b>") && !strstr(last_out, "</h1><p><b>"));
+        request("GET /?saved=save HTTP/1.1\r\n\r\n", 1000, 200, "<button name=g value=save>Save</button> <b>-</b>");
+        // a name the page does not have: the note at the top; one that will not do: as no name
+        request("GET /?saved=nosuch HTTP/1.1\r\n\r\n", 1000, 200, "</h1><p><b>-</b>");
+        request("GET /?saved=%22%3E HTTP/1.1\r\n\r\n", 1000, 200, "</h1><p><b>-</b>");
+        snprintf(body, sizeof(body), "t=%s&g=a%%0d%%0aX-Bad:1", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        request(req, 1000, 303, "Location: /?saved\r\n");
+        assert(!strstr(last_out, "X-Bad"));
+        // the main loop still at it: asked again in a moment, to the same place
+        page_busy_now = true;
+        request("GET /?saved=combos HTTP/1.1\r\n\r\n", 1000, 200, "Refresh: 0; url=/?saved=combos#combos");
+        assert(strstr(last_out, "content=\"0; url=/?saved=combos#combos\""));
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2>Settings</h2>");
+        page_busy_now = false;
         assert(submitted.pad_combo[5].button == 9 && submitted.pad_combo[5].key == 0x2c);
         snprintf(body, sizeof(body), "t=%s&combos=1&c1b=6&c1d=1&c1f=1&c1k=&c2b=7&c2k=+Space&c3b=0&c3u=1&c3k=f1&c4b=16&c4k=0x64&c5b=1&c5k=Q", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
@@ -448,23 +471,23 @@ int main(void)
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "Profile: none");
         assert(!strstr(last_out, "formaction=/profile-load") && strstr(last_out, "formaction=/profile-save"));
         snprintf(body, sizeof(body), "t=%s&pad_triangle=1&pad_directions=2&combos=1&c1b=6&c1d=1&c1f=1&c2b=7&c2k=space&profile_for=0&profile_name=Blue+Max", token);
-        post("/profile-save", NULL, body, 200, "as the profile Blue Max");
+        post("/profile-save", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(profiles_count() == 1 && current.pad_profile == 1 && current.pad_triangle == 1 && current.pad_combo[1].key == 0x2c);
         snprintf(body, sizeof(body), "t=%s&pad_triangle=0&pad_directions=0&combos=1&c1b=5&c1u=1&profile_for=0&profile_name=jumper", token);
-        post("/profile-save", NULL, body, 200, "as the profile jumper");
+        post("/profile-save", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(profiles_count() == 2 && current.pad_profile == 2 && current.pad_combo[0].button == 5 && current.pad_combo[1].button == 0);
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "Profile: <b>jumper</b><label>");
         assert(strstr(last_out, "<option value=1>Blue Max<option value=2 selected>jumper</select>"));
         // the same name again: saved over, not a third
         snprintf(body, sizeof(body), "t=%s&combos=1&c1b=5&c1u=1&c1f=1&profile_for=0&profile_name=jumper", token);
-        post("/profile-save", NULL, body, 200, NULL);
+        post("/profile-save", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(profiles_count() == 2 && profiles_get(1)->combo[0].outputs == (1 | 16));
         // edited without saving the profile: the page says so
         current.pad_combo[0].outputs = 1;
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<b>jumper</b> (changed since)");
         // load the other one
         snprintf(body, sizeof(body), "t=%s&mode=2&profile=1&profile_for=0&profile_name=ignored", token);
-        post("/profile-load", NULL, body, 200, "loads the pad profile Blue Max");
+        post("/profile-load", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(current.pad_profile == 1 && current.pad_triangle == 1 && current.pad_directions == 2 && current.mode == 0);
         assert(current.pad_combo[0].button == 6 && current.pad_combo[0].outputs == (2 | 16) && current.pad_combo[1].key == 0x2c);
         // they survive a restart, in the flash
@@ -491,18 +514,18 @@ int main(void)
         post("/profile-delete", NULL, body, 400, "out of date");
         // delete the loaded one
         snprintf(body, sizeof(body), "t=%s&profile=1", token);
-        post("/profile-delete", NULL, body, 200, "deletes the pad profile Blue Max");
+        post("/profile-delete", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(profiles_count() == 1 && current.pad_profile == 0 && current.pad_combo[0].button == 6);
         // thirty-two fit, the next is refused, saving over one still goes
         for (int i = 0; i < 31; i++) {
             snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=game+%d", token, i);
-            post("/profile-save", NULL, body, 200, NULL);
+            post("/profile-save", NULL, body, 303, "Location: /?saved=combos#combos");
         }
         assert(profiles_count() == 32);
         snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=one+too+many", token);
         post("/profile-save", NULL, body, 400, "slot is in use");
         snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=game+3", token);
-        post("/profile-save", NULL, body, 200, NULL);
+        post("/profile-save", NULL, body, 303, "Location: /?saved=combos#combos");
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<b>game 3</b>");
         printf("  page with 32 profiles: %zu bytes\n", strlen(last_out));
         profiles_init();

@@ -339,11 +339,26 @@ static void put_profiles(writer_t *w, settings_t const *s)
     put(w, "</select> <button formaction=/profile-save>Save as profile</button></span></label>");
 }
 
-static void put_combos(writer_t *w, settings_t const *s)
+/**
+ * a group's own save button, and the note about the save if it was made here.
+ * the button's name and value come back with the form: the answer is the page
+ * again, at this group
+ */
+static void put_group_foot(writer_t *w, char const *id, char const *at, char const *note)
+{
+    put(w, "<p><button name=g value=%s>Save</button>", id);
+    if (note && at && (strcmp(at, id) == 0)) {
+        put(w, " <b>");
+        put_text(w, note, 96);
+        put(w, "</b>");
+    }
+}
+
+static void put_combos(writer_t *w, settings_t const *s, char const *at, char const *note)
 {
     char buf[8];
 
-    put(w, "<details open><summary>Pad button combos</summary><input type=hidden name=combos value=1>"
+    put(w, "<details open id=combos><summary>Pad button combos</summary><input type=hidden name=combos value=1>"
         "<table class=c><tr><th style=width:30%%>Button");
     for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
         put(w, "<th>%s", combo_heads[o]);
@@ -367,6 +382,7 @@ static void put_combos(writer_t *w, settings_t const *s)
         put(w, "<option>%s", keys[i].name);
     put(w, "</datalist>");
     put_profiles(w, s);
+    put_group_foot(w, "combos", at, note);
     put(w, "<p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
         "held together (a direction wins over the stick), and the key is down on the keyboard. The button "
         "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
@@ -381,8 +397,11 @@ static void put_combos(writer_t *w, settings_t const *s)
 // the page
 //--------------------------------------------------------------------+
 
-size_t web_page_render(char *out, size_t size, char const *note)
+size_t web_page_render(char *out, size_t size, char const *at, char const *note)
 {
+    char const *group = NULL;       // the group being written, by its first field
+    bool placed = false;            // the note has a group to go in
+
     writer_t w = { out, size, 0, false };
     // a save still on its way into flash already shows
     settings_t const *s = wifi_page_storing() ? wifi_page_storing() : settings_get();
@@ -392,9 +411,14 @@ size_t web_page_render(char *out, size_t size, char const *note)
     put(&w, "<h1>");
     put_text(&w, wifi_name(), 32);
     put(&w, "</h1>");
-    if (note) {
+    // the note goes where the save was made; at the top if that is nowhere
+    if (at && (!strcmp(at, "combos") || !strcmp(at, "save")))
+        placed = true;
+    for (size_t i = 0; at && !placed && (i < CHOICE_COUNT); i++)
+        placed = choices[i].group && (strcmp(at, choices[i].key) == 0);
+    if (note && !placed) {
         put(&w, "<p><b>");
-        put_text(&w, note, 64);
+        put_text(&w, note, 96);
         put(&w, "</b>");
     }
 
@@ -451,12 +475,17 @@ size_t web_page_render(char *out, size_t size, char const *note)
                 || ((strcmp(c->key, "amiga_port1") == 0) && (s->mode == SETTINGS_MODE_AMIGA))
                 || ((strcmp(c->key, "c64_port1") == 0) && (s->mode == SETTINGS_MODE_C64));
 
-            if (i)
+            if (at && (strcmp(at, c->key) == 0))
+                open = true;
+            if (group) {
+                put_group_foot(&w, group, at, note);
                 put(&w, "</details>");
+            }
+            group = c->key;
             // the combos follow the pads
             if (strcmp(c->key, "wheel_enabled") == 0)
-                put_combos(&w, s);
-            put(&w, "<details%s><summary>%s</summary>", open ? " open" : "", c->group);
+                put_combos(&w, s, at, note);
+            put(&w, "<details%s id=%s><summary>%s</summary>", open ? " open" : "", c->key, c->group);
         }
 
         put(&w, "<label>%s <select name=%s>", c->label, c->key);
@@ -485,7 +514,14 @@ size_t web_page_render(char *out, size_t size, char const *note)
 #endif
     }
 
-    put(&w, "</details><p><button>Save</button></form>");
+    put_group_foot(&w, group, at, note);
+    put(&w, "</details><p id=save><button name=g value=save>Save</button>");
+    if (note && at && (strcmp(at, "save") == 0)) {
+        put(&w, " <b>");
+        put_text(&w, note, 96);
+        put(&w, "</b>");
+    }
+    put(&w, "</form>");
 
     // the page password
     put(&w, "<h2>Page password</h2><form method=post action=/password>"
@@ -522,14 +558,17 @@ size_t web_page_render(char *out, size_t size, char const *note)
     return w.full ? 0 : w.len;
 }
 
-size_t web_page_message(char *out, size_t size, char const *title, char const *text, bool back)
+size_t web_page_message(char *out, size_t size, char const *title, char const *text, char const *refresh)
 {
     writer_t w = { out, size, 0, false };
 
     put_head(&w, title);
     // back by itself, for browsers that ignore the Refresh header
-    if (back)
-        put(&w, "<meta http-equiv=refresh content=\"2;url=/\">");
+    if (refresh) {
+        put(&w, "<meta http-equiv=refresh content=\"");
+        put_text(&w, refresh, 64);
+        put(&w, "\">");
+    }
     put(&w, "<h1>");
     put_text(&w, title, 64);
     put(&w, "</h1><p>");

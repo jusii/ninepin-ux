@@ -98,6 +98,7 @@ static volatile bool page_pending_ready;
 // stored: what the page shows meanwhile (lwip context reads, main loop clears)
 static settings_t page_storing;
 static volatile bool page_storing_valid;
+static volatile bool page_busy;      // a save or profile step handed over and not yet done
 static char password_pending[SETTINGS_PAGE_PASSWORD_LEN];   // empty: keep the password
 static bool password_pending_open;
 static volatile bool password_pending_ready;
@@ -544,6 +545,11 @@ static void follow_settings(void)
 // a save from the page
 //--------------------------------------------------------------------+
 
+bool wifi_page_busy(void)
+{
+    return page_busy;
+}
+
 settings_t const *wifi_page_storing(void)
 {
     return page_storing_valid ? &page_storing : NULL;
@@ -563,6 +569,7 @@ bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, 
     page_pending_op = op;
     snprintf(page_pending_name, sizeof(page_pending_name), "%s", name ? name : "");
     page_pending_slot = slot;
+    page_busy = true;
     __dmb();
     page_pending_ready = true;
     return true;
@@ -724,6 +731,7 @@ static void page_save_task(void)
         return;
     page_save_work();
     page_storing_valid = false;
+    page_busy = false;
 }
 
 //--------------------------------------------------------------------+

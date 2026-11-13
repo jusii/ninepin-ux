@@ -143,6 +143,8 @@ static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }
 char const *reset_info_detail(void) { return ""; }
+static bool page_busy_now;
+bool wifi_page_busy(void) { return page_busy_now; }
 settings_t const *wifi_page_storing(void) { return NULL; }
 void reset_info_status(char *out, size_t size) { snprintf(out, size, "0:00:07 since: power on"); }
 void bt_hid_pair_window(void) { }

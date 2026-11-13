@@ -408,21 +408,72 @@ static bool respond_with(http_conn_t *c, int status, char const *body, size_t bo
  */
 static bool respond_message(http_conn_t *c, int status, char const *title, char const *message, char const *extra_head)
 {
-    size_t body_len = web_page_message(c->small, sizeof(c->small) - 320, title, message,
-        extra_head && strstr(extra_head, "Refresh:"));
+    char refresh[64] = "";
+    char const *header = extra_head ? strstr(extra_head, "Refresh: ") : NULL;
+    size_t body_len;
+
+    // the same again inside the page, for browsers that ignore the header
+    if (header)
+        snprintf(refresh, sizeof(refresh), "%.*s", (int)strcspn(header + 9, "\r"), header + 9);
+    body_len = web_page_message(c->small, sizeof(c->small) - 320, title, message, header ? refresh : NULL);
 
     return respond_with(c, status, c->small, body_len, extra_head);
 }
 
-static bool respond_page(http_conn_t *c, char const *note)
+// the group a save was made in, as the page and the form's buttons name it
+#define HTTP_AT_MAX 20
+
+static bool at_ok(char const *at)
+{
+    size_t length = strlen(at);
+
+    if (!length || (length >= HTTP_AT_MAX))
+        return false;
+    for (size_t i = 0; i < length; i++)
+        if (!((at[i] >= 'a' && at[i] <= 'z') || (at[i] >= '0' && at[i] <= '9') || (at[i] == '_')))
+            return false;
+    return true;
+}
+
+/**
+ * "Location: /?saved=<at>#<at>": back to the page, where the save was made
+ */
+static char const *saved_location(char const *header, char const *at)
+{
+    static char line[2 * HTTP_AT_MAX + 48];     // lwip callbacks do not nest
+
+    if (at && at_ok(at))
+        snprintf(line, sizeof(line), "%s/?saved=%s#%s\r\n", header, at, at);
+    else
+        snprintf(line, sizeof(line), "%s/?saved\r\n", header);
+    return line;
+}
+
+/**
+ * the settings page. after a save ("?saved", "?saved=<group>") it waits for
+ * the main loop to have stored it, then says how that went, in that group
+ */
+static bool respond_page(http_conn_t *c, char const *query)
 {
     size_t length;
+    char const *at = NULL, *note = NULL;
+
+    if (query && (strncmp(query, "saved", 5) == 0) && ((query[5] == 0) || (query[5] == '='))) {
+        if ((query[5] == '=') && at_ok(query + 6))
+            at = query + 6;
+        // a plain save shows from what is being stored; anything else (a
+        // profile step) is asked for again in a moment
+        if (wifi_page_busy() && !wifi_page_storing())
+            return respond_message(c, 200, "Storing", "The board is storing that; the settings follow.",
+                saved_location("Refresh: 0; url=", at));
+        note = wifi_page_storing() ? "Saved." : wifi_page_result();
+    }
 
     if (page_owner && page_owner != c)
         return respond_message(c, 503, "Busy", "Another page is on its way out; reload in a moment.", "Retry-After: 1\r\n");
 
     page_owner = c;
-    length = web_page_render(page, sizeof(page), note);
+    length = web_page_render(page, sizeof(page), at, note);
     if (!length) {
         page_owner = NULL;
         return respond_message(c, 503, "Too big", "The page did not fit its buffer.", NULL);
@@ -600,7 +651,7 @@ static bool handle_profile(http_conn_t *c, char const *body, bool load)
         return respond_message(c, 503, "Not done", "The previous save is still being stored; try again.", NULL);
 
     ahprintf("[web] pad profile %s: %s\n", profile->name, load ? "load" : "delete");
-    return respond_message(c, 200, load ? "Loaded" : "Deleted", text, "Refresh: 2; url=/\r\n");
+    return respond_message(c, 303, load ? "Loaded" : "Deleted", text, saved_location("Location: ", "combos"));
 }
 
 static bool handle_form(http_conn_t *c)
@@ -612,6 +663,7 @@ static bool handle_form(http_conn_t *c)
     char const *new_name;
     char profile_name[PROFILE_NAME_LEN + 4] = "";
     char profile_for[4] = "";
+    char at[HTTP_AT_MAX + 4] = "";
     unsigned machine = PROFILE_FOR_ANY;
     bool wifi_changed, renamed;
 
@@ -627,7 +679,11 @@ static bool handle_form(http_conn_t *c)
         default:            break;
     }
 
-    // the profile's name, before the parser takes the body apart
+    // the save button pressed, before the parser takes the body apart
+    if (!web_page_field(body, "g", at, sizeof(at)))
+        at[0] = 0;
+
+    // the profile's name, likewise
     if (c->form == FORM_PROFILE_SAVE) {
         if (!web_page_field(body, "profile_name", profile_name, sizeof(profile_name)))
             profile_name[0] = 0;
@@ -678,10 +734,11 @@ static bool handle_form(http_conn_t *c)
     else
         snprintf(text, sizeof(text), "The board stores and applies the settings now.");
 
-    // a plain save goes straight back to the settings, which show it at once
-    if (!wifi_changed && (c->form == FORM_SETTINGS))
-        return respond_message(c, 303, "Saved", text, "Location: /?saved\r\n");
-    return respond_message(c, 200, "Saved", text, wifi_changed ? NULL : "Refresh: 2; url=/\r\n");
+    // straight back to the settings, to the group the save was made in
+    if (!wifi_changed)
+        return respond_message(c, 303, "Saved", text,
+            saved_location("Location: ", (c->form == FORM_PROFILE_SAVE) ? "combos" : at));
+    return respond_message(c, 200, "Saved", text, NULL);
 }
 
 //--------------------------------------------------------------------+
@@ -1060,7 +1117,7 @@ static bool handle_head(http_conn_t *c)
 
     if (is_get) {
         if (strcmp(target, "/") == 0)
-            return respond_page(c, (query && !strcmp(query, "saved")) ? "Saved." : NULL);
+            return respond_page(c, query);
         return respond_after_body(c, 404, "Not found", "There is only the settings page here.", NULL);
     }
 

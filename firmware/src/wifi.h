@@ -86,6 +86,12 @@ char const *wifi_page_result(void);
 settings_t const *wifi_page_storing(void);
 
 /**
+ * @return true from a save or profile step being handed over until the main
+ *         loop has done it. Cyw43 background context.
+ */
+bool wifi_page_busy(void);
+
+/**
  * @brief The state for the console's wifi command. Main loop.
  */
 void wifi_describe(void);
