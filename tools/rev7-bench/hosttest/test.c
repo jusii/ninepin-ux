@@ -136,6 +136,7 @@ bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char co
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
+char const *reset_info_detail(void) { return ""; }
 void reset_info_status(char *out, size_t size) { snprintf(out, size, "0:00:07 since: power on"); }
 static int pair_windows;
 void bt_hid_pair_window(void) { pair_windows++; }

@@ -64,7 +64,14 @@ static volatile bool bus_borrowed = false;
 // the isr is only installed once a display has answered
 static bool display_present = false;
 
-static uint8_t queue_depth = 0;
+static volatile uint8_t queue_depth = 0;
+
+// a redraw sends the whole frame, eight transactions on the heap. writes that
+// come faster than the bus sends them (a mouse readout, say) must not pile
+// frames up until the heap is gone: past this many waiting, the redraw is
+// only noted, and disp_task() sends one frame once the queue has drained
+#define DISP_QUEUE_LIMIT 16
+static volatile bool update_wanted;
 
 /**
  * ssd1306 commands; borrowed from https://github.com/fivdi/pico-i2c-dma ssd1306 example code with thanks.
@@ -491,11 +498,10 @@ void disp_queue_transaction(uint8_t *write_buffer, size_t write_length, uint8_t 
         memcpy(new_transaction->read_buffer, read_buffer, read_length);
     }
 
-    queue_depth++;
-
     // check if we're the the first item in the list and act accordingly
     if (current_transaction == NULL) {
         irq_set_enabled(irqn, false);
+        queue_depth++;
         new_transaction->prev_transaction = NULL;
         last_transaction = current_transaction = new_transaction;
 
@@ -518,6 +524,7 @@ void disp_queue_transaction(uint8_t *write_buffer, size_t write_length, uint8_t 
 
     // this is not the first item, so shove this on the end of the queue
     irq_set_enabled(irqn, false);
+    queue_depth++;
     new_transaction->prev_transaction = last_transaction;
     last_transaction->next_transaction = new_transaction;
     last_transaction = new_transaction;
@@ -624,6 +631,11 @@ static void ugui_draw_pixel_cb(UG_S16 x, UG_S16 y, UG_COLOUR colour)
  */
 static void disp_ssd_update()
 {
+    if (queue_depth >= DISP_QUEUE_LIMIT) {
+        update_wanted = true;
+        return;
+    }
+
 #if defined(DISPLAY_SH1106)
     // the sh1106 has no horizontal addressing mode: the column counter increments within a page but never advances
     // to the next page on its own, for each of the 8 pages, set the page address and column (offset by 2) then
@@ -644,6 +656,14 @@ static void disp_ssd_update()
 #else
     disp_queue_transaction(display_command, sizeof(display_command), NULL, 0);
 #endif
+}
+
+void disp_task(void)
+{
+    if (update_wanted && display_present && (queue_depth == 0)) {
+        update_wanted = false;
+        disp_ssd_update();
+    }
 }
 
 /**

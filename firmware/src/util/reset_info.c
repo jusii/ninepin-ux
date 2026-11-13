@@ -12,7 +12,9 @@
 #include "config.h"
 #include "util/reset_info.h"
 
+#include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "pico/stdlib.h"
 #include "hardware/watchdog.h"
@@ -25,6 +27,34 @@
 #define RESET_FAULT_BIT (1u << 19)
 
 static char reason[72] = "?";
+
+// more than the scratch registers hold, in ram the start-up code leaves alone:
+// a panic's message, and what on the stack looked like a return address
+#define NOTE_MAGIC      0x4e6f7465u
+#define NOTE_TRAIL      10
+
+typedef struct {
+    uint32_t magic;
+    uint32_t check;                 // ~magic once the note is whole
+    uint32_t trail[NOTE_TRAIL];
+    char text[64];
+} crash_note_t;
+
+static crash_note_t __uninitialized_ram(crash_note);
+static char detail[sizeof(((crash_note_t *)0)->text) + NOTE_TRAIL * 9 + 16] = "";
+
+extern char __flash_binary_start, __flash_binary_end;
+
+static void __not_in_flash_func(note_begin)(void)
+{
+    if ((crash_note.magic == NOTE_MAGIC) && (crash_note.check == ~NOTE_MAGIC))
+        return;     // a panic's message is already in: keep it
+    crash_note.magic = NOTE_MAGIC;
+    crash_note.check = 0;
+    for (unsigned i = 0; i < NOTE_TRAIL; i++)
+        crash_note.trail[i] = 0;
+    crash_note.text[0] = 0;
+}
 
 static char const *const stage_names[RESET_STAGE_COUNT] = {
     "start-up", "usb host", "usb device", "console", "menu", "pads", "apply", "bluetooth", "wifi", "updates",
@@ -48,6 +78,20 @@ void __attribute__((used)) __not_in_flash_func(reset_info_hardfault_c)(uint32_t 
     watchdog_hw->scratch[2] = frame[5];
     watchdog_hw->scratch[3] = *(volatile uint32_t *)0xE000ED28u;   // cfsr
 
+    // what on the stack points into the firmware with the thumb bit set: the
+    // callers, more or less
+    note_begin();
+    for (unsigned i = 8, found = 0; (i < 200) && (found < NOTE_TRAIL); i++) {
+        uint32_t word;
+
+        if ((uintptr_t)&frame[i] >= 0x20082000u)
+            break;
+        word = frame[i];
+        if ((word & 1u) && (word >= (uintptr_t)&__flash_binary_start) && (word < (uintptr_t)&__flash_binary_end))
+            crash_note.trail[found++] = word;
+    }
+    crash_note.check = ~NOTE_MAGIC;
+
     watchdog_reboot(0, 0, 1);
     for (;;)
         ;
@@ -68,6 +112,26 @@ void __attribute__((naked)) __not_in_flash_func(isr_hardfault)(void)
 }
 #endif
 
+/**
+ * panic(): keep the message, then stop the way the sdk does (a breakpoint,
+ * which with no debugger is a hard fault: the handler above does the rest)
+ */
+void __attribute__((noreturn)) reset_info_panic(const char *fmt, ...)
+{
+    va_list args;
+
+    crash_note.magic = NOTE_MAGIC;
+    crash_note.check = 0;
+    memset(crash_note.trail, 0, sizeof(crash_note.trail));
+    va_start(args, fmt);
+    vsnprintf(crash_note.text, sizeof(crash_note.text), fmt ? fmt : "panic", args);
+    va_end(args);
+    crash_note.check = ~NOTE_MAGIC;
+
+    for (;;)
+        __asm volatile("bkpt #0");
+}
+
 void reset_info_init(void)
 {
     uint32_t s0 = watchdog_hw->scratch[0];
@@ -82,7 +146,9 @@ void reset_info_init(void)
     } else if (watchdog_enable_caused_reboot()) {
         // the main loop stopped coming round
         snprintf(reason, sizeof(reason), "watchdog (in %s)", where);
-    } else if (watchdog_caused_reboot()) {
+    } else if (watchdog_hw->reason) {
+        // through the watchdog, not by its timeout: a command, an update
+        // (watchdog_caused_reboot() says no after an update's kind of boot)
         snprintf(reason, sizeof(reason), "restart asked for");
     } else {
 #if !PICO_RP2040
@@ -97,6 +163,20 @@ void reset_info_init(void)
 #endif
     }
 
+    // the note belongs to a fault only; anything else left it from earlier
+    if (ours && (s0 & RESET_FAULT_BIT) && (crash_note.magic == NOTE_MAGIC) && (crash_note.check == ~NOTE_MAGIC)) {
+        size_t at;
+
+        crash_note.text[sizeof(crash_note.text) - 1] = 0;
+        for (char *c = crash_note.text; *c; c++)
+            if ((*c < 0x20) || (*c > 0x7e))
+                *c = ' ';
+        at = (size_t)snprintf(detail, sizeof(detail), "%s%s", crash_note.text[0] ? "panic: " : "", crash_note.text);
+        for (unsigned i = 0; (i < NOTE_TRAIL) && crash_note.trail[i] && (at < sizeof(detail) - 10); i++)
+            at += (size_t)snprintf(detail + at, sizeof(detail) - at, " %08lx", (unsigned long)crash_note.trail[i]);
+    }
+    crash_note.magic = 0;
+
     watchdog_hw->scratch[0] = (RESET_MAGIC << 20) | RESET_STAGE_BOOT;
     watchdog_hw->scratch[1] = watchdog_hw->scratch[2] = watchdog_hw->scratch[3] = 0;
 }
@@ -104,6 +184,11 @@ void reset_info_init(void)
 char const *reset_info_reason(void)
 {
     return reason;
+}
+
+char const *reset_info_detail(void)
+{
+    return detail;
 }
 
 void reset_info_status(char *out, size_t size)

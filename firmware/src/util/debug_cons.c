@@ -279,6 +279,14 @@ void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons, int8_t wheel)
         wheel_reports = (uint8_t)((wheel_reports + 1) % 100);
     }
 
+    // a fast mouse reports a thousand times a second: draw a few of them
+    static uint32_t drawn_ms;
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+
+    if (!wheel && ((uint32_t)(now - drawn_ms) < 50u))
+        return;
+    drawn_ms = now;
+
     char linebuf[32] = "";
 
     snprintf(linebuf, sizeof(linebuf), "%+04d%+04d b%x w%+d n%u", x, y, buttons & 0x0f, last_wheel, wheel_reports);

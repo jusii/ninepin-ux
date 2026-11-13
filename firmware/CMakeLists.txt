@@ -82,6 +82,9 @@ endif ()
 option(AHP_BRINGUP "Enable board bring-up diagnostics" OFF)
 if (AHP_BRINGUP)
 	add_compile_definitions(USB_DEVICE_BRINGUP_SERVICE=1)
+else ()
+	# a panic's message is kept for the next start (util/reset_info.c)
+	add_compile_definitions(PICO_PANIC_FUNCTION=reset_info_panic)
 endif ()
 
 # real amiga keyboard input timings (milliseconds), for bench tuning; see

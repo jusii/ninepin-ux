@@ -48,6 +48,11 @@ disp_write_fn disp_writer(void);
  */
 void disp_blank(bool blank);
 
+/**
+ * @brief Main loop: send a redraw that was held back whilst the queue was full.
+ */
+void disp_task(void);
+
 // where disp_write points whilst there is no display (or it is borrowed)
 void _noop_disp_write(uint8_t x, uint8_t y, char *message);
 

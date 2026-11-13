@@ -365,6 +365,8 @@ int main(void)
     apply_report_watchdog_reboot();
 #ifndef USB_DEVICE_BRINGUP_SERVICE
     ahprintf("[boot] started by: %s\n", reset_info_reason());
+    if (reset_info_detail()[0])
+        ahprintf("[boot] last fault: %s\n", reset_info_detail());
 #endif
     dbgcons_mode(run_mode_name(run_mode_get()));
     dbgcons_amiga_power(amiga_sense_is_on());

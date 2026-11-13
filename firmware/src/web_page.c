@@ -402,9 +402,9 @@ size_t web_page_render(char *out, size_t size)
 
         reset_info_status(running, sizeof(running));
         put_status_row(&w, "Running", running, sizeof(running));
+        if (reset_info_detail()[0])
+            put_status_row(&w, "Last fault", reset_info_detail(), 180);
     }
-    reset_info_status(line, sizeof(line));
-    put_status_row(&w, "Running", line, sizeof(line));
     for (uint8_t player = 0; player < 2; player++) {
         pad_player_t const *p = pads_player(player);
 

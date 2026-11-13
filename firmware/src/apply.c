@@ -21,6 +21,7 @@
 
 #include "platform/amiga/de9.h"
 #include "platform/amiga/quad_mouse.h"
+#include "display/disp_ssd.h"
 #include "ota.h"
 #include "pad.h"
 #include "profiles.h"
@@ -114,6 +115,7 @@ void pads_profile_step(int step)
 void apply_task(void)
 {
     dbgcons_notice_task();
+    disp_task();
     if (watchdog_ms && (watchdog_ms != WATCHDOG_UNKNOWN))
         watchdog_update();
 }

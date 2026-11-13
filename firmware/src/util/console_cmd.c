@@ -95,6 +95,8 @@ static void cmd_info(char const *arg)
     ahprintf("firmware built %s, board %s\n", ahp_build_stamp, PICO_BOARD);
     reset_info_status(running, sizeof(running));
     ahprintf("running %s\n", running);
+    if (reset_info_detail()[0])
+        ahprintf("last fault: %s\n", reset_info_detail());
 #if !PICO_RP2040
     ahprintf("chip rp2350 rev a%u\n", rp2350_chip_version());
     if (rom_get_boot_info(&boot)) {

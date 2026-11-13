@@ -47,6 +47,12 @@ void reset_info_stage(reset_stage_t stage);
 char const *reset_info_reason(void);
 
 /**
+ * @return after a fault: a panic's message and the return addresses found on
+ *         the stack (for addr2line); else ""
+ */
+char const *reset_info_detail(void);
+
+/**
  * @brief "0:12:34 since power on" for the page and the console.
  */
 void reset_info_status(char *out, size_t size);
