@@ -26,8 +26,10 @@
  *                                                     push
  *   console         menu open             menu next   menu inc/dec    menu leave
  *
- * leaving with unsaved edits first moves to "save & exit"; leaving again there
- * throws the edits away.
+ * two levels: the top one and a group behind each of its group entries
+ * (select, or change, opens one). leave goes up a level; from the top, with
+ * unsaved edits it first moves to "save & exit", and leaving again there
+ * throws the edits away. the menu reopens at the setting visited last.
  */
 
 #ifndef _MENU_H

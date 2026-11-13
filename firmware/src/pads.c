@@ -41,6 +41,8 @@ typedef struct {
     uint16_t state;                 // digital, under the settings
     uint8_t keys[SETTINGS_PAD_COMBOS]; // the keys its held combo buttons stand for (0: none)
     uint32_t home_since;            // 0: not held
+    bool home_used;                 // this hold of home stepped the profile: no menu from it
+    uint8_t home_dpad;              // the d-pad as it was, whilst home is held
     uint8_t touch_buttons;
 } pad_slot_t;
 
@@ -72,6 +74,11 @@ void __attribute__((weak)) pads_output_usb(uint8_t player, pad_player_t const *s
 {
     (void)player;
     (void)source;
+}
+
+void __attribute__((weak)) pads_profile_step(int step)
+{
+    (void)step;
 }
 
 static uint32_t now_ms(void)
@@ -401,12 +408,28 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad->state = pad_digital(input, pad->keys);
     latest_slot = slot;
 
-    // home held: open the menu (pads_task() times it)
+    // home held: open the menu (pads_task() times it), or with the d-pad left
+    // or right step the pad profile. the pad sends nothing else meanwhile
     if (input->home) {
-        if (!pad->home_since)
+        uint8_t pressed = (uint8_t)(input->dpad & ~pad->home_dpad);
+
+        pad->home_dpad = (uint8_t)input->dpad;
+        if (!menu_is_open() && !pad->quarantine && (pressed & (PAD_LEFT | PAD_RIGHT))) {
+            pad->home_used = true;
+            pads_profile_step((pressed & PAD_RIGHT) ? +1 : -1);
+        }
+        if (pad->home_used)
+            pad->home_since = 0;
+        else if (!pad->home_since)
             pad->home_since = now_ms();
+        if (!menu_is_open()) {
+            pad->state = 0;
+            memset(pad->keys, 0, sizeof(pad->keys));
+        }
     } else {
         pad->home_since = 0;
+        pad->home_used = false;
+        pad->home_dpad = 0;
     }
 
     pad_menu(slot, before, pad->state);

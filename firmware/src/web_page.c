@@ -41,7 +41,7 @@
 //--------------------------------------------------------------------+
 
 typedef struct {
-    char const *group;              // non-NULL: a new fieldset starts here
+    char const *group;              // non-NULL: a new group (a details box) starts here
     char const *key;
     char const *label;
     uint16_t offset;
@@ -230,7 +230,8 @@ static void put_head(writer_t *w, char const *title)
     put_text(w, title, 64);
     put(w, "</title><style>"
         "body{font-family:sans-serif;max-width:36em;margin:1em auto;padding:0 1em;line-height:1.4}"
-        "fieldset{margin:.8em 0;border:1px solid #999;min-width:0}"
+        "details{margin:.8em 0;border:1px solid #999;padding:.3em .8em}"
+        "summary{font-weight:bold;cursor:pointer}"
         "label{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.2em 1em;margin:.3em 0}"
         "td,th{padding:.1em 1em .1em 0;vertical-align:top;text-align:left}"
         ".c{table-layout:fixed;width:100%%}.c td,.c th{padding-right:.2em}"
@@ -332,7 +333,7 @@ static void put_combos(writer_t *w, settings_t const *s)
 {
     char buf[8];
 
-    put(w, "<fieldset><legend>Pad button combos</legend><input type=hidden name=combos value=1>"
+    put(w, "<details open><summary>Pad button combos</summary><input type=hidden name=combos value=1>"
         "<table class=c><tr><th style=width:30%%>Button");
     for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
         put(w, "<th>%s", combo_heads[o]);
@@ -361,7 +362,7 @@ static void put_combos(writer_t *w, settings_t const *s)
         "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
         "the list. A profile keeps the combos, Pad directions and Triangle button under a name: Save as "
-        "stores the whole form and the profile, Load puts a profile back.</small></fieldset>");
+        "stores the whole form and the profile, Load puts a profile back.</small></details>");
 }
 
 //--------------------------------------------------------------------+
@@ -419,12 +420,17 @@ size_t web_page_render(char *out, size_t size)
         uint8_t value = *((uint8_t const *)s + c->offset);
 
         if (c->group) {
+            // what is changed most stays open: the mode, its ports, the pads
+            bool open = (strcmp(c->key, "mode") == 0) || (strcmp(c->key, "pad_swap") == 0)
+                || ((strcmp(c->key, "amiga_port1") == 0) && (s->mode == SETTINGS_MODE_AMIGA))
+                || ((strcmp(c->key, "c64_port1") == 0) && (s->mode == SETTINGS_MODE_C64));
+
             if (i)
-                put(&w, "</fieldset>");
+                put(&w, "</details>");
             // the combos follow the pads
             if (strcmp(c->key, "wheel_enabled") == 0)
                 put_combos(&w, s);
-            put(&w, "<fieldset><legend>%s</legend>", c->group);
+            put(&w, "<details%s><summary>%s</summary>", open ? " open" : "", c->group);
         }
 
         put(&w, "<label>%s <select name=%s>", c->label, c->key);
@@ -443,7 +449,7 @@ size_t web_page_render(char *out, size_t size)
             put_wifi(&w, s);
     }
 
-    put(&w, "</fieldset><p><button>Save</button></form>");
+    put(&w, "</details><p><button>Save</button></form>");
 
     // the page password
     put(&w, "<h2>Page password</h2><form method=post action=/password>"

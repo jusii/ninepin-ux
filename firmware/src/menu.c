@@ -53,7 +53,15 @@
 // the items
 //--------------------------------------------------------------------+
 
-typedef enum { ITEM_CHOICE, ITEM_ACTION, ITEM_REMAP, ITEM_PROFILE } item_kind_t;
+typedef enum { ITEM_CHOICE, ITEM_ACTION, ITEM_REMAP, ITEM_PROFILE, ITEM_GROUP, ITEM_BACK } item_kind_t;
+
+// the menu has two levels: the top one, and a group of items behind each of
+// its ITEM_GROUP entries
+typedef enum { G_TOP = 0, G_PADS, G_MOUSE, G_KEYBOARD, G_BT, G_WIFI, G_BOARD, G_COUNT, G_ANY = 0xff } group_t;
+
+static char const *const group_titles[G_COUNT] = {
+    "SETTINGS", "PADS", "MOUSE", "KEYBOARD", "BLUETOOTH", "WI-FI", "BOARD",
+};
 
 typedef struct {
     char const *label;
@@ -62,7 +70,8 @@ typedef struct {
     settings_names_t const *names;  // ITEM_CHOICE: one per value
     bool (*visible)(void);          // NULL: always
     void (*action)(void);           // ITEM_ACTION
-    uint8_t slot;                   // ITEM_REMAP: slot number
+    uint8_t slot;                   // ITEM_REMAP: slot number; ITEM_GROUP: the group it opens
+    uint8_t group;                  // the level it shows on (G_ANY: every group, not the top)
     bool from_amiga;                // ITEM_REMAP: amiga keyboard -> usb (else usb -> amiga)
 } menu_item_t;
 
@@ -84,65 +93,81 @@ static void action_page_password_new(void);
 #endif
 static void action_previous_firmware(void);
 
-#define CHOICE(label, field, names, visible) \
-    { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, false }
-#define ACTION(label, fn) \
-    { label, ITEM_ACTION, 0, NULL, NULL, fn, 0, false }
+#define CHOICE(group, label, field, names, visible) \
+    { label, ITEM_CHOICE, offsetof(settings_t, field), &settings_##names, visible, NULL, 0, group, false }
+#define ACTION(group, label, fn) \
+    { label, ITEM_ACTION, 0, NULL, NULL, fn, 0, group, false }
+#define GROUP(label, group) \
+    { label, ITEM_GROUP, 0, NULL, NULL, NULL, group, G_TOP, false }
 #define REMAP_PC(n) \
-    { "PC remap " #n, ITEM_REMAP, offsetof(settings_t, kb_remap), NULL, NULL, NULL, (n) - 1, false }
+    { "PC remap " #n, ITEM_REMAP, offsetof(settings_t, kb_remap), NULL, NULL, NULL, (n) - 1, G_KEYBOARD, false }
 #define REMAP_A4000(n) \
-    { "A4000 remap " #n, ITEM_REMAP, offsetof(settings_t, ak_remap), NULL, NULL, NULL, (n) - 1, true }
+    { "A4000 remap " #n, ITEM_REMAP, offsetof(settings_t, ak_remap), NULL, NULL, NULL, (n) - 1, G_KEYBOARD, true }
 
+// the top level first, what is changed most often at its head; "save & exit"
+// and "cancel" stay the last two (ITEM_SAVE)
 static const menu_item_t items[] = {
-    CHOICE("Mode",              mode,           names_mode,         NULL),
-    CHOICE("Port 1",            amiga_port[0],  names_amiga_port,   visible_amiga),
-    CHOICE("Port 2",            amiga_port[1],  names_amiga_port,   visible_amiga),
-    CHOICE("Port 1",            c64_port[0],    names_c64_port,     visible_c64),
-    CHOICE("Port 2",            c64_port[1],    names_c64_port,     visible_c64),
-    CHOICE("Swap players",      pad_swap,       names_no_yes,       NULL),
-    CHOICE("Merge all pads",    pad_merge,      names_no_yes,       NULL),
-    CHOICE("Pad directions",    pad_directions, names_directions,   NULL),
-    CHOICE("Stick deadzone",    pad_deadzone,   names_deadzone,     NULL),
-    CHOICE("Triangle button",   pad_triangle,   names_triangle,     NULL),
-    CHOICE("Touchpad mouse",    pad_touchpad,   names_off_on,       NULL),
-    { "Pad profile", ITEM_PROFILE, offsetof(settings_t, pad_profile), NULL, NULL, NULL, 0, false },
-    CHOICE("Mouse wheel",       wheel_enabled,  names_off_on,       NULL),
-    CHOICE("Wheel direction",   wheel_reverse,  names_wheel_dir,    NULL),
-    CHOICE("Keyboard preset",   kb_preset,      names_kb_preset,    NULL),
-    CHOICE("Help key",          kb_help,        names_kb_help,      NULL),
-    CHOICE("Del key",           kb_delete,      names_kb_delete,    NULL),
-    CHOICE("ISO key",           kb_iso,         names_kb_iso,       NULL),
+    CHOICE(G_TOP, "Mode",               mode,           names_mode,         NULL),
+    { "Pad profile", ITEM_PROFILE, offsetof(settings_t, pad_profile), NULL, NULL, NULL, 0, G_TOP, false },
+    CHOICE(G_TOP, "Port 1",             amiga_port[0],  names_amiga_port,   visible_amiga),
+    CHOICE(G_TOP, "Port 2",             amiga_port[1],  names_amiga_port,   visible_amiga),
+    CHOICE(G_TOP, "Port 1",             c64_port[0],    names_c64_port,     visible_c64),
+    CHOICE(G_TOP, "Port 2",             c64_port[1],    names_c64_port,     visible_c64),
+    GROUP("Pads",       G_PADS),
+    GROUP("Mouse",      G_MOUSE),
+    GROUP("Keyboard",   G_KEYBOARD),
+    GROUP("Bluetooth",  G_BT),
+    GROUP("Wi-Fi",      G_WIFI),
+    GROUP("Board",      G_BOARD),
+
+    CHOICE(G_PADS, "Swap players",      pad_swap,       names_no_yes,       NULL),
+    CHOICE(G_PADS, "Merge all pads",    pad_merge,      names_no_yes,       NULL),
+    CHOICE(G_PADS, "Pad directions",    pad_directions, names_directions,   NULL),
+    CHOICE(G_PADS, "Stick deadzone",    pad_deadzone,   names_deadzone,     NULL),
+    CHOICE(G_PADS, "Triangle button",   pad_triangle,   names_triangle,     NULL),
+    CHOICE(G_PADS, "Touchpad mouse",    pad_touchpad,   names_off_on,       NULL),
+
+    CHOICE(G_MOUSE, "Mouse wheel",      wheel_enabled,  names_off_on,       NULL),
+    CHOICE(G_MOUSE, "Wheel direction",  wheel_reverse,  names_wheel_dir,    NULL),
+    CHOICE(G_MOUSE, "Mouse speed",      mouse_speed,    names_mouse_speed,  NULL),
+
+    CHOICE(G_KEYBOARD, "Keyboard preset", kb_preset,    names_kb_preset,    NULL),
+    CHOICE(G_KEYBOARD, "Help key",      kb_help,        names_kb_help,      NULL),
+    CHOICE(G_KEYBOARD, "Del key",       kb_delete,      names_kb_delete,    NULL),
+    CHOICE(G_KEYBOARD, "ISO key",       kb_iso,         names_kb_iso,       NULL),
+    CHOICE(G_KEYBOARD, "A4000 numpad ( )", ak_parens,   names_ak_parens,    NULL),
+    CHOICE(G_KEYBOARD, "Ctrl-Amiga-Amiga", ak_cad,      names_ak_cad,       NULL),
     REMAP_PC(1), REMAP_PC(2), REMAP_PC(3), REMAP_PC(4),
     REMAP_PC(5), REMAP_PC(6), REMAP_PC(7), REMAP_PC(8),
-    CHOICE("A4000 numpad ( )",  ak_parens,      names_ak_parens,    NULL),
-    CHOICE("Ctrl-Amiga-Amiga",  ak_cad,         names_ak_cad,       NULL),
     REMAP_A4000(1), REMAP_A4000(2), REMAP_A4000(3), REMAP_A4000(4),
     REMAP_A4000(5), REMAP_A4000(6), REMAP_A4000(7), REMAP_A4000(8),
-    CHOICE("Mouse speed",       mouse_speed,    names_mouse_speed,  NULL),
-    CHOICE("Display",           display,        names_display,      NULL),
-    CHOICE("Watchdog",          watchdog,       names_watchdog,     NULL),
-    CHOICE("Bluetooth",         bt_enabled,     names_off_on,       NULL),
-    CHOICE("BT pairing",        bt_pairing,     names_bt_pairing,   NULL),
+
+    CHOICE(G_BT, "Bluetooth",           bt_enabled,     names_off_on,       NULL),
+    CHOICE(G_BT, "BT pairing",          bt_pairing,     names_bt_pairing,   NULL),
 #ifdef ENABLE_BLUETOOTH_HID
-    ACTION("BT pair (2 min)",   action_bt_pair),
-    ACTION("Forget BT devices", action_bt_forget),
+    ACTION(G_BT, "BT pair (2 min)",     action_bt_pair),
+    ACTION(G_BT, "Forget BT devices",   action_bt_forget),
 #endif
-    CHOICE("Wi-Fi",             wifi_mode,      names_wifi,         NULL),
+
+    CHOICE(G_WIFI, "Wi-Fi",             wifi_mode,      names_wifi,         NULL),
 #ifdef HAS_WIFI
-    CHOICE("Page password",     page_open,      names_page_open,    NULL),
-    ACTION("Show page password", action_page_password_show),
-    ACTION("New page password", action_page_password_new),
+    CHOICE(G_WIFI, "Page password",     page_open,      names_page_open,    NULL),
+    ACTION(G_WIFI, "Show page password", action_page_password_show),
+    ACTION(G_WIFI, "New page password", action_page_password_new),
+    CHOICE(G_WIFI, "Network control",   net_control,    names_off_on,       NULL),
+    CHOICE(G_WIFI, "Net screen",        net_screen,     names_net_screen,   NULL),
+    CHOICE(G_WIFI, "Net mouse scale",   net_scale,      names_net_scale,    NULL),
 #endif
-#ifdef HAS_WIFI
-    CHOICE("Network control",   net_control,    names_off_on,       NULL),
-    CHOICE("Net screen",        net_screen,     names_net_screen,   NULL),
-    CHOICE("Net mouse scale",   net_scale,      names_net_scale,    NULL),
-#endif
-    CHOICE("Updates need BOOT", ota_needs_boot, names_no_yes,       NULL),
-    ACTION("Previous firmware", action_previous_firmware),
-    ACTION("Factory defaults",  action_defaults),
-    ACTION("Save & exit",       action_save),
-    ACTION("Cancel",            action_cancel),
+
+    CHOICE(G_BOARD, "Display",          display,        names_display,      NULL),
+    CHOICE(G_BOARD, "Watchdog",         watchdog,       names_watchdog,     NULL),
+    CHOICE(G_BOARD, "Updates need BOOT", ota_needs_boot, names_no_yes,      NULL),
+    ACTION(G_BOARD, "Previous firmware", action_previous_firmware),
+    ACTION(G_BOARD, "Factory defaults", action_defaults),
+
+    { "Back", ITEM_BACK, 0, NULL, NULL, NULL, 0, G_ANY, false },
+    ACTION(G_TOP, "Save & exit",        action_save),
+    ACTION(G_TOP, "Cancel",             action_cancel),
 };
 
 #define ITEM_COUNT      count_of(items)
@@ -156,6 +181,9 @@ static bool open;
 static bool dirty;                  // edits not saved yet
 static bool editing;                // encoder: a push turned the knob to the value
 static unsigned cursor;
+static uint8_t group;               // the level the cursor is on
+static unsigned group_cursor[G_COUNT]; // where the cursor was on each level
+static unsigned resume;             // the last setting visited: the next open starts there
 static char const *hint = "";
 
 // teaching a remap slot: 0 idle, 1 waiting for the key to change, 2 for its
@@ -188,7 +216,38 @@ static uint32_t now_ms(void)
 
 static bool item_visible(unsigned index)
 {
+    if ((items[index].group != group) && !((items[index].group == G_ANY) && (group != G_TOP)))
+        return false;
     return (items[index].visible == NULL) || items[index].visible();
+}
+
+/**
+ * the cursor on to a level: where it was there last, else the level's first item
+ */
+static void level(uint8_t to, unsigned at)
+{
+    group_cursor[group] = cursor;
+    group = to;
+    cursor = at;
+    for (unsigned i = 0; !item_visible(cursor) && (i < ITEM_COUNT); i++)
+        cursor = i;
+}
+
+static void group_enter(void)
+{
+    uint8_t to = items[cursor].slot;
+
+    level(to, group_cursor[to]);
+}
+
+static void group_leave(void)
+{
+    unsigned at = 0;
+
+    for (unsigned i = 0; i < ITEM_COUNT; i++)
+        if ((items[i].kind == ITEM_GROUP) && (items[i].slot == group))
+            at = i;
+    level(G_TOP, at);
 }
 
 static uint8_t *item_value(unsigned index)
@@ -213,7 +272,7 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
             position = shown;
     }
 
-    snprintf(lines[0], MENU_COLS + 1, "%-15s%2u/%-2u%s", "SETTINGS", position, shown, dirty ? "*" : " ");
+    snprintf(lines[0], MENU_COLS + 1, "%-15s%2u/%-2u%s", group_titles[group], position, shown, dirty ? "*" : " ");
     snprintf(lines[1], MENU_COLS + 1, "%-*s", MENU_COLS, item->label);
 
     if (item->kind == ITEM_CHOICE) {
@@ -243,6 +302,10 @@ static void render(char lines[MENU_LINES][MENU_COLS + 1])
         else
             snprintf(lines[2], MENU_COLS + 1, " %s > %s", keyboard_map_hid_name(remap->source),
                 keyboard_map_amiga_name(remap->target));
+    } else if (item->kind == ITEM_GROUP) {
+        snprintf(lines[2], MENU_COLS + 1, " > select to open");
+    } else if (item->kind == ITEM_BACK) {
+        snprintf(lines[2], MENU_COLS + 1, " > select to go up");
     } else {
         snprintf(lines[2], MENU_COLS + 1, " > select to run");
     }
@@ -303,7 +366,10 @@ static void menu_open(char const *how)
     edited = *settings_get();
     dirty = false;
     editing = false;
+    // back to the setting visited last, on its level
+    group = G_TOP;
     cursor = 0;
+    level(items[resume].group, resume);
     notice = NULL;
     confirm_since = 0;
     hint = how;
@@ -548,10 +614,23 @@ void menu_input(menu_input_t input)
     switch (input) {
         case MENU_IN_NEXT:  editing = false; move(+1); break;
         case MENU_IN_PREV:  editing = false; move(-1); break;
-        case MENU_IN_INC:   change(+1); break;
+        case MENU_IN_INC:
+            if (items[cursor].kind == ITEM_GROUP)
+                group_enter();
+            else
+                change(+1);
+            break;
         case MENU_IN_DEC:   change(-1); break;
 
         case MENU_IN_ENTER:
+            if (items[cursor].kind == ITEM_GROUP) {
+                group_enter();
+                break;
+            }
+            if (items[cursor].kind == ITEM_BACK) {
+                group_leave();
+                break;
+            }
             if (items[cursor].kind == ITEM_ACTION) {
                 items[cursor].action();
                 if (!open)
@@ -578,6 +657,12 @@ void menu_input(menu_input_t input)
             return;
 
         case MENU_IN_LEAVE:
+            // up a level first; the top level leaves the menu
+            if (group != G_TOP) {
+                editing = false;
+                group_leave();
+                break;
+            }
             if (!dirty) {
                 menu_close(false);
                 return;
@@ -594,6 +679,9 @@ void menu_input(menu_input_t input)
         default:
             break;
     }
+
+    if ((items[cursor].kind == ITEM_CHOICE) || (items[cursor].kind == ITEM_PROFILE) || (items[cursor].kind == ITEM_REMAP))
+        resume = cursor;
 
     draw();
 }
@@ -899,7 +987,7 @@ void menu_encoder_switch(bool down)
         return;
     }
 
-    if (items[cursor].kind == ITEM_ACTION) {
+    if ((items[cursor].kind == ITEM_ACTION) || (items[cursor].kind == ITEM_GROUP) || (items[cursor].kind == ITEM_BACK)) {
         menu_input(MENU_IN_ENTER);
         return;
     }

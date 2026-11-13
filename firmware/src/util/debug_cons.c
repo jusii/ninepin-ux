@@ -444,6 +444,26 @@ void dbgcons_ota(char const *text)
 #endif
 }
 
+// a short message over line 3, which gets its own text back after a while
+#define DBGCONS_NOTICE_MS 3000
+static uint32_t notice_until;
+
+void dbgcons_notice(char const *text)
+{
+    dbgcons_write_diag_line(3, text);
+    notice_until = to_ms_since_boot(get_absolute_time()) + DBGCONS_NOTICE_MS;
+    if (!notice_until)
+        notice_until = 1;
+}
+
+void dbgcons_notice_task(void)
+{
+    if (!notice_until || ((int32_t)(to_ms_since_boot(get_absolute_time()) - notice_until) < 0))
+        return;
+    notice_until = 0;
+    dbgcons_write_diag_line(3, line_cache[3]);
+}
+
 void dbgcons_display_mode(uint8_t mode)
 {
     bool was_off = display_mode == DBGCONS_DISPLAY_OFF;

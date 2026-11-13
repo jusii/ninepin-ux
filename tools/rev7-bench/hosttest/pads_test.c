@@ -17,7 +17,10 @@ settings_t const *settings_get(void) { return &s; }
 void ahprintf(const char *f, ...) { (void)f; }
 static bool menu_open;
 bool menu_is_open(void) { return menu_open; }
-void menu_input(menu_input_t i) { (void)i; }
+static int menu_opens;
+void menu_input(menu_input_t i) { if (i == MENU_IN_OPEN) menu_opens++; }
+static int steps, stepped;
+void pads_profile_step(int step) { steps++; stepped += step; }
 run_mode_t run_mode_get(void) { return RUN_MODE_AMIGA; }
 bool run_mode_pads_usb(run_mode_t m) { (void)m; return false; }
 void input_bridge_handle_mouse(uint8_t slot, hid_mouse_report_t const *r) { (void)slot; (void)r; }
@@ -59,8 +62,20 @@ int main(void)
     pads_report(0, &in); assert(kb_reports == 3 && de9[0] == 0);
     in.buttons = 0; pads_report(0, &in);
     in.buttons = 1u << 6; pads_report(0, &in); assert(kb.keycode[0] == 0x2c && kb_reports == 4);
+    // home with the d-pad: the profile steps, nothing goes out, and no menu from that hold
+    in.buttons = 0; pads_report(0, &in);
+    in.home = true; in.dpad = PAD_RIGHT; pads_report(0, &in); assert(steps == 1 && stepped == 1 && de9[0] == 0);
+    pads_report(0, &in); assert(steps == 1);
+    in.dpad = 0; pads_report(0, &in); in.dpad = PAD_LEFT; pads_report(0, &in); assert(steps == 2 && stepped == 0 && de9[0] == 0);
+    fake_now_us += 2000000; pads_task(); assert(menu_opens == 0);
+    in.home = false; pads_report(0, &in); assert(de9[0] == PAD_LEFT);
+    in.dpad = 0; pads_report(0, &in);
+    // home alone, held, still opens the menu
+    in.home = true; pads_report(0, &in); fake_now_us += 2000000; pads_task(); assert(menu_opens == 1 && steps == 2);
+    in.home = false; pads_report(0, &in);
+    in.buttons = 1u << 6; pads_report(0, &in);
     // unplugged with the key down
-    pads_disconnected(0); assert(kb.keycode[0] == 0 && kb_reports == 5);
+    pads_disconnected(0); assert(kb.keycode[0] == 0);
     printf("pads: all passed\n");
     return 0;
 }

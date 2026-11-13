@@ -11,6 +11,10 @@
  */
 
 #include "apply.h"
+
+#include <stdio.h>
+#include <string.h>
+
 #include "config.h"
 
 #include "hardware/watchdog.h"
@@ -18,6 +22,8 @@
 #include "platform/amiga/de9.h"
 #include "platform/amiga/quad_mouse.h"
 #include "ota.h"
+#include "pad.h"
+#include "profiles.h"
 #include "settings.h"
 #include "util/debug_cons.h"
 #include "util/output.h"
@@ -64,8 +70,49 @@ void apply_settings(void)
     de9_apply();
 }
 
+/**
+ * the pad profiles in turn, "none" (no combos) amongst them; stored at once,
+ * like a load from the page
+ */
+void pads_profile_step(int step)
+{
+    settings_t s = *settings_get();
+    unsigned at = s.pad_profile;
+    profile_t const *profile = NULL;
+    char text[22];
+
+    if (!profiles_count()) {
+        dbgcons_notice("no pad profiles");
+        return;
+    }
+
+    for (unsigned tries = 0; tries <= PROFILES_MAX; tries++) {
+        at = (at + PROFILES_MAX + 1u + ((step > 0) ? 1u : PROFILES_MAX)) % (PROFILES_MAX + 1u);
+        profile = at ? profiles_get(at - 1u) : NULL;
+        if (!at || profile)
+            break;
+    }
+
+    if (profile) {
+        profiles_to_settings(profile, &s);
+    } else {
+        at = 0;
+        memset(s.pad_combo, 0, sizeof(s.pad_combo));
+    }
+    s.pad_profile = (uint8_t)at;
+
+    if (!settings_save(&s)) {
+        dbgcons_notice("profile: save failed");
+        return;
+    }
+    snprintf(text, sizeof(text), "profile %.12s", profile ? profile->name : "none");
+    dbgcons_notice(text);
+    ahprintf("[pads] %s\n", text);
+}
+
 void apply_task(void)
 {
+    dbgcons_notice_task();
     if (watchdog_ms && (watchdog_ms != WATCHDOG_UNKNOWN))
         watchdog_update();
 }

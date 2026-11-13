@@ -126,4 +126,10 @@ void pads_describe(void);
 void pads_output_de9(uint8_t player, uint16_t state);
 void pads_output_usb(uint8_t player, pad_player_t const *source);
 
+/**
+ * @brief Home with the d-pad left or right: on to the previous / next saved
+ *        pad profile (apply.c; a weak no-op in pads.c).
+ */
+void pads_profile_step(int step);
+
 #endif // _PAD_H

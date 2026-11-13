@@ -54,52 +54,49 @@ discards them. While the menu is open, input goes nowhere else.
 
 ## menu map
 
-Defaults in **bold**.
+Two levels. The top level holds what changes most; **›** opens a group. Leave (Esc, hold) goes up
+a level, and from the top leaves the menu. Each group also ends with **Back**. The menu reopens at
+the setting visited last. Defaults in **bold**.
 
-**Mode**
+**Top level**
 * Mode: **amiga**, c64, usb
+* Pad profile: picks a saved profile (see pads); `*` after the name: changed since it was loaded
+* Port 1 / Port 2, for the current mode:
+  * amiga: mouse, joystick, cd32 pad, off (**port 1 mouse, port 2 joystick**)
+  * c64: **joystick**, 1351 mouse, off
+* Pads ›, Mouse ›, Keyboard ›, Bluetooth ›, Wi-Fi ›, Board ›
+* Save & exit, Cancel
 
-**Ports** (shown for the current mode)
-* amiga, Port 1 / Port 2: mouse, joystick, cd32 pad, off (**port 1 mouse, port 2 joystick**)
-* c64, Port 1 / Port 2: **joystick**, 1351 mouse, off
-
-**Pads**
+**Pads ›**
 * Swap players: **no**, yes. Player 1 is on port 2, player 2 on port 1.
 * Merge all pads: **no**, yes (every pad drives player 1)
 * Pad directions: **d-pad + stick**, d-pad, stick
 * Stick deadzone: 25%, **50%**, 75%
 * Triangle button: **up (jump)**, autofire, off
 * Touchpad mouse: off, **on** (DualSense touchpad moves the pointer, left / right half clicks)
-* Pad profile: picks a saved profile (see pads); `*` after the name: changed since it was loaded
 
-**Mouse**
+**Mouse ›**
 * Mouse wheel: off, **on** (TankMouse / Cocolino protocol)
 * Wheel direction: **normal**, reversed
+* Mouse speed: **300 us**, 200 us, 150 us, 100 us
 
-**PC keyboard to the Amiga**
-* Keyboard preset: **original**, Y<->Z, A<->Q W<->Z
+**Keyboard ›**
+* Keyboard preset (PC keyboard to the Amiga): **original**, Y<->Z, A<->Q W<->Z
 * Help key (the PC key that gives Amiga Help): **insert**, home, page up, F11, none
 * Del key: **delete**, backspace, none
 * ISO key (the key next to left shift): **backslash**, amiga iso key
-* PC remap 1-8: Enter, press the key, press its new meaning. Left / right clears.
-
-**A4000 keyboard to USB-C**
-* A4000 numpad ( ): **keypad keys** (Linux, any layout), US/UK, Nordic/DE, French
+* A4000 numpad ( ) (A4000 keyboard to USB-C): **keypad keys** (Linux, any layout), US/UK, Nordic/DE, French
 * Ctrl-Amiga-Amiga: **nothing**, ctrl-alt-del
+* PC remap 1-8: Enter, press the key, press its new meaning. Left / right clears.
 * A4000 remap 1-8: as PC remap
 
-**Board**
-* Mouse speed: **300 us**, 200 us, 150 us, 100 us
-* Display: **status**, hid diag, mouse diag (bottom line: movement, buttons `b`, last wheel step `w`, wheel reports counted `n`), off
-* Watchdog: off, 2 s, **5 s**
-
-**Bluetooth**
+**Bluetooth ›**
 * Bluetooth: off, **on**
 * BT pairing: **automatic** (any device in pairing mode), paired only
 * BT pair (2 min): opens a pairing window
 * Forget BT devices: select twice
 
-**Wi-Fi**
+**Wi-Fi ›**
 * Wi-Fi: **off**, access point, join network
 * Page password: **asked for**, off (join mode; see Wi-Fi)
 * Show page password, New page password (a random one; also switches it back on)
@@ -107,12 +104,12 @@ Defaults in **bold**.
 * Net screen: the target's screen size for absolute moves on DE9: **640x256** ... 1920x1080
 * Net mouse scale: mouse counts per screen pixel on DE9: 50%, 75%, **100%**, 150%, 200%
 
-**Updates**
+**Board ›**
+* Display: **status**, hid diag, mouse diag (bottom line: movement, buttons `b`, last wheel step `w`, wheel reports counted `n`), off. Takes effect on save, no restart.
+* Watchdog: off, 2 s, **5 s**
 * Updates need BOOT: no, **yes**
 * Previous firmware: select twice; restarts into the one before the last update
-
-**End**
-* Factory defaults, Save & exit, Cancel
+* Factory defaults
 
 ## pads
 
@@ -124,6 +121,8 @@ pads.
 * C64: ✕ fire; ○ / □ 2nd / 3rd fire on the POT lines.
 * The first pad is player 1, the next player 2. A pad that drops out keeps its player for 30 s.
 * Hold PS 1 s: menu.
+* Hold PS and press d-pad right / left: the next / previous saved pad profile, then none (no
+  combos). The display shows its name. It is stored at once.
 
 ### combos
 
