@@ -87,6 +87,19 @@ static void dbgcons_write_padded_line(uint8_t line, char const *message)
     disp_write(0, line, linebuf);
 }
 
+// a diagnostics readout over a status line: drawn, not remembered, so the
+// status text comes back when the display setting leaves the diagnostics
+static void dbgcons_write_diag_line(uint8_t line, char const *message)
+{
+    char linebuf[DBGCONS_OLED_COLS + 1] = "";
+
+    snprintf(linebuf, sizeof(linebuf), "%-*.*s", DBGCONS_OLED_COLS, DBGCONS_OLED_COLS, message);
+    disp_write(0, line, linebuf);
+}
+
+// the hid readout as last made, for when the display setting turns to it
+static char hid_line[DBGCONS_OLED_COLS + 1] = "hid --";
+
 // the board status line: output mode and amiga power. it shares oled line 2
 // with the DEBUG_HID_STATUS readout, which wins until the next status change
 #define DBGCONS_STATUS_LINE 2
@@ -229,19 +242,12 @@ void dbgcons_amiga_mod(uint8_t outcode, char updown)
 
 void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol, bool receive_ok, uint8_t report_count, bool mounted)
 {
-    if (diag_hid()) {
-    char linebuf[32] = "";
+    // "h+ a01 i00 p01 r1 ok": mounted, address, instance, protocol, reports, receiving
+    snprintf(hid_line, sizeof(hid_line), "h%c a%02x i%02x p%02x r%u %s", mounted ? '+' : '-',
+        dev_addr, instance, hid_protocol, (unsigned)(report_count % 10), receive_ok ? "ok" : "no");
 
-    snprintf(
-        linebuf,
-        sizeof(linebuf),
-        "hid %c a%02x i%02x p%02x r%u",
-        mounted ? '+' : '-',
-        dev_addr,
-        instance,
-        hid_protocol,
-        report_count
-    );
+    if (!diag_hid())
+        return;
 
     ahprintf(
         VT_CUP_POS VT_EL_LIN
@@ -255,16 +261,7 @@ void dbgcons_hid_status(uint8_t dev_addr, uint8_t instance, uint8_t hid_protocol
         receive_ok ? "ok" : "fail"
     );
 
-    disp_write(0, 2, linebuf);
-
-    snprintf(
-        linebuf,
-        sizeof(linebuf),
-        "rx %s",
-        receive_ok ? "ok" : "fail"
-    );
-    disp_write(17, 2, linebuf);
-    }
+    dbgcons_write_diag_line(2, hid_line);
 }
 
 // the mouse line: movement, buttons, the last wheel step that was not zero and
@@ -300,7 +297,7 @@ void dbgcons_mouse_report(int16_t x, int16_t y, uint8_t buttons, int8_t wheel)
     if (bt_passkey_active)
         return;
 #endif
-    dbgcons_write_padded_line(3, linebuf);
+    dbgcons_write_diag_line(3, linebuf);
 }
 
 void dbgcons_tankmouse_status(uint16_t queued, uint16_t requests, uint16_t responses)
@@ -451,6 +448,8 @@ void dbgcons_display_mode(uint8_t mode)
 {
     bool was_off = display_mode == DBGCONS_DISPLAY_OFF;
 
+    if (mode == display_mode)
+        return;
     display_mode = mode;
 
     if (mode == DBGCONS_DISPLAY_OFF) {
@@ -458,13 +457,22 @@ void dbgcons_display_mode(uint8_t mode)
         return;
     }
 
-    if (!was_off)
-        return;
-
-    // back on: draw what the status screen showed before it went dark
-    disp_blank(false);
+    // the status screen as it stands, then the readout the setting asks for
+    // over its line: a change shows at once, not at the next plug or report
+    if (was_off)
+        disp_blank(false);
     dbgcons_print_counters();
     for (uint8_t line = 1; line < 4; line++)
         if (line_cache[line][0])
             disp_write(0, line, line_cache[line]);
+
+    if (diag_hid())
+        dbgcons_write_diag_line(2, hid_line);
+#ifdef ENABLE_BLUETOOTH_HID
+    if (diag_mouse() && !bt_passkey_active)
+        dbgcons_write_diag_line(3, "mouse --");
+#else
+    if (diag_mouse())
+        dbgcons_write_diag_line(3, "mouse --");
+#endif
 }
