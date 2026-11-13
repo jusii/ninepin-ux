@@ -650,12 +650,16 @@ static int8_t bt_classic_find_free_slot(void)
 }
 
 /**
- * look for a classic pad: only with a free slot and no classic pad connected
+ * look for a classic pad: only with a free slot. with a classic pad connected
+ * the search would cost that pad its radio time, so then only whilst a pairing
+ * window is open (BT pair): that is how a second pad is paired
  */
 static bool bt_classic_wants_inquiry(void)
 {
     if (!bt_radio_on || !bt_classic_working || bt_scan_paused || (bt_classic_find_free_slot() < 0))
         return false;
+    if (bt_pair_window)
+        return true;
     for (unsigned slot = 0; slot < INPUT_BRIDGE_BT_CLASSIC_SLOTS; slot++)
         if (bt_classic_connections[slot].in_use && bt_classic_connections[slot].has_gamepad)
             return false;

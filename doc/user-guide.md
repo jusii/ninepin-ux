@@ -153,6 +153,8 @@ names up to 12 characters), one per game.
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.
 * Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED.
 * Paired devices reconnect by themselves.
+* A second pad, with one already connected: open BT pair (2 min) first, then put the pad in
+  pairing mode. Without the window the board does not search while a pad is in use.
 * Searching for new devices pauses while the Wi-Fi access point is on and during an upload (shared
   radio). Connected devices keep working; BT pair (2 min) searches anyway.
 
