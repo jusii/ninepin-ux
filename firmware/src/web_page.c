@@ -230,10 +230,11 @@ static void put_head(writer_t *w, char const *title)
     put_text(w, title, 64);
     put(w, "</title><style>"
         "body{font-family:sans-serif;max-width:36em;margin:1em auto;padding:0 1em;line-height:1.4}"
-        "fieldset{margin:.8em 0;border:1px solid #999}"
-        "label{display:flex;justify-content:space-between;gap:1em;margin:.3em 0}"
+        "fieldset{margin:.8em 0;border:1px solid #999;min-width:0}"
+        "label{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.2em 1em;margin:.3em 0}"
         "td,th{padding:.1em 1em .1em 0;vertical-align:top;text-align:left}"
-        ".c td,.c th{padding-right:.5em}"
+        ".c{table-layout:fixed;width:100%%}.c td,.c th{padding-right:.2em}"
+        ".c select,.c [list]{width:100%%;box-sizing:border-box}.c input{margin-left:0}.c th{font-size:.8em}"
         "small{color:#666}"
         "</style></head><body>");
 }
@@ -332,10 +333,10 @@ static void put_combos(writer_t *w, settings_t const *s)
     char buf[8];
 
     put(w, "<fieldset><legend>Pad button combos</legend><input type=hidden name=combos value=1>"
-        "<table class=c><tr><th>Pad button");
+        "<table class=c><tr><th style=width:30%%>Button");
     for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
         put(w, "<th>%s", combo_heads[o]);
-    put(w, "<th>Key");
+    put(w, "<th style=width:22%%>Key");
 
     for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++) {
         settings_combo_t const *c = &s->pad_combo[i];
