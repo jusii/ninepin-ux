@@ -53,6 +53,16 @@ FONT = next(f for f in ("/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf",          
                         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",             # debian host
                         "/run/host/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf") if os.path.exists(f))
 LABEL_DEPTH = 0.5
+# lid logo, an inlay for a second filament (or a deboss in one colour): nine dots in the DE9 layout
+# and a dot-matrix wordmark. dot and gap sizes are for a 0.5 mm nozzle (gap = one line)
+LOGO_DEPTH = 0.6                                               # three layers, lid printed face down
+LOGO_PINS = (17.0, 18.0, 5.0, 3.0)                             # centre x, y (KiCad), pitch, dot diameter
+LOGO_TEXT, LOGO_TEXT_AT, LOGO_PITCH, LOGO_DOT = "NINEPIN UX", (50.0, 52.0), 2.0, 1.5
+LOGO_FONT = {"N": ("1001", "1001", "1101", "1011", "1001", "1001", "1001"), "I": ("1",) * 7,
+             "E": ("1111", "1000", "1000", "1110", "1000", "1000", "1111"),
+             "P": ("1110", "1001", "1001", "1110", "1000", "1000", "1000"),
+             "U": ("1001", "1001", "1001", "1001", "1001", "1001", "0110"),
+             "X": ("10001", "10001", "01010", "00100", "01010", "10001", "10001"), " ": ("0",) * 7}
 
 OUT_X0, OUT_X1 = -OVH, W + OVH
 OUT_Y0, OUT_Y1 = -(H + OVH), OVH
@@ -143,7 +153,7 @@ def label(text, size, origin, xdir, ydir, into):
     return Part.makeCompound([f.extrude(into * (LABEL_DEPTH + 0.01)) for f in sh.Faces])
 X, Y, Z = V(1, 0, 0), V(0, 1, 0), V(0, 0, 1)
 ZL = Z_PLATE_TOP + (Z_BT + 0.3 - Z_PLATE_TOP) / 2 + 0.3          # label line: the band below every opening, same on all walls
-LS = 2.5
+LS = 3.5                                                       # strokes about 0.65 mm: a 0.5 mm nozzle prints them as an inlay
 labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("PORT 2", LS, V(CONN["P2"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("USB", LS, V(CONN["J4"][4] + 3.5, OUT_Y0, ZL), X, Z, Y),
@@ -152,7 +162,22 @@ labels = [label("PORT 1", LS, V(CONN["P1"][4] + 5.54, OUT_Y0, ZL), X, Z, Y),
           label("BOOT", LS, V(OUT_X1, ky(SW_STEM[0]), ZL), Y, Z, -X),
           label("RESET", LS, V(OUT_X1, ky(SW_STEM[1]), ZL), Y, Z, -X),
           label("5V", LS, V(OUT_X1, ky(yc), ZL), Y, Z, -X)]
+label_inlay = Part.makeCompound([s for l in labels for s in cap.common(l).Solids])
 for l in labels: cap = cap.cut(l)
+
+# ---- lid logo ----
+def logo_dots():
+    px, py, pp, pd = LOGO_PINS
+    dots = [(px + (i - 2) * pp, py - pp / 2, pd) for i in range(5)] + [(px + (i - 1.5) * pp, py + pp / 2, pd) for i in range(4)]
+    cols = sum(len(LOGO_FONT[c][0]) + 1 for c in LOGO_TEXT) - 1
+    x = LOGO_TEXT_AT[0] - (cols - 1) * LOGO_PITCH / 2; y = LOGO_TEXT_AT[1] - 3 * LOGO_PITCH
+    for c in LOGO_TEXT:
+        for r, row in enumerate(LOGO_FONT[c]):
+            dots += [(x + q * LOGO_PITCH, y + r * LOGO_PITCH, LOGO_DOT) for q, b in enumerate(row) if b == "1"]
+        x += (len(LOGO_FONT[c][0]) + 1) * LOGO_PITCH
+    return dots
+logo_inlay = Part.makeCompound([cyl(d, LOGO_DEPTH, x, ky(y), Z_TOP - LOGO_DEPTH) for x, y, d in logo_dots()])
+cap = cap.cut(Part.makeCompound([cyl(d, LOGO_DEPTH + 1, x, ky(y), Z_TOP - LOGO_DEPTH) for x, y, d in logo_dots()]))
 
 # ---- standoffs, screw holes, foot recesses ----
 for (cx, cy) in HOLES:
@@ -204,7 +229,10 @@ checks.append(("encoder pins", kbox(ENC[0] - ENC_BODY / 2, ENC[0] + ENC_BODY / 2
 
 report = ["outer %.1f x %.1f x %.1f mm (tray %.1f to the seam + cap %.1f); lid underside %.2f above the board underside, glass top %.2f, gap %.2f"
           % (OUT_X1 - OUT_X0, OUT_Y1 - OUT_Y0, Z_TOP - Z_PLATE_BOT, Z_SPLIT - Z_PLATE_BOT, Z_TOP - Z_SPLIT, CEIL, FP["OLED_Z_TOP"], CEIL - FP["OLED_Z_TOP"]),
-          "tray valid %s (%d solid), cap valid %s (%d solid)" % (tray.isValid(), len(tray.Solids), cap.isValid(), len(cap.Solids))]
+          "tray valid %s (%d solid), cap valid %s (%d solid)" % (tray.isValid(), len(tray.Solids), cap.isValid(), len(cap.Solids)),
+          "inlays: lid logo %d dots %.1f mm3 (in the cap %.2f), labels %d bodies %.1f mm3 (in the tray %.2f, in the cap %.2f)"
+          % (len(logo_inlay.Solids), logo_inlay.Volume, cap.common(logo_inlay).Volume, len(label_inlay.Solids), label_inlay.Volume,
+             tray.common(label_inlay).Volume, cap.common(label_inlay).Volume)]
 hits = []
 for name, shape in checks:
     for half, hs in (("cap", cap), ("tray", tray)):
@@ -243,13 +271,14 @@ def add(name, shape, color):
     except Exception: pass
     return o
 add("Cap", cap, (0.85, 0.85, 0.9)); add("Tray", tray, (0.6, 0.6, 0.65))
+add("CapLogo", logo_inlay, (1.0, 0.6, 0.1)); add("TrayLabels", label_inlay, (1.0, 0.6, 0.1))
 add("Board", box(0, W, ky(H), 0, 0, BOARD_T), (0.1, 0.45, 0.2))
 add("Parts", Part.makeCompound([s for _, s in checks]), (0.8, 0.7, 0.2))
 doc.recompute()
 import MeshPart
-for name, shape in (("cap", cap), ("tray", tray)):
+for name, shape in (("cap", cap), ("tray", tray), ("cap-logo", logo_inlay), ("tray-labels", label_inlay)):
     MeshPart.meshFromShape(Shape=shape, LinearDeflection=0.05, AngularDeflection=0.3).write(os.path.join(OUT_DIR, "ninepin-ux-case-%s.stl" % name))
-Part.export([doc.getObject("Cap"), doc.getObject("Tray")], os.path.join(OUT_DIR, "ninepin-ux-case.step"))
+Part.export([doc.getObject(n) for n in ("Cap", "Tray", "CapLogo", "TrayLabels")], os.path.join(OUT_DIR, "ninepin-ux-case.step"))
 doc.saveAs(os.path.join(OUT_DIR, "ninepin-ux-case.FCStd"))
 open(os.path.join(OUT_DIR, "fit-report.txt"), "w").write("\n".join(report) + "\n")
 print("exported to", OUT_DIR)

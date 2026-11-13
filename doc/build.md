@@ -74,6 +74,11 @@ Everything for an order is in [`hardware/rev7.1/`](../hardware/rev7.1/). Read th
 and the board into M3 heat-set inserts (4.0 mm hole, up to 6 mm long) in the cap. Same case for
 rev7 and rev7.1.
 
+Two colours (optional): `ninepin-ux-case-cap-logo.stl` (lid logo, 0.6 mm deep, print the cap lid
+down) and `ninepin-ux-case-tray-labels.stl` (wall labels) fill the recesses flush; add them as
+parts of the cap and the tray with a second filament. `ninepin-ux-case.step` holds all four
+bodies. Sized for a 0.5 mm nozzle or finer. In one colour the logo and labels stay debossed.
+
 ### changing the board
 
 The board is generated from Python (`design.py`, `make_sch.py`, `make_board.py`, `route.py`) and
