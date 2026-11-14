@@ -618,8 +618,9 @@ static void buy_if_on_trial(void)
         }
     }
 
-    // the bootrom's trial watchdog is still counting: the settings take it over
-    apply_watchdog();
+    // accepting stops the bootrom's trial watchdog, and with it ours (they are
+    // the one watchdog): start it again as the settings have it
+    apply_watchdog_rearm();
 }
 
 /**

@@ -22,6 +22,7 @@
 #include "platform/amiga/de9.h"
 #include "platform/amiga/quad_mouse.h"
 #include "display/disp_ssd.h"
+#include "net_update.h"
 #include "ota.h"
 #include "pad.h"
 #include "profiles.h"
@@ -33,6 +34,10 @@
 // trial boot of a new firmware: 16.7 s to accept itself, see ota.c)
 #define WATCHDOG_UNKNOWN    UINT32_MAX
 #define WATCHDOG_TRIAL_MS   5000u
+// whilst the board talks to the release server (net_update.c): the tls
+// handshake's arithmetic runs in the radio's interrupt context and keeps the
+// main loop waiting for a second or two at a time, which is no hang
+#define WATCHDOG_NET_MS     8000u
 
 static uint32_t watchdog_ms = WATCHDOG_UNKNOWN;     // 0: off
 
@@ -45,6 +50,8 @@ void apply_watchdog(void)
     // stops before it has accepted itself, the previous firmware comes back
     if (!wanted && ota_trial())
         wanted = WATCHDOG_TRIAL_MS;
+    if (wanted && (wanted < WATCHDOG_NET_MS) && net_update_busy())
+        wanted = WATCHDOG_NET_MS;
 
     // nothing the main loop does blocks for anywhere near 2 s (the longest:
     // the amiga reset pulse, 0.5 s, and a flash write)
@@ -54,8 +61,9 @@ void apply_watchdog(void)
         else
             watchdog_disable();
         if (watchdog_ms != WATCHDOG_UNKNOWN || wanted)
-            ahprintf("[wdt] %s%s\n", wanted ? (wanted == 2000 ? "2 s" : "5 s") : "off",
-                (wanted && !settings_get()->watchdog) ? " (new firmware on trial)" : "");
+            ahprintf("[wdt] %lu s%s\n", (unsigned long)(wanted / 1000u),
+                !wanted ? " (off)" : (wanted == WATCHDOG_NET_MS) ? " (talking to the release server)"
+                : !settings_get()->watchdog ? " (new firmware on trial)" : "");
         watchdog_ms = wanted;
     }
 }
@@ -112,10 +120,24 @@ void pads_profile_step(int step)
     ahprintf("[pads] %s\n", text);
 }
 
+void apply_watchdog_rearm(void)
+{
+    // whatever ran is no longer known to: set it up afresh
+    watchdog_ms = WATCHDOG_UNKNOWN;
+    apply_watchdog();
+}
+
 void apply_task(void)
 {
+    static bool net_busy;
+
     dbgcons_notice_task();
     disp_task();
+    // the watchdog's time follows a talk with the release server
+    if (net_update_busy() != net_busy) {
+        net_busy = !net_busy;
+        apply_watchdog();
+    }
     if (watchdog_ms && (watchdog_ms != WATCHDOG_UNKNOWN))
         watchdog_update();
 }

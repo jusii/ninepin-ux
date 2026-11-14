@@ -138,6 +138,7 @@ static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt c0:scan le:scan"; }
 char const *reset_info_detail(void) { return ""; }
+bool reset_info_stalled(char *out, size_t size) { (void)out; (void)size; return false; }
 bool net_update_quiet(void) { return true; }
 static int net_checks, net_installs; static bool net_checking_now; static char const *net_latest = ""; static int net_newer;
 bool net_update_check(void) { net_checks++; return true; }

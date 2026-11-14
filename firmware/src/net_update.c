@@ -719,17 +719,24 @@ void net_update_task(void)
 {
     static bool looked;
 
-    // once after start: is this the firmware the last download restarted into?
+    // after start: is this the firmware the last download restarted into? if
+    // so the note stays until this firmware is accepted, for the one that is
+    // fallen back to if it is not
     if (!looked) {
-        looked = true;
-        if (update_attempt.magic == ATTEMPT_MAGIC) {
+        if (update_attempt.magic != ATTEMPT_MAGIC) {
+            looked = true;
+        } else {
             update_attempt.version[sizeof(update_attempt.version) - 1] = 0;
             if (strcmp(update_attempt.version, ahp_version) != 0) {
                 snprintf(status, sizeof(status), "%.20s was installed and fell back", update_attempt.version);
                 ahprintf("[net] update: %s\n", status);
+                update_attempt.magic = 0;
+                looked = true;
+            } else if (!ota_trial()) {
+                update_attempt.magic = 0;
+                looked = true;
             }
         }
-        update_attempt.magic = 0;
     }
 
     // a downloaded release on its way in: note it for the firmware that starts next

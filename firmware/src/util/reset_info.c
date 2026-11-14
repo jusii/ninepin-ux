@@ -61,9 +61,34 @@ static char const *const stage_names[RESET_STAGE_COUNT] = {
     "amiga", "controls",
 };
 
+// the main loop's pulse, for whoever can still look when it has stopped (the
+// page is served from the radio's interrupt context)
+static volatile uint32_t loop_passes, loop_seen_passes, loop_seen_ms;
+
 void reset_info_stage(reset_stage_t stage)
 {
     watchdog_hw->scratch[0] = (RESET_MAGIC << 20) | (uint32_t)stage;
+    if (stage == RESET_STAGE_USB_HOST)
+        loop_passes++;
+}
+
+bool reset_info_stalled(char *out, size_t size)
+{
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+    unsigned stage = watchdog_hw->scratch[0] & 0xffu;
+
+    if (loop_passes != loop_seen_passes) {
+        loop_seen_passes = loop_passes;
+        loop_seen_ms = now;
+        return false;
+    }
+    if ((uint32_t)(now - loop_seen_ms) < 1000u)
+        return false;
+    snprintf(out, size, "stopped for %lu s in %s (watchdog %s, %lu ms left)", (unsigned long)((now - loop_seen_ms) / 1000u),
+        (stage < RESET_STAGE_COUNT) ? stage_names[stage] : "?",
+        (watchdog_hw->ctrl & WATCHDOG_CTRL_ENABLE_BITS) ? "on" : "off",
+        (unsigned long)((watchdog_hw->ctrl & WATCHDOG_CTRL_TIME_BITS) / 1000u));
+    return true;
 }
 
 #ifndef USB_DEVICE_BRINGUP_SERVICE

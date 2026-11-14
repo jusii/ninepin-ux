@@ -56,6 +56,9 @@
 
 #define MBEDTLS_BIGNUM_C
 #define MBEDTLS_ECP_C
+// the nist curves' fast reduction: the handshake's arithmetic keeps the main
+// loop waiting whilst it runs
+#define MBEDTLS_ECP_NIST_OPTIM
 #define MBEDTLS_ECP_DP_SECP256R1_ENABLED
 #define MBEDTLS_ECP_DP_SECP384R1_ENABLED
 #define MBEDTLS_ECDH_C

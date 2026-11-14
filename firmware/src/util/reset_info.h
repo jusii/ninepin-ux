@@ -10,6 +10,7 @@
 #ifndef _RESET_INFO_H
 #define _RESET_INFO_H
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -45,6 +46,16 @@ void reset_info_stage(reset_stage_t stage);
  *         "fault pc 1000abcd lr 1000ef01 cfsr 00000400 (in bluetooth)"
  */
 char const *reset_info_reason(void);
+
+/**
+ * @brief Has the main loop stopped coming round? For the page, which is
+ *        served from interrupt context and outlives it. The first call after a
+ *        pass only notes the time.
+ *
+ * @return true, with a line saying for how long and where, if it has not
+ *         come round for a second
+ */
+bool reset_info_stalled(char *out, size_t size);
 
 /**
  * @return after a fault: a panic's message and the return addresses found on

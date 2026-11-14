@@ -437,6 +437,8 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
         put_status_row(&w, "Running", running, sizeof(running));
         if (reset_info_detail()[0])
             put_status_row(&w, "Last fault", reset_info_detail(), 180);
+        if (reset_info_stalled(running, sizeof(running)))
+            put_status_row(&w, "Main loop", running, sizeof(running));
     }
     for (uint8_t player = 0; player < 2; player++) {
         pad_player_t const *p = pads_player(player);

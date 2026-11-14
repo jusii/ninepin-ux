@@ -25,6 +25,13 @@ void apply_settings(void);
 void apply_watchdog(void);
 
 /**
+ * @brief As apply_watchdog(), when something else may have stopped or changed
+ *        the watchdog behind our back (the bootrom, as a firmware on trial
+ *        accepts itself).
+ */
+void apply_watchdog_rearm(void);
+
+/**
  * @brief Keep the watchdog fed. Every main loop pass.
  */
 void apply_task(void);
