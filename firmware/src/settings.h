@@ -86,6 +86,20 @@ enum settings_pad_names {
     SETTINGS_PAD_NAMES_COUNT
 };
 
+// the keyboard layout the machine is set to, for text typed from the page
+enum settings_type_layout {
+    SETTINGS_TYPE_LAYOUT_US = 0,
+    SETTINGS_TYPE_LAYOUT_UK,
+    SETTINGS_TYPE_LAYOUT_NORDIC,    // finnish and swedish
+    SETTINGS_TYPE_LAYOUT_DE,
+    SETTINGS_TYPE_LAYOUT_FR,
+    SETTINGS_TYPE_LAYOUT_COUNT
+};
+
+// settings_t.type_text packs the switch and a layout for each mode into its
+// one byte: on + 2 * (amiga + 5 * c64 + 25 * usb); settings_type_*() below
+#define SETTINGS_TYPE_TEXT_MAX      249
+
 // usb/bt keyboard -> amiga
 enum settings_kb_preset {
     SETTINGS_KB_PRESET_ORIGINAL = 0,
@@ -232,8 +246,23 @@ typedef struct {
 
     uint8_t pad_names;                              // enum settings_pad_names
 
-    uint8_t reserved[1];                            // zero; pads the struct to 224 bytes
-} settings_t;
+    uint8_t type_text;                              // text from the page: see SETTINGS_TYPE_TEXT_MAX
+} settings_t;                                       // 224 bytes, and full
+
+/**
+ * @return true if text may be typed from the page
+ */
+bool settings_type_enabled(settings_t const *settings);
+
+/**
+ * @return the layout (enum settings_type_layout) typed text goes by in a mode
+ */
+uint8_t settings_type_layout(settings_t const *settings, uint8_t mode);
+
+/**
+ * @brief Set the switch, and the layout of one mode.
+ */
+void settings_type_set(settings_t *settings, bool enabled, uint8_t mode, uint8_t layout);
 
 /**
  * @brief Fill in the factory defaults.

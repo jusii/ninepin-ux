@@ -75,6 +75,9 @@ typedef enum {
     FORM_BT_PAIR,       // the settings form again, for its token only
     FORM_UPDATE_CHECK,  // the firmware section's buttons
     FORM_UPDATE_INSTALL,
+    FORM_TYPE_SET,      // the type text section: its switch and layout,
+    FORM_TYPE,          // a text to type (multipart),
+    FORM_TYPE_STOP,     // and the end of one being typed
 } form_kind_t;
 
 typedef struct {
@@ -490,13 +493,16 @@ static bool page_waits(char const *at)
 {
     if (at && (strcmp(at, "update") == 0))
         return net_update_checking();
+    // a short text is typed before the page is back; a long one is not waited for
+    if (at && (strcmp(at, "typed") == 0))
+        return kvmd_api_page_typing();
     return wifi_page_busy() && !wifi_page_storing();
 }
 
 static char const *page_note(char const *at)
 {
     // the firmware section says how things stand itself
-    if (at && (strcmp(at, "update") == 0))
+    if (at && ((strcmp(at, "update") == 0) || (strcmp(at, "typed") == 0)))
         return NULL;
     return wifi_page_storing() ? "Saved." : wifi_page_result();
 }
@@ -780,6 +786,8 @@ static char const *multipart_field(char const *body, size_t body_len, char const
     return NULL;
 }
 
+static bool multipart_boundary(http_conn_t const *c, char boundary[HTTP_BOUNDARY_MAX + 1]);
+
 /**
  * a profile from a file
  */
@@ -788,25 +796,14 @@ static bool handle_profile_add(http_conn_t *c, char const *body)
     static profile_t profile;   // lwip callbacks do not nest
     char boundary[HTTP_BOUNDARY_MAX + 1];
     char error[96] = "";
-    size_t type_len, length;
-    char const *type = header_value(c, "Content-Type", &type_len);
-    char const *mark = type ? memmem(type, type_len, "boundary=", 9) : NULL;
+    size_t length;
     char const *value;
-    size_t n = 0;
     bool replace;
 
-    if (!mark)
+    if (!multipart_boundary(c, boundary))
         return respond_message(c, 400, "Not added", "That was not a file from this page's form.", NULL);
-    mark += 9;
-    if ((mark < type + type_len) && (*mark == '"'))
-        mark++;
-    while ((mark + n < type + type_len) && (n < HTTP_BOUNDARY_MAX) && (mark[n] != '"') && (mark[n] != ';')
-        && (mark[n] != '\r'))
-        n++;
-    memcpy(boundary, mark, n);
-    boundary[n] = 0;
 
-    value = n ? multipart_field(body, c->content_length, boundary, "t", &length) : NULL;
+    value = multipart_field(body, c->content_length, boundary, "t", &length);
     if (!value || (length != strlen(token)) || (memcmp(value, token, length) != 0))
         return respond_message(c, 400, "Not added", "The page is out of date: reload it and try again.", NULL);
 
@@ -836,6 +833,107 @@ static bool handle_profile_add(http_conn_t *c, char const *body)
     return respond_message(c, 303, "Added", text, saved_location("Location: ", "combos"));
 }
 
+/**
+ * the boundary of a multipart form, from the request's content type
+ *
+ * @return false if there is none
+ */
+static bool multipart_boundary(http_conn_t const *c, char boundary[HTTP_BOUNDARY_MAX + 1])
+{
+    size_t type_len, n = 0;
+    char const *type = header_value(c, "Content-Type", &type_len);
+    char const *mark = type ? memmem(type, type_len, "boundary=", 9) : NULL;
+
+    if (!mark)
+        return false;
+    mark += 9;
+    if ((mark < type + type_len) && (*mark == '"'))
+        mark++;
+    while ((mark + n < type + type_len) && (n < HTTP_BOUNDARY_MAX) && (mark[n] != '"') && (mark[n] != ';')
+        && (mark[n] != '\r'))
+        n++;
+    memcpy(boundary, mark, n);
+    boundary[n] = 0;
+    return n != 0;
+}
+
+/**
+ * the type text section's switch and the layout of the mode the board is in
+ */
+static bool handle_type_set(http_conn_t *c, char const *body)
+{
+    static settings_t submitted;    // lwip callbacks do not nest
+    char on[4], layout[4];
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not saved", "The page is out of date: reload it and try again.", NULL);
+    if (!web_page_field(body, "type_on", on, sizeof(on)) || ((on[0] != '0') && (on[0] != '1')) || on[1]
+        || !web_page_field(body, "type_layout", layout, sizeof(layout)) || (layout[0] < '0')
+        || (layout[0] >= '0' + SETTINGS_TYPE_LAYOUT_COUNT) || layout[1])
+        return respond_message(c, 400, "Not saved", "That was not this page's form.", NULL);
+
+    submitted = *settings_get();
+    settings_type_set(&submitted, on[0] == '1', submitted.mode, (uint8_t)(layout[0] - '0'));
+    if (!wifi_page_submit(&submitted))
+        return respond_message(c, 503, "Not saved", "The previous save is still being stored; try again.", NULL);
+
+    ahprintf("[web] type text %s\n", (on[0] == '1') ? "on" : "off");
+    return respond_message(c, 303, "Saved", "The board stores the settings now.", saved_location("Location: ", "type"));
+}
+
+/**
+ * a text to type on the machine
+ */
+static bool handle_type(http_conn_t *c, char *body)
+{
+    static char const *const keymaps[SETTINGS_TYPE_LAYOUT_COUNT] = { "en-us", "en-gb", "fi", "de", "fr" };
+    settings_t const *s = settings_get();
+    char boundary[HTTP_BOUNDARY_MAX + 1];
+    char const *value;
+    char *typed;
+    size_t length, kept = 0;
+    bool enter;
+
+    if (!multipart_boundary(c, boundary))
+        return respond_message(c, 400, "Not typed", "That was not this page's form.", NULL);
+    value = multipart_field(body, c->content_length, boundary, "t", &length);
+    if (!value || (length != strlen(token)) || (memcmp(value, token, length) != 0))
+        return respond_message(c, 400, "Not typed", "The page is out of date: reload it and try again.", NULL);
+    if (!settings_type_enabled(s))
+        return respond_message(c, 403, "Not typed", "Type text is switched off.", NULL);
+
+    enter = multipart_field(body, c->content_length, boundary, "enter", &length) != NULL;
+    value = multipart_field(body, c->content_length, boundary, "text", &length);
+    if (!value || !length)
+        return respond_message(c, 400, "Not typed", "There was no text.", NULL);
+
+    // a browser ends a line with cr lf: one Return each. the form has been
+    // read, so the text is tidied where it lies (and may grow by its Return)
+    typed = body + (value - body);
+    for (size_t i = 0; i < length; i++)
+        if (typed[i] != '\r')
+            typed[kept++] = typed[i];
+    if (enter && (!kept || (typed[kept - 1] != '\n')))
+        typed[kept++] = '\n';
+
+    if (kvmd_api_page_typing())
+        return respond_message(c, 503, "Not typed", "The last text is still being typed: stop it, or wait.", NULL);
+    if (!kvmd_api_page_type(typed, kept, keymaps[settings_type_layout(s, s->mode) % SETTINGS_TYPE_LAYOUT_COUNT]))
+        return respond_message(c, 503, "Not typed", "The board cannot take that text now: it is too long, or "
+            "something else is typing.", NULL);
+
+    ahprintf("[web] type text: %u bytes\n", (unsigned)kept);
+    return respond_message(c, 303, "Typing", "The board types the text now.", saved_location("Location: ", "typed"));
+}
+
+static bool handle_type_stop(http_conn_t *c, char const *body)
+{
+    if (!token_given(body))
+        return respond_message(c, 400, "Not done", "The page is out of date: reload it and try again.", NULL);
+    kvmd_api_page_stop();
+    return respond_message(c, 303, "Stopped", "The board stops typing.", saved_location("Location: ", "typed"));
+}
+
 static bool handle_form(http_conn_t *c)
 {
     static settings_t submitted;    // lwip callbacks do not nest
@@ -862,6 +960,9 @@ static bool handle_form(http_conn_t *c)
         case FORM_PROFILE_DELETE:   return handle_profile(c, body, false);
         case FORM_PROFILE_FILE:     return handle_profile_file(c, body);
         case FORM_PROFILE_ADD:      return handle_profile_add(c, body);
+        case FORM_TYPE_SET:         return handle_type_set(c, body);
+        case FORM_TYPE:             return handle_type(c, body);
+        case FORM_TYPE_STOP:        return handle_type_stop(c, body);
         default:            break;
     }
 
@@ -1226,7 +1327,7 @@ static bool request_authorised(http_conn_t const *c)
 static bool form_begin(http_conn_t *c, form_kind_t form)
 {
     if (c->content_length > HTTP_REQUEST_MAX - c->head_len)
-        return respond_after_body(c, 413, "Too big", "That form is larger than the settings.", NULL);
+        return respond_after_body(c, 413, "Too big", "That is more than the board takes at once.", NULL);
     c->form = form;
     c->phase = CONN_FORM;
     return true;
@@ -1326,6 +1427,12 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_PROFILE_FILE);
     if (strcmp(target, "/profile-add") == 0)
         return form_begin(c, FORM_PROFILE_ADD);
+    if (strcmp(target, "/type-set") == 0)
+        return form_begin(c, FORM_TYPE_SET);
+    if (strcmp(target, "/type") == 0)
+        return form_begin(c, FORM_TYPE);
+    if (strcmp(target, "/type-stop") == 0)
+        return form_begin(c, FORM_TYPE_STOP);
     if (strcmp(target, "/bt-pair") == 0)
         return form_begin(c, FORM_BT_PAIR);
     if (strcmp(target, "/update-check") == 0)

@@ -142,6 +142,18 @@ char const *wifi_page_result(void) { return "-"; }
 bool wifi_page_submit(settings_t const *s) { (void)s; return true; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *n, unsigned slot) { (void)op; (void)s; (void)n; (void)slot; return true; }
 bool wifi_page_profile_add(profile_t const *p) { (void)p; return true; }
+bool settings_type_enabled(settings_t const *s) { return (s->type_text & 1u) != 0; }
+uint8_t settings_type_layout(settings_t const *s, uint8_t mode) { unsigned p = s->type_text >> 1; for (uint8_t m = 0; m < mode; m++) p /= 5; return (uint8_t)(p % 5); }
+void settings_type_set(settings_t *s, bool on, uint8_t mode, uint8_t layout)
+{
+    unsigned p = 0;
+    for (int m = 2; m >= 0; m--) p = p * 5 + (((uint8_t)m == mode) ? layout : settings_type_layout(s, (uint8_t)m));
+    s->type_text = (uint8_t)((p << 1) | (on ? 1u : 0u));
+}
+bool kvmd_api_page_type(char const *t, size_t n, char const *k) { (void)t; (void)n; (void)k; return true; }
+bool kvmd_api_page_typing(void) { return false; }
+void kvmd_api_page_stop(void) { }
+bool kvmd_api_page_status(char *out, size_t size) { (void)size; out[0] = 0; return false; }
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }

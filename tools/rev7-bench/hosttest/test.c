@@ -112,6 +112,30 @@ void flash_range_program(uint32_t off, uint8_t const *data, size_t len)
     for (size_t i = 0; i < len; i++) fake_flash[off + i] &= data[i];
 }
 int flash_safe_execute(void (*fn)(void *), void *param, uint32_t t) { (void)t; fn(param); return PICO_OK; }
+bool settings_type_enabled(settings_t const *s) { return (s->type_text & 1u) != 0; }
+uint8_t settings_type_layout(settings_t const *s, uint8_t mode) { unsigned p = s->type_text >> 1; for (uint8_t m = 0; m < mode; m++) p /= 5; return (uint8_t)(p % 5); }
+void settings_type_set(settings_t *s, bool on, uint8_t mode, uint8_t layout)
+{
+    unsigned p = 0;
+    for (int m = 2; m >= 0; m--) p = p * 5 + (((uint8_t)m == mode) ? layout : settings_type_layout(s, (uint8_t)m));
+    s->type_text = (uint8_t)((p << 1) | (on ? 1u : 0u));
+}
+// the typer: what the page handed over, and what the page is told
+static char typed_text[2100]; static size_t typed_len; static char typed_keymap[8]; static bool typing; static int type_stops;
+bool kvmd_api_page_type(char const *t, size_t n, char const *k)
+{
+    if (typing || n > 2048) return false;
+    memcpy(typed_text, t, n); typed_text[n] = 0; typed_len = n; snprintf(typed_keymap, sizeof(typed_keymap), "%s", k);
+    return true;
+}
+bool kvmd_api_page_typing(void) { return typing; }
+void kvmd_api_page_stop(void) { type_stops++; typing = false; }
+bool kvmd_api_page_status(char *out, size_t size)
+{
+    if (typing) { snprintf(out, size, "Typing: 3 of 9 characters so far."); return true; }
+    if (typed_len) { snprintf(out, size, "Typed %zu characters.", typed_len); return true; }
+    out[0] = 0; return false;
+}
 static int profile_ops;
 bool wifi_page_profile_add(profile_t const *p) { profile_ops++; return profiles_put(p) >= 0; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *name, unsigned slot)
@@ -244,6 +268,20 @@ static void profile_add(char const *tok, bool replace, char const *file, int sta
     snprintf(r, sizeof(r), "POST /profile-add HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=----WebKitFormBoundaryx1\r\n"
         "Content-Length: %zu\r\n\r\n%s", strlen(b), b);
     request(r, 37, status, must);
+}
+
+// a text through the type text section's multipart form
+static void type_text(char const *tok, bool enter, char const *text, int status, char const *must)
+{
+    static char r[6000], b[5000];
+    size_t n = (size_t)snprintf(b, sizeof(b), "--xYz\r\nContent-Disposition: form-data; name=\"t\"\r\n\r\n%s\r\n"
+        "--xYz\r\nContent-Disposition: form-data; name=\"text\"\r\n\r\n%s\r\n", tok, text);
+    if (enter)
+        n += (size_t)snprintf(b + n, sizeof(b) - n, "--xYz\r\nContent-Disposition: form-data; name=\"enter\"\r\n\r\n1\r\n");
+    snprintf(b + n, sizeof(b) - n, "--xYz--\r\n");
+    snprintf(r, sizeof(r), "POST /type HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=xYz\r\n"
+        "Content-Length: %zu\r\n\r\n%s", strlen(b), b);
+    request(r, 53, status, must);
 }
 
 // the session cookie of the last response, as a request header line
@@ -648,6 +686,63 @@ int main(void)
         assert(profiles_count() == 32);
         memset(current.pad_combo, 0, sizeof(current.pad_combo));
         current.pad_profile = 0; current.pad_triangle = 0; current.pad_directions = 0;
+
+        {
+            // type text: off as it comes, its own switch and a layout for the mode the board is in
+            settings_t kept = current;
+            request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2 id=type>Type text</h2>");
+            assert(strstr(last_out, "<option value=0 selected>off<option value=1>on") && !strstr(last_out, "action=/type enctype"));
+            type_text(token, true, "hello", 403, "switched off");
+            current.mode = SETTINGS_MODE_C64;
+            snprintf(body, sizeof(body), "t=%s&type_on=1&type_layout=2", token);
+            post("/type-set", NULL, body, 303, "Location: /?saved=type#type");
+            assert(settings_type_enabled(&submitted) && settings_type_layout(&submitted, SETTINGS_MODE_C64) == SETTINGS_TYPE_LAYOUT_NORDIC
+                && settings_type_layout(&submitted, SETTINGS_MODE_AMIGA) == 0 && settings_type_layout(&submitted, SETTINGS_MODE_USB) == 0);
+            current = submitted;
+            current.mode = SETTINGS_MODE_USB;
+            snprintf(body, sizeof(body), "t=%s&type_on=1&type_layout=4", token);
+            post("/type-set", NULL, body, 303, "Location: /?saved=type#type");
+            assert(settings_type_layout(&submitted, SETTINGS_MODE_C64) == SETTINGS_TYPE_LAYOUT_NORDIC
+                && settings_type_layout(&submitted, SETTINGS_MODE_USB) == SETTINGS_TYPE_LAYOUT_FR && submitted.type_text <= SETTINGS_TYPE_TEXT_MAX);
+            current = submitted;
+            snprintf(body, sizeof(body), "t=%s&type_on=1&type_layout=5", token);
+            post("/type-set", NULL, body, 400, "That was not this page");
+            snprintf(body, sizeof(body), "t=bad&type_on=1&type_layout=0");
+            post("/type-set", NULL, body, 400, "out of date");
+            // on: the page has the text box, with the layout of the mode
+            current.mode = SETTINGS_MODE_C64;
+            request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "action=/type enctype=multipart/form-data");
+            assert(strstr(last_out, "Layout in C64 mode") && strstr(last_out, "<option value=2 selected>Finnish / Swedish"));
+            // a text: lines end in one Return each, and one more at the end when asked for
+            type_text(token, true, "10 PRINT \"HI\"\r\n20 GOTO 10", 303, "Location: /?saved=typed#typed");
+            assert(!strcmp(typed_text, "10 PRINT \"HI\"\n20 GOTO 10\n") && !strcmp(typed_keymap, "fi"));
+            type_text(token, false, "run\r\n", 303, "Location: /?saved=typed#typed");
+            assert(!strcmp(typed_text, "run\n"));
+            type_text(token, true, "run\r\n", 303, "Location: /?saved=typed#typed");
+            assert(!strcmp(typed_text, "run\n"));
+            type_text(token, false, "x", 303, "Location: /?saved=typed#typed");
+            assert(!strcmp(typed_text, "x") && typed_len == 1);
+            request("GET /?saved=typed HTTP/1.1\r\n\r\n", 1000, 200, "<b>Typed 1 characters.</b>");
+            assert(!strstr(last_out, "action=/type-stop"));
+            // refused: nothing, a stale page, one still being typed (which the page shows, with its stop)
+            type_text(token, false, "", 400, "no text");
+            type_text("bad", false, "x", 400, "out of date");
+            typing = true;
+            type_text(token, false, "y", 503, "still being typed");
+            request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<b>Typing: 3 of 9 characters so far.</b>");
+            assert(strstr(last_out, "action=/type-stop"));
+            snprintf(body, sizeof(body), "t=bad");
+            post("/type-stop", NULL, body, 400, "out of date");
+            snprintf(body, sizeof(body), "t=%s", token);
+            post("/type-stop", NULL, body, 303, "Location: /?saved=typed#typed");
+            assert(type_stops == 1 && !typing);
+            {
+                // more than the board takes at once
+                static char big[3300]; memset(big, 'a', sizeof(big) - 1);
+                type_text(token, false, big, 413, "more than the board takes");
+            }
+            current = kept; typed_len = 0;
+        }
 
         // the device name
         snprintf(body, sizeof(body), "t=%s&wifi_mode=1&device_name=Amiga-4000", token);

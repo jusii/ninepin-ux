@@ -52,6 +52,33 @@ void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp);
 void kvmd_api_task(void);
 
 /**
+ * @brief Type text from the settings page (its own switch in the settings,
+ *        not network control's). Network context. One text at a time, and
+ *        not whilst the api types one.
+ *
+ * @param keymap  a kvmd_keymaps() name
+ * @return false if something is being typed already, or the text is too long
+ */
+bool kvmd_api_page_type(char const *text, size_t length, char const *keymap);
+
+/**
+ * @return true whilst a text from the page is being typed
+ */
+bool kvmd_api_page_typing(void);
+
+/**
+ * @brief Stop the page's text where it is. Any context.
+ */
+void kvmd_api_page_stop(void);
+
+/**
+ * @brief How the page's text stands, or how the last one went, for the page.
+ *
+ * @return false if there has been none
+ */
+bool kvmd_api_page_status(char *out, size_t size);
+
+/**
  * @brief Write a kvmd error object into out.
  *
  * @return its length

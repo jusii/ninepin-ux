@@ -28,6 +28,7 @@
 #include "build_stamp.h"
 #include "http_server.h"
 #include "keyboard_map.h"
+#include "kvmd_api.h"
 #include "ota.h"
 #include "pad.h"
 #include "profiles.h"
@@ -578,6 +579,52 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
     }
     put(&w, "</form>");
 
+    // text typed on the machine: its own switch, and its own forms
+    {
+        static char const *const modes[SETTINGS_MODE_COUNT] = { "Amiga", "C64", "USB" };
+        bool on = settings_type_enabled(s);
+        uint8_t layout = settings_type_layout(s, s->mode);
+        char status[96];
+
+        put(&w, "<h2 id=type>Type text</h2><form method=post action=/type-set>"
+            "<input type=hidden name=t value=%s>"
+            "<label>Type text <select name=type_on><option value=0%s>off<option value=1%s>on</select></label>"
+            "<label>Layout in %s mode <select name=type_layout>", http_server_token(), on ? "" : " selected",
+            on ? " selected" : "", modes[s->mode % SETTINGS_MODE_COUNT]);
+        for (uint8_t v = 0; v < settings_names_type_layout.count; v++)
+            put(&w, "<option value=%u%s>%s", v, (v == layout) ? " selected" : "", settings_names_type_layout.names[v]);
+        put(&w, "</select></label><p><button>Save</button>");
+        if (note && at && (strcmp(at, "type") == 0)) {
+            put(&w, " <b>");
+            put_text(&w, note, 96);
+            put(&w, "</b>");
+        }
+        put(&w, "</form>");
+
+        if (on) {
+            put(&w, "<form id=typed method=post action=/type enctype=multipart/form-data>"
+                "<input type=hidden name=t value=%s>"
+                "<p><textarea name=text rows=6 maxlength=1000 style=\"width:100%%;box-sizing:border-box\">"
+                "</textarea>"
+                "<label>Press Return at the end <input type=checkbox name=enter value=1 checked></label>"
+                "<p><button>Type</button>", http_server_token());
+            if (kvmd_api_page_status(status, sizeof(status))) {
+                put(&w, " <b>");
+                put_text(&w, status, sizeof(status));
+                put(&w, "</b>");
+            }
+            put(&w, "</form>");
+            if (kvmd_api_page_typing())
+                put(&w, "<form method=post action=/type-stop><input type=hidden name=t value=%s>"
+                    "<p><button>Stop</button> <small>Reload the page to see how far it is.</small></form>",
+                    http_server_token());
+        }
+        put(&w, "<p><small>Types the text on the machine as its keyboard would: on an Amiga, on a C64 "
+            "Ultimate or a PC over USB-C, not on an original C64. Up to 1000 characters at a time. The "
+            "layout is the one the machine is set to; a character it does not have is left out. With this "
+            "on, whoever can open this page can type on the machine.</small>");
+    }
+
     // the page password
     put(&w, "<h2>Page password</h2><form method=post action=/password>"
         "<input type=hidden name=t value=%s>"
@@ -592,7 +639,7 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
         "<option value=1%s>no password"
         "</select></label>"
         "<p><small>%u to 16 characters. Without a password everyone on your network can change these "
-        "settings and, with network control on, type on the machine, and replace "
+        "settings and, with network control or Type text on, type on the machine, and replace "
         "the firmware unless updates need a BOOT press (Board). The board menu shows the password (Show page password), makes a new one and "
         "switches it back on.</small>"
         "<p><button>Change</button></form>",

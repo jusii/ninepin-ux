@@ -29,6 +29,7 @@ extern const settings_names_t settings_names_directions;
 extern const settings_names_t settings_names_triangle;
 extern const settings_names_t settings_names_autofire;
 extern const settings_names_t settings_names_pad_names;
+extern const settings_names_t settings_names_type_layout;
 extern const settings_names_t settings_names_wheel_dir;
 extern const settings_names_t settings_names_page_open;
 extern const settings_names_t settings_names_mouse_speed;

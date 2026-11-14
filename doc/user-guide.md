@@ -200,6 +200,19 @@ combo=l2 key=space
   `l1 r1 l2 r2`, `select start` (create, options), `l3 r3`, `home`, `touchpad`, `mute`, `b16`;
   or a number 1 to 16.
 
+## type text
+
+On the page, Type text: switch it on, choose the layout the machine is set to (one per mode: US,
+UK, Finnish / Swedish, German, French), Save. Then paste or write up to 1000 characters and press
+Type; the board types them as a keyboard would. "Press Return at the end" adds one.
+
+* Works on an Amiga, and on a C64 Ultimate or a PC over USB-C. Not on an original C64: the board
+  cannot press its keys.
+* A character the layout does not have is left out; the page says how many.
+* A long text takes a while (about 30 characters a second on an Amiga). The page shows how far it
+  is when reloaded, and has a Stop button.
+* With it on, whoever can open the page can type on the machine: keep the page password on.
+
 ## Bluetooth
 
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.

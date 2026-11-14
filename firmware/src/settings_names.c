@@ -28,6 +28,7 @@ NAMES(directions,   SETTINGS_PAD_DIR_COUNT,     "d-pad + stick", "d-pad", "stick
 NAMES(triangle,     SETTINGS_PAD_TRIANGLE_COUNT, "up (jump)", "autofire", "off");
 NAMES(autofire,     SETTINGS_PAD_AUTOFIRE_COUNT, "5 a second", "8 a second", "10 a second", "15 a second", "20 a second");
 NAMES(pad_names,    SETTINGS_PAD_NAMES_COUNT,   "automatic", "PlayStation", "Xbox", "Switch", "numbers");
+NAMES(type_layout,  SETTINGS_TYPE_LAYOUT_COUNT, "US", "UK", "Finnish / Swedish", "German", "French");
 NAMES(wheel_dir,    2,                          "normal", "reversed");
 NAMES(page_open,    2,                          "asked for", "off");
 NAMES(mouse_speed,  SETTINGS_MOUSE_SPEED_COUNT, "300 us", "200 us", "150 us", "100 us");

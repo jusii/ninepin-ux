@@ -19,6 +19,9 @@
  *   POST /profile-file    the same form: a saved profile as a text file
  *   POST /profile-add     a profile from a text file (a multipart form of
  *                         its own; profile_text.h)
+ *   POST /type-set, /type, /type-stop
+ *                     the type text section: its switch and layout, a text
+ *                     for the machine's keyboard (kvmd_api.h), and its end
  *
  * in join mode every request needs the page password, unless it is switched
  * off: a session cookie from the log-in form (web_auth.h), or http basic

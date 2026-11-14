@@ -141,10 +141,6 @@ bool settings_valid(settings_t const *s)
             || (s->pad_combo[i].outputs & (uint8_t)~(SETTINGS_PAD_COMBO_OUTPUTS | SETTINGS_PAD_COMBO_AUTO)))
             return false;
 
-    for (unsigned i = 0; i < sizeof(s->reserved); i++)
-        if (s->reserved[i])
-            return false;
-
     return (s->mode < SETTINGS_MODE_COUNT)
         && (s->pad_swap <= 1) && (s->pad_merge <= 1) && (s->pad_touchpad <= 1)
         && (s->pad_deadzone < SETTINGS_DEADZONE_COUNT)
@@ -152,6 +148,7 @@ bool settings_valid(settings_t const *s)
         && (s->pad_triangle < SETTINGS_PAD_TRIANGLE_COUNT)
         && (s->pad_autofire < SETTINGS_PAD_AUTOFIRE_COUNT)
         && (s->pad_names < SETTINGS_PAD_NAMES_COUNT)
+        && (s->type_text <= SETTINGS_TYPE_TEXT_MAX)
         && (s->kb_preset < SETTINGS_KB_PRESET_COUNT) && (s->kb_help < SETTINGS_KB_HELP_COUNT)
         && (s->kb_delete < SETTINGS_KB_DELETE_COUNT) && (s->kb_iso < SETTINGS_KB_ISO_COUNT)
         && remaps_ok(s->kb_remap)
@@ -206,6 +203,32 @@ static uint8_t autofire_to_flash(uint8_t value)
         if (autofire_from_flash[i] == value)
             return i;
     return 0;
+}
+
+bool settings_type_enabled(settings_t const *settings)
+{
+    return (settings->type_text & 1u) != 0;
+}
+
+uint8_t settings_type_layout(settings_t const *settings, uint8_t mode)
+{
+    unsigned packed = settings->type_text >> 1;
+
+    for (uint8_t m = 0; (m < mode) && (m < SETTINGS_MODE_COUNT); m++)
+        packed /= SETTINGS_TYPE_LAYOUT_COUNT;
+    return (uint8_t)(packed % SETTINGS_TYPE_LAYOUT_COUNT);
+}
+
+void settings_type_set(settings_t *settings, bool enabled, uint8_t mode, uint8_t layout)
+{
+    unsigned packed = 0;
+
+    for (int m = SETTINGS_MODE_COUNT - 1; m >= 0; m--) {
+        unsigned one = ((uint8_t)m == mode) ? layout : settings_type_layout(settings, (uint8_t)m);
+
+        packed = packed * SETTINGS_TYPE_LAYOUT_COUNT + (one % SETTINGS_TYPE_LAYOUT_COUNT);
+    }
+    settings->type_text = (uint8_t)((packed << 1) | (enabled ? 1u : 0u));
 }
 
 unsigned settings_autofire_half_ms(void)

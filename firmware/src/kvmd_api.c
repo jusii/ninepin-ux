@@ -84,6 +84,12 @@ static uint32_t print_delay_ms;
 static uint32_t print_wait_id;
 static unsigned print_skipped;
 
+// a print from the settings page: no api request waits for it, the page asks
+static bool print_page;
+static volatile bool page_stop;
+static unsigned print_chars, print_typed;   // in the text, and typed so far
+static char page_result[96];
+
 static volatile uint32_t last_request_ms;
 static volatile uint32_t last_input_ms;
 static char mouse_output[12] = "usb";
@@ -488,9 +494,63 @@ static void print(kvmd_request_t const *req, kvmd_response_t *resp)
     snprintf(print_keymap, sizeof(print_keymap), "%s", keymap);
     print_delay_ms = (uint32_t)delay_ms;
     print_wait_id = req->wait_id;
+    print_page = false;
+    print_chars = (unsigned)chars;
+    print_typed = 0;
     print_busy = true;
     push(EV_PRINT, 0, 0);
     resp->deferred = true;
+}
+
+bool kvmd_api_page_type(char const *text, size_t length, char const *keymap)
+{
+    size_t i = 0;
+    unsigned chars = 0;
+    uint32_t cp;
+
+    if (print_busy || !queue_free() || (length > KVMD_PRINT_MAX) || !kvmd_keymap_known(keymap))
+        return false;
+
+    while (i < length) {
+        i += kvmd_utf8_next(text + i, length - i, &cp);
+        chars++;
+    }
+    memcpy(print_text, text, length);
+    print_text[length] = 0;
+    print_len = length;
+    print_pos = 0;
+    print_skipped = 0;
+    snprintf(print_keymap, sizeof(print_keymap), "%s", keymap);
+    print_delay_ms = 0;
+    print_wait_id = 0;
+    print_page = true;
+    page_stop = false;
+    print_chars = chars;
+    print_typed = 0;
+    page_result[0] = 0;
+    print_busy = true;
+    push(EV_PRINT, 0, 0);
+    return true;
+}
+
+bool kvmd_api_page_typing(void)
+{
+    return print_busy && print_page;
+}
+
+void kvmd_api_page_stop(void)
+{
+    page_stop = true;
+}
+
+bool kvmd_api_page_status(char *out, size_t size)
+{
+    if (print_busy && print_page) {
+        snprintf(out, size, "Typing: %u of %u characters so far.", print_typed, print_chars);
+        return true;
+    }
+    snprintf(out, size, "%s", page_result);
+    return page_result[0] != 0;
 }
 
 void kvmd_api_handle(kvmd_request_t const *req, kvmd_response_t *resp)
@@ -712,6 +772,22 @@ static void print_finish(int status, char const *error)
 {
     char json[160];
 
+    if (print_page) {
+        // the page asks how it went (kvmd_api_page_status())
+        if (error)
+            snprintf(page_result, sizeof(page_result), "Stopped after %u of %u characters%s%s.", print_typed,
+                print_chars, strcmp(error, "stopped") ? ": " : "", strcmp(error, "stopped") ? error : "");
+        else if (print_skipped)
+            snprintf(page_result, sizeof(page_result), "Typed %u characters; %u left out, which this layout "
+                "does not have.", print_typed - print_skipped, print_skipped);
+        else
+            snprintf(page_result, sizeof(page_result), "Typed %u characters.", print_typed);
+        step = STEP_NONE;
+        print_page = false;
+        print_busy = false;
+        return;
+    }
+
     if (error)
         kvmd_api_error(json, sizeof(json), "HidError", error);
     else
@@ -790,6 +866,7 @@ static void print_step(void)
                     return;
                 }
                 print_pos += n;
+                print_typed++;
                 if (kvmd_keymap_stroke(print_keymap, cp, &stroke))
                     break;
                 print_skipped++;
@@ -863,6 +940,17 @@ void kvmd_api_task(void)
     bool allowed = s->net_control && (s->wifi_mode != SETTINGS_WIFI_AP);
     bool active;
 
+    // a text from the page goes by its own switch, and can be stopped
+    if (print_busy && print_page) {
+        if (page_stop || !settings_type_enabled(s)) {
+            page_stop = false;
+            keyboard_out(0, 0);
+            print_finish(503, settings_type_enabled(s) ? "stopped" : "switched off");
+        } else {
+            allowed = true;
+        }
+    }
+
     // switched off, or the menu opened: let go of everything
     if (!allowed || menu_is_open()) {
         bool held = held_mod || held_buttons || held_keys[0] || held_keys[1] || held_keys[2]
@@ -870,7 +958,7 @@ void kvmd_api_task(void)
 
         q_tail = q_head;
         if (print_busy)
-            print_finish(503, "network control stopped");
+            print_finish(503, print_page ? "the board's menu was opened" : "network control stopped");
         step = STEP_NONE;
         if (held)
             release_all();
