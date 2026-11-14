@@ -20,6 +20,7 @@
  *   5 l1 0x01, r1 0x02, l2 0x04, r2 0x08, share 0x10, options 0x20, l3 0x40, r3 0x80,
  *   6 ps 0x01, touchpad click 0x02,
  *   7 l2, 8 r2 (analog)
+ *   29 (full report) battery: level 0 .. 10 (low nibble), 0x10 on a cable
  * full report only: byte 35 of the report is the touch sample count, 37.. two
  * touch points of 4 bytes: contact (bit 7 set: not touching), x 12 bits,
  * y 12 bits.
@@ -187,6 +188,14 @@ bool bt_ds4_decode(bt_ds4_t *pad, uint8_t const *report, size_t length, pad_inpu
         // no touchpad in the short report
         memset(pad, 0, sizeof(*pad));
         return true;
+    }
+
+    {
+        unsigned level = d[29] & 0x0fu;
+
+        // tenths, reported as the middle of each; on a cable 10 and up is full
+        input->battery = (uint8_t)((level >= 10u) ? 100u : level * 10u + 5u);
+        input->charging = (d[29] & 0x10u) != 0;
     }
 
     input->has_touchpad = true;

@@ -24,6 +24,7 @@
 #include "input_bridge_bt.h"
 #include "menu.h"
 #include "settings.h"
+#include "util/debug_cons.h"
 #include "util/output.h"
 #include "util/run_mode.h"
 
@@ -41,6 +42,8 @@ typedef struct {
     uint16_t state;                 // digital, under the settings
     uint8_t keys[SETTINGS_PAD_COMBOS]; // the keys its held combo buttons stand for (0: none)
     bool autofire;                  // it holds a combo button that fires by itself
+    uint8_t battery;                // the last it said (a short report says nothing)
+    bool charging;
     uint32_t home_since;            // 0: not held
     bool home_used;                 // this hold of home stepped the profile: no menu from it
     uint8_t home_dpad;              // the d-pad as it was, whilst home is held
@@ -257,6 +260,8 @@ static void route(void)
         }
         if (next[0].active && (latest_slot >= 0) && slots[latest_slot].present) {
             next[0].input = slots[latest_slot].input;
+            next[0].battery = slots[latest_slot].battery;
+            next[0].charging = slots[latest_slot].charging;
             snprintf(next[0].name, sizeof(next[0].name), "%s", slots[latest_slot].name);
         }
     } else {
@@ -268,6 +273,8 @@ static void route(void)
             next[p].active = true;
             next[p].state = slots[slot].quarantine ? 0 : slots[slot].state;
             next[p].input = slots[slot].input;
+            next[p].battery = slots[slot].battery;
+            next[p].charging = slots[slot].charging;
             snprintf(next[p].name, sizeof(next[p].name), "%s", slots[slot].name);
         }
     }
@@ -279,6 +286,10 @@ static void route(void)
     }
 
     route_keys(captured);
+
+    // the batteries, for the display
+    dbgcons_pads(next[0].active ? next[0].battery : -1, next[0].charging,
+        next[1].active ? next[1].battery : -1, next[1].charging);
 
     for (unsigned p = 0; p < PADS_PLAYERS; p++) {
         if (captured) {
@@ -429,6 +440,10 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad = &slots[slot];
     before = pad->state;
     pad->input = *input;
+    if (input->battery) {
+        pad->battery = input->battery;
+        pad->charging = input->charging;
+    }
 
     // the first autofire button held anywhere starts the beat, pressed
     beating = autofire_held();

@@ -17,6 +17,8 @@ settings_t const *settings_get(void) { return &s; }
 void ahprintf(const char *f, ...) { (void)f; }
 static unsigned autofire_half = 50;
 unsigned settings_autofire_half_ms(void) { return autofire_half; }
+static int shown[2]; static bool shown_charging[2];
+void dbgcons_pads(int b1, bool c1, int b2, bool c2) { shown[0] = b1; shown[1] = b2; shown_charging[0] = c1; shown_charging[1] = c2; }
 static bool menu_open;
 bool menu_is_open(void) { return menu_open; }
 static int menu_opens;
@@ -38,6 +40,10 @@ int main(void)
     pads_connected(0, 1, "pad", NULL);
     memset(&in, 0, sizeof(in)); in.hat = PAD_HAT_CENTRED; memcpy(in.defaults, d, 7);
 
+    // the battery: none said yet, then what the pad says, kept over reports that say nothing
+    pads_report(0, &in); assert(shown[0] == 0 && shown[1] == -1);
+    in.battery = 65; in.charging = true; pads_report(0, &in); assert(shown[0] == 65 && shown_charging[0] && pads_player(0)->battery == 65);
+    in.battery = 0; in.charging = false; pads_report(0, &in); assert(shown[0] == 65 && shown_charging[0]);
     // no combos: cross fires, r1 is the cd32 r
     in.buttons = 1u << 1; pads_report(0, &in); assert(de9[0] == PAD_FIRE);
     in.buttons = 1u << 5; pads_report(0, &in); assert(de9[0] == PAD_R);

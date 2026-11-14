@@ -127,6 +127,9 @@ pads.
 * CD32: ✕ red, ○ blue, □ green, △ yellow, L1 / R1 shoulders, Options play.
 * C64: ✕ fire; ○ / □ 2nd / 3rd fire on the POT lines.
 * The first pad is player 1, the next player 2. A pad that drops out keeps its player for 30 s.
+* Battery (DualSense, DualShock 4 over Bluetooth): on the page beside the player, and on the
+  display's third line as `1:60 2:85` (percent, player 1 and 2). At 20% or below, not charging,
+  the figure blinks. In Amiga mode with the Amiga off the line starts `amiga:off`.
 * Hold PS 1 s: menu.
 * Hold PS and press d-pad right / left: the next / previous saved pad profile, then none (no
   combos). The display shows its name. It is stored at once.

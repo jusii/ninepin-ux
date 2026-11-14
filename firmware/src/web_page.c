@@ -449,6 +449,9 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
         put(&w, "<tr><td>Player %u<td>", player + 1);
         if (p && p->active) {
             put_text(&w, p->name, PAD_NAME_LEN - 1);
+            if (p->battery)
+                put(&w, ", battery %u%%%s", p->battery,
+                    !p->charging ? "" : (p->battery >= 100) ? ", on a cable" : ", charging");
             // the numbers the pad combos go by
             if (p->input.buttons) {
                 put(&w, ", holding button");
@@ -509,6 +512,11 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
             put_remaps(&w, s->ak_remap, true);
         else if (strcmp(c->key, "wifi_mode") == 0)
             put_wifi(&w, s);
+        else if (strcmp(c->key, "pad_touchpad") == 0)
+            put(&w, "<p><small>A PlayStation pad as it comes: &#10005; fire 1, &#9675; fire 2, &#9633; fire 3 "
+                "(as a CD32 pad red, blue, green), &#9651; the Triangle button above (CD32: yellow), "
+                "L1 and R1 the CD32 shoulders, Options its play. Anything else: Pad button combos."
+                "</small>");
         else if (strcmp(c->key, "ota_needs_boot") == 0)
             put(&w, "<p><small>With no BOOT press needed, whoever can open this page can replace the "
                 "firmware from the network. Without a page password that is everyone on your network.</small>");

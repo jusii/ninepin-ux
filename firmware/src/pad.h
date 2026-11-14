@@ -58,6 +58,8 @@ typedef struct {
     int8_t touch_dx, touch_dy;      // touchpad motion since the last report
     uint8_t touch_buttons;          // bit 0 left half clicked, bit 1 right half
     bool has_touchpad;
+    uint8_t battery;                // percent, 1 .. 100; 0: the pad does not say
+    bool charging;                  // on a cable, charging or full
     uint8_t defaults[PAD_LOGICAL_BUTTONS]; // own button (1..16) for fire 1, 2, 3, yellow, l, r, play
 } pad_input_t;
 
@@ -78,6 +80,8 @@ typedef struct {
     uint16_t state;                 // digital, pad_state bits
     pad_input_t input;              // the latest report (usb passthrough)
     char name[PAD_NAME_LEN];
+    uint8_t battery;                // as pad_input_t's, the last the pad said
+    bool charging;
 } pad_player_t;
 
 void pads_init(void);

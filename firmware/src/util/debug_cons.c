@@ -107,12 +107,57 @@ static char hid_line[DBGCONS_OLED_COLS + 1] = "hid --";
 static char const *status_mode = "amiga";
 static bool status_amiga_on = true;
 
+// the players' pad batteries: percent, 0 not known, -1 no pad. a low one
+// (not charging) blinks
+#define DBGCONS_BATTERY_LOW     20
+#define DBGCONS_BLINK_MS        500
+static int8_t pad_battery[2] = { -1, -1 };
+static bool pad_low[2];
+static bool blink_hidden;
+static uint32_t blink_at;
+
 static void dbgcons_status_line(void)
 {
-    char linebuf[DBGCONS_OLED_COLS + 1] = "";
+    char linebuf[DBGCONS_OLED_COLS + 12] = "";
+    size_t used;
 
-    snprintf(linebuf, sizeof(linebuf), "out:%s amiga:%s", status_mode, status_amiga_on ? "on" : "off");
+    // the amiga's power only when it is the trouble: amiga mode, and it is off
+    if (!status_amiga_on && (strcmp(status_mode, "amiga") == 0))
+        snprintf(linebuf, sizeof(linebuf), "amiga:off");
+    else
+        snprintf(linebuf, sizeof(linebuf), "out:%s", status_mode);
+
+    for (unsigned p = 0; p < 2; p++) {
+        used = strlen(linebuf);
+        if (pad_battery[p] < 0)
+            continue;
+        if (pad_battery[p] == 0)
+            snprintf(linebuf + used, sizeof(linebuf) - used, " %u:-", p + 1);
+        else if (pad_low[p] && blink_hidden)
+            snprintf(linebuf + used, sizeof(linebuf) - used, " %u:  ", p + 1);
+        else
+            snprintf(linebuf + used, sizeof(linebuf) - used, " %u:%d", p + 1, pad_battery[p]);
+    }
     dbgcons_write_padded_line(DBGCONS_STATUS_LINE, linebuf);
+}
+
+void dbgcons_pads(int battery1, bool charging1, int battery2, bool charging2)
+{
+    int const battery[2] = { battery1, battery2 };
+    bool const charging[2] = { charging1, charging2 };
+    bool changed = false;
+
+    for (unsigned p = 0; p < 2; p++) {
+        int8_t level = (int8_t)((battery[p] < 0) ? -1 : (battery[p] > 100) ? 100 : battery[p]);
+        bool low = (level > 0) && (level <= DBGCONS_BATTERY_LOW) && !charging[p];
+
+        if ((level != pad_battery[p]) || (low != pad_low[p]))
+            changed = true;
+        pad_battery[p] = level;
+        pad_low[p] = low;
+    }
+    if (changed)
+        dbgcons_status_line();
 }
 
 void dbgcons_init()
@@ -466,6 +511,20 @@ void dbgcons_notice(char const *text)
 
 void dbgcons_notice_task(void)
 {
+    uint32_t now = to_ms_since_boot(get_absolute_time());
+
+    // a low pad battery blinks (not under the hid readout, which has the line)
+    if ((pad_low[0] || pad_low[1]) && !diag_hid() && (display_mode != DBGCONS_DISPLAY_OFF)) {
+        if ((uint32_t)(now - blink_at) >= DBGCONS_BLINK_MS) {
+            blink_at = now;
+            blink_hidden = !blink_hidden;
+            dbgcons_status_line();
+        }
+    } else if (blink_hidden) {
+        blink_hidden = false;
+        dbgcons_status_line();
+    }
+
     if (!notice_until || ((int32_t)(to_ms_since_boot(get_absolute_time()) - notice_until) < 0))
         return;
     notice_until = 0;

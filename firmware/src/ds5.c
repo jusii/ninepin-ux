@@ -17,6 +17,7 @@
  *   9 ps 0x01, touchpad click 0x02, mute 0x04,
  *   32.. two touch points of 4 bytes: contact (bit 7 set: not touching),
  *        x 12 bits, y 12 bits
+ *   52 battery: level 0 .. 10 (low nibble), 1 charging / 2 full (high nibble)
  */
 
 #include "ds5.h"
@@ -30,6 +31,7 @@ enum {
 };
 
 #define DS5_INPUT_BYTES         41      // up to the second touch point
+#define DS5_STATUS_BYTE         52      // the battery
 #define DS5_BT_FULL_LEN         78
 #define DS5_TOUCH_WIDTH         1920
 #define DS5_TOUCH_HEIGHT        1080
@@ -108,7 +110,7 @@ static void decode_touch(ds5_t *pad, uint8_t const *point, pad_input_t *input)
 /**
  * the common part: data starts at lx.
  */
-static void decode(ds5_t *pad, uint8_t const *d, bool with_touch, pad_input_t *input)
+static void decode(ds5_t *pad, uint8_t const *d, bool with_touch, bool with_status, pad_input_t *input)
 {
     static uint8_t const hat_directions[8] = { PAD_UP, PAD_UP | PAD_RIGHT, PAD_RIGHT, PAD_RIGHT | PAD_DOWN,
         PAD_DOWN, PAD_DOWN | PAD_LEFT, PAD_LEFT, PAD_LEFT | PAD_UP };
@@ -144,6 +146,14 @@ static void decode(ds5_t *pad, uint8_t const *d, bool with_touch, pad_input_t *i
     input->home = (d[9] & 0x01) != 0;
     memcpy(input->defaults, defaults, sizeof(defaults));
 
+    if (with_status) {
+        unsigned level = d[DS5_STATUS_BYTE] & 0x0fu, charge = d[DS5_STATUS_BYTE] >> 4;
+
+        // tenths, reported as the middle of each (hid-playstation does the same)
+        input->battery = (uint8_t)((charge == 2u) || (level >= 10u) ? 100u : level * 10u + 5u);
+        input->charging = (charge == 1u) || (charge == 2u);
+    }
+
     if (with_touch) {
         input->has_touchpad = true;
         decode_touch(pad, d + 32, input);
@@ -159,7 +169,7 @@ bool ds5_decode_usb(ds5_t *pad, uint8_t const *report, size_t length, pad_input_
     if (!pad || !report || !input || (length < 1 + DS5_INPUT_BYTES) || (report[0] != 0x01))
         return false;
 
-    decode(pad, report + 1, true, input);
+    decode(pad, report + 1, true, length > 1 + DS5_STATUS_BYTE, input);
     return true;
 }
 
@@ -174,7 +184,7 @@ bool ds5_decode_bt(ds5_t *pad, uint8_t const *report, size_t length, pad_input_t
 
         if (crc_report(0xa1, report, 74) != received)
             return false;
-        decode(pad, report + 2, true, input);
+        decode(pad, report + 2, true, true, input);
         return true;
     }
 
@@ -193,7 +203,7 @@ bool ds5_decode_bt(ds5_t *pad, uint8_t const *report, size_t length, pad_input_t
         d[9] = report[7] & 0x03;
         d[4] = report[8];
         d[5] = report[9];
-        decode(pad, d, false, input);
+        decode(pad, d, false, false, input);
         return true;
     }
 

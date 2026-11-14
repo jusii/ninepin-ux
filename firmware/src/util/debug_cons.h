@@ -53,6 +53,13 @@ void dbgcons_mode(char const *mode);
 void dbgcons_amiga_power(bool on);
 
 /**
+ * @brief The pads' batteries, for the status line: percent, 0 if the pad does
+ *        not say, -1 with no pad for that player. Any number of calls; only a
+ *        change is drawn.
+ */
+void dbgcons_pads(int battery1, bool charging1, int battery2, bool charging2);
+
+/**
  * usb-c device port state on oled line 1 (builds without bluetooth; a no-op
  * otherwise), with the number of attempts the i/o expander
  * that senses its vbus took to answer.
