@@ -1,0 +1,11 @@
+ninepin-ux pad profile
+# Turrican II (Amiga): space fires the power lines, down + space is the
+# gyroscope, fire + space the super weapon. north (triangle) jumps
+name=Turrican 2
+machine=amiga
+directions=both
+triangle=up
+autofire=10
+combo=l1 key=space
+combo=r1 down key=space
+combo=r2 fire1 key=space

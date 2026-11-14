@@ -141,6 +141,7 @@ char const *wifi_status(void) { return "ap"; }
 char const *wifi_page_result(void) { return "-"; }
 bool wifi_page_submit(settings_t const *s) { (void)s; return true; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *n, unsigned slot) { (void)op; (void)s; (void)n; (void)slot; return true; }
+bool wifi_page_profile_add(profile_t const *p) { (void)p; return true; }
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }

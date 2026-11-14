@@ -16,6 +16,9 @@
  *   POST /logout      ends the session
  *   POST /profile-save, /profile-load, /profile-delete
  *                     the settings form's pad profile buttons (profiles.h)
+ *   POST /profile-file    the same form: a saved profile as a text file
+ *   POST /profile-add     a profile from a text file (a multipart form of
+ *                         its own; profile_text.h)
  *
  * in join mode every request needs the page password, unless it is switched
  * off: a session cookie from the log-in form (web_auth.h), or http basic

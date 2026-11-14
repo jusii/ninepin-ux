@@ -30,6 +30,7 @@
 #include <stdint.h>
 
 #include "config.h"
+#include "profiles.h"
 #include "settings.h"
 
 #ifdef HAS_WIFI
@@ -120,6 +121,7 @@ typedef enum {
     WIFI_PROFILE_SAVE,          // the form's settings, and their pad part as a profile under a name
     WIFI_PROFILE_LOAD,          // a profile (by slot) into the settings
     WIFI_PROFILE_DELETE,
+    WIFI_PROFILE_ADD,           // a profile from a file (wifi_page_profile_add())
 } wifi_profile_op_t;
 
 /**
@@ -133,6 +135,15 @@ typedef enum {
  * @return false if a previous save is still waiting
  */
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, char const *name, unsigned slot);
+
+/**
+ * @brief Hand a profile read from a file to the main loop, which stores it
+ *        under its name (over one of that name, else in the first free slot).
+ *        The settings stay as they are. Cyw43 background context.
+ *
+ * @return false if a previous save is still waiting
+ */
+bool wifi_page_profile_add(profile_t const *profile);
 
 /**
  * @brief Hand a page password change to the main loop, which stores it.

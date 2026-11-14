@@ -1,0 +1,11 @@
+ninepin-ux pad profile
+# Turrican (C64): space fires the energy lines, f7 throws a grenade, down +
+# space is the gyroscope. north (triangle) jumps
+name=Turrican
+machine=c64
+directions=both
+triangle=up
+autofire=10
+combo=l1 key=space
+combo=r1 key=f7
+combo=l2 down key=space

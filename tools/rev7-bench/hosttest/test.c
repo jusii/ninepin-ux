@@ -113,6 +113,7 @@ void flash_range_program(uint32_t off, uint8_t const *data, size_t len)
 }
 int flash_safe_execute(void (*fn)(void *), void *param, uint32_t t) { (void)t; fn(param); return PICO_OK; }
 static int profile_ops;
+bool wifi_page_profile_add(profile_t const *p) { profile_ops++; return profiles_put(p) >= 0; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *name, unsigned slot)
 {
     profile_ops++;
@@ -229,6 +230,20 @@ static void post(char const *path, char const *extra_head, char const *body, int
     snprintf(r, sizeof(r), "POST %s HTTP/1.1\r\n%sContent-Type: application/x-www-form-urlencoded\r\nContent-Length: %zu\r\n\r\n%s",
         path, extra_head ? extra_head : "", strlen(body), body);
     request(r, 11, status, must);
+}
+
+// a profile file through the page's own multipart form, as a browser sends it
+static void profile_add(char const *tok, bool replace, char const *file, int status, char const *must)
+{
+    static char r[4096], b[3000];
+    size_t n = (size_t)snprintf(b, sizeof(b), "------WebKitFormBoundaryx1\r\nContent-Disposition: form-data; name=\"t\"\r\n\r\n%s\r\n", tok);
+    if (replace)
+        n += (size_t)snprintf(b + n, sizeof(b) - n, "------WebKitFormBoundaryx1\r\nContent-Disposition: form-data; name=\"replace\"\r\n\r\n1\r\n");
+    snprintf(b + n, sizeof(b) - n, "------WebKitFormBoundaryx1\r\nContent-Disposition: form-data; name=\"file\"; filename=\"%s\"\r\n"
+        "Content-Type: text/plain\r\n\r\n%s\r\n------WebKitFormBoundaryx1--\r\n", *file ? "p.txt" : "", file);
+    snprintf(r, sizeof(r), "POST /profile-add HTTP/1.1\r\nContent-Type: multipart/form-data; boundary=----WebKitFormBoundaryx1\r\n"
+        "Content-Length: %zu\r\n\r\n%s", strlen(b), b);
+    request(r, 37, status, must);
 }
 
 // the session cookie of the last response, as a request header line
@@ -579,6 +594,44 @@ int main(void)
         snprintf(body, sizeof(body), "t=%s&profile=1", token);
         post("/profile-delete", NULL, body, 303, "Location: /?saved=combos#combos");
         assert(profiles_count() == 1 && current.pad_profile == 0 && current.pad_combo[0].button == 6);
+        {
+            // a profile as a file to keep, and one put in from a file
+            int slot = -1;
+            for (unsigned i = 0; i < PROFILES_MAX; i++) if (profiles_get(i)) slot = (int)i;
+            assert(slot >= 0);
+            snprintf(body, sizeof(body), "t=%s&pad_swap=1&profile=%d", token, slot + 1);
+            post("/profile-file", NULL, body, 200, "Content-Disposition: attachment; filename=\"");
+            assert(strstr(last_out, "text/plain") && strstr(last_out, "\r\n\r\nninepin-ux pad profile\nname=") && strstr(last_out, "\ncombo="));
+            snprintf(body, sizeof(body), "t=bad&profile=%d", slot + 1);
+            post("/profile-file", NULL, body, 400, "out of date");
+            snprintf(body, sizeof(body), "t=%s&profile=31", token);
+            post("/profile-file", NULL, body, 400, "no such pad profile");
+
+            profile_add(token, false, "ninepin-ux pad profile\r\nname=From file\r\nmachine=c64\r\ncombo=r1 down fire1 auto\r\ncombo=l2 key=space\r\n",
+                303, "Location: /?saved=combos#combos");
+            assert(profiles_count() == 2 && profiles_find("From file") >= 0);
+            {
+                profile_t const *got = profiles_get((unsigned)profiles_find("From file"));
+                assert(got->machine == PROFILE_FOR_C64 && got->combo[0].button == 6 && got->combo[0].outputs == (0x02 | 0x10 | 0x80)
+                    && got->combo[1].button == 7 && got->combo[1].key == 0x2c && got->pad_autofire == SETTINGS_PAD_AUTOFIRE_10);
+            }
+            // one of that name is there: only with the tick
+            profile_add(token, false, "ninepin-ux pad profile\nname=From file\ncombo=l1 up\n", 400, "tick replace");
+            assert(profiles_get((unsigned)profiles_find("From file"))->combo[0].button == 6);
+            profile_add(token, true, "ninepin-ux pad profile\nname=From file\ncombo=l1 up\n", 303, "Location: /?saved=combos#combos");
+            assert(profiles_count() == 2 && profiles_get((unsigned)profiles_find("From file"))->combo[0].button == 5);
+            // not a profile, no file, a stale page
+            profile_add(token, false, "hello\n", 400, "not a pad profile");
+            profile_add(token, false, "ninepin-ux pad profile\nname=x\ncombo=r1 sideways\n", 400, "Line 3");
+            profile_add(token, false, "", 400, "Choose a profile file");
+            profile_add("bad", false, "ninepin-ux pad profile\nname=y\n", 400, "out of date");
+            assert(profiles_count() == 2);
+            // the page has the buttons, and the form the file goes by
+            request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "formaction=/profile-file");
+            assert(strstr(last_out, "<form id=padd method=post action=/profile-add enctype=multipart/form-data>")
+                && strstr(last_out, "name=file form=padd"));
+            assert(profiles_remove((unsigned)profiles_find("From file")));
+        }
         // thirty-two fit, the next is refused, saving over one still goes
         for (int i = 0; i < 31; i++) {
             snprintf(body, sizeof(body), "t=%s&profile_for=0&profile_name=game+%d", token, i);

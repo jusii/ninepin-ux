@@ -1,0 +1,9 @@
+ninepin-ux pad profile
+# platform games that jump with up: south (PlayStation cross) jumps, west (square) fires
+name=Jump button
+machine=any
+directions=both
+triangle=up
+autofire=10
+combo=south up
+combo=west fire1

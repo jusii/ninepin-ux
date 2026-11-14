@@ -1,0 +1,11 @@
+ninepin-ux pad profile
+# Pinball Dreams, Pinball Fantasies (Amiga): the shift keys are the flippers,
+# cursor down pulls the plunger
+name=Pinball
+machine=amiga
+directions=both
+triangle=off
+autofire=10
+combo=l1 key=lshift
+combo=r1 key=rshift
+combo=south key=down

@@ -1,0 +1,8 @@
+ninepin-ux pad profile
+# Commando (C64): space throws a grenade
+name=Commando
+machine=c64
+directions=both
+triangle=off
+autofire=10
+combo=east key=space

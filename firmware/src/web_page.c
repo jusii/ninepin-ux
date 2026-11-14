@@ -161,7 +161,7 @@ static const web_key_t keys[] = {
 
 #define KEY_COUNT (sizeof(keys) / sizeof(keys[0]))
 
-static char const *key_name(uint8_t usage, char buf[8])
+char const *web_page_key_name(uint8_t usage, char buf[8])
 {
     for (size_t i = 0; i < KEY_COUNT; i++)
         if (keys[i].usage == usage)
@@ -180,10 +180,7 @@ static char const *key_name(uint8_t usage, char buf[8])
     return buf;
 }
 
-/**
- * @return the usage a key name stands for, 0 for none (empty), -1 if there is no such key
- */
-static int key_usage(char const *name)
+int web_page_key_usage(char const *name)
 {
     size_t length = strlen(name);
     char *end;
@@ -354,7 +351,8 @@ static void put_profiles(writer_t *w, settings_t const *s)
             put_text(w, p->name, PROFILE_NAME_LEN);
         }
         put(w, "</select> <button formaction=/profile-load>Load</button>"
-            " <button formaction=/profile-delete>Delete</button></span></label>");
+            " <button formaction=/profile-delete>Delete</button>"
+            " <button formaction=/profile-file>Download</button></span></label>");
     }
     put(w, "<label>Save as <span><input name=profile_name size=12 maxlength=12 value=\"");
     if (loaded)
@@ -368,6 +366,11 @@ static void put_profiles(writer_t *w, settings_t const *s)
             put(w, "<option value=%u%s>%s", m, (m == machine) ? " selected" : "", names[m]);
     }
     put(w, "</select> <button formaction=/profile-save>Save as profile</button></span></label>");
+    // these belong to the form "padd", outside this one
+    put(w, "<label>Add from a file <span><input type=file name=file form=padd accept=.txt,text/plain"
+        " style=max-width:13em> <span style=white-space:nowrap><input type=checkbox name=replace value=1"
+        " form=padd title=\"replace one of the same name\">replace</span>"
+        " <button form=padd>Add profile</button></span></label>");
 }
 
 /**
@@ -407,7 +410,7 @@ static void put_combos(writer_t *w, settings_t const *s, char const *at, char co
         for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
             put(w, "<td><input type=checkbox name=c%u%c value=1%s>", i + 1, combo_letters[o],
                 (c->outputs & (1u << o)) ? " checked" : "");
-        put(w, "<td><input name=c%uk size=7 maxlength=9 list=keys value=\"%s\">", i + 1, key_name(c->key, buf));
+        put(w, "<td><input name=c%uk size=7 maxlength=9 list=keys value=\"%s\">", i + 1, web_page_key_name(c->key, buf));
     }
 
     put(w, "</table><datalist id=keys>");
@@ -423,7 +426,8 @@ static void put_combos(writer_t *w, settings_t const *s, char const *at, char co
         "are those of the pad in use, or what Pad names (Pads) says. On a pad of another make, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
         "the list. A profile keeps the combos, Pad directions, Triangle button and Autofire rate under a name: Save as "
-        "stores the whole form and the profile, Load puts a profile back. A profile for the Amiga or "
+        "stores the whole form and the profile, Load puts a profile back. Download gives a profile as a text file to keep or hand on; Add "
+        "from a file puts one in (replace: over a profile of the same name). A profile for the Amiga or "
         "the C64 is offered in that mode only, and each mode comes back with the profile it had last."
         "</small></details>");
 }
@@ -502,6 +506,11 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
     // settings
     // the form's first button is what Enter in a field presses: the plain save,
     // not a profile button further down
+    // the form a profile file is added by: its fields sit among the pad combos,
+    // inside the settings form, and name this one
+    put(&w, "<form id=padd method=post action=/profile-add enctype=multipart/form-data>"
+        "<input type=hidden name=t value=%s></form>", http_server_token());
+
     put(&w, "<h2>Settings</h2><form method=post action=/settings>"
         "<input type=hidden name=t value=%s>"
         "<button tabindex=-1 style=\"position:absolute;left:-99em\">Save</button>", http_server_token());
@@ -753,7 +762,7 @@ static bool parse_combo(char const *pair, char const *value, settings_t *setting
         // spaces around a typed name do not matter
         while (*value == ' ')
             value++;
-        usage = key_usage(value);
+        usage = web_page_key_usage(value);
         if (usage < 0) {
             snprintf(error, error_size, "Combo %u: no such key.", slot + 1);
             return false;

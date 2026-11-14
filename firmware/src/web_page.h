@@ -75,4 +75,15 @@ bool web_page_field(char const *body, char const *name, char *out, size_t size);
  */
 bool web_page_parse(char *body, settings_t *settings, char *error, size_t error_size);
 
+/**
+ * @return the name of a keyboard key (a hid usage) as the page and the profile
+ *         files spell it; "" for 0. buf is used for the names worked out
+ */
+char const *web_page_key_name(uint8_t usage, char buf[8]);
+
+/**
+ * @return the usage a key name stands for, 0 for none (empty), -1 if there is no such key
+ */
+int web_page_key_usage(char const *name);
+
 #endif // _WEB_PAGE_H

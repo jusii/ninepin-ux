@@ -27,6 +27,7 @@
 #include "kvmd_api.h"
 #include "net_update.h"
 #include "ota.h"
+#include "profile_text.h"
 #include "profiles.h"
 #include "settings.h"
 #include "util/output.h"
@@ -69,6 +70,8 @@ typedef enum {
     FORM_PROFILE_SAVE,  // the settings form, and its pad part as a named profile
     FORM_PROFILE_LOAD,
     FORM_PROFILE_DELETE,
+    FORM_PROFILE_FILE,  // a profile as a text file
+    FORM_PROFILE_ADD,   // a profile from a file: a multipart form of its own
     FORM_BT_PAIR,       // the settings form again, for its token only
     FORM_UPDATE_CHECK,  // the firmware section's buttons
     FORM_UPDATE_INSTALL,
@@ -707,6 +710,132 @@ static bool handle_profile(http_conn_t *c, char const *body, bool load)
     return respond_message(c, 303, load ? "Loaded" : "Deleted", text, saved_location("Location: ", "combos"));
 }
 
+/**
+ * a profile as a file to keep: the answer is the text, to be saved
+ */
+static bool handle_profile_file(http_conn_t *c, char const *body)
+{
+    char value[8];
+    char head[80];
+    char *end;
+    unsigned long number;
+    profile_t const *profile;
+    size_t length;
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not done", "The page is out of date: reload it and try again.", NULL);
+
+    number = web_page_field(body, "profile", value, sizeof(value)) ? strtoul(value, &end, 10) : 0;
+    profile = (number && !*end) ? profiles_get((unsigned)number - 1u) : NULL;
+    if (!profile)
+        return respond_message(c, 400, "Not done", "There is no such pad profile.", NULL);
+
+    length = profile_text_write(profile, c->small, PROFILE_TEXT_MAX);
+    if (!length)
+        return respond_message(c, 500, "Not done", "The profile did not fit its file.", NULL);
+
+    // a profile's name has nothing a file name or this header cannot hold
+    snprintf(head, sizeof(head), "Content-Disposition: attachment; filename=\"%s.txt\"\r\n", profile->name);
+    ahprintf("[web] pad profile %s: file\n", profile->name);
+    return respond_typed(c, 200, "text/plain; charset=utf-8", c->small, length, head);
+}
+
+/**
+ * one field of a multipart form
+ *
+ * @param boundary  as the content type gives it, without the leading dashes
+ * @return its value's start within body and its length, NULL if there is none
+ */
+static char const *multipart_field(char const *body, size_t body_len, char const *boundary, char const *name,
+    size_t *length)
+{
+    char mark[HTTP_BOUNDARY_MAX + 8], wanted[40];
+    size_t mark_len = (size_t)snprintf(mark, sizeof(mark), "--%s", boundary);
+    char const *end = body + body_len;
+    char const *part = body;
+
+    snprintf(wanted, sizeof(wanted), " name=\"%s\"", name);
+
+    while ((part = memmem(part, (size_t)(end - part), mark, mark_len)) != NULL) {
+        char const *head = part + mark_len;
+        char const *data = memmem(head, (size_t)(end - head), "\r\n\r\n", 4);
+        char const *next, *found;
+
+        if (!data)
+            return NULL;
+        data += 4;
+        next = memmem(data, (size_t)(end - data), mark, mark_len);
+        if (!next)
+            return NULL;
+
+        // the part's own head says which field it is
+        found = memmem(head, (size_t)(data - head), wanted, strlen(wanted));
+        if (found) {
+            // the value ends before the cr lf that precedes the next boundary
+            *length = ((next - data) >= 2) ? (size_t)(next - data) - 2u : 0;
+            return data;
+        }
+        part = next;
+    }
+    return NULL;
+}
+
+/**
+ * a profile from a file
+ */
+static bool handle_profile_add(http_conn_t *c, char const *body)
+{
+    static profile_t profile;   // lwip callbacks do not nest
+    char boundary[HTTP_BOUNDARY_MAX + 1];
+    char error[96] = "";
+    size_t type_len, length;
+    char const *type = header_value(c, "Content-Type", &type_len);
+    char const *mark = type ? memmem(type, type_len, "boundary=", 9) : NULL;
+    char const *value;
+    size_t n = 0;
+    bool replace;
+
+    if (!mark)
+        return respond_message(c, 400, "Not added", "That was not a file from this page's form.", NULL);
+    mark += 9;
+    if ((mark < type + type_len) && (*mark == '"'))
+        mark++;
+    while ((mark + n < type + type_len) && (n < HTTP_BOUNDARY_MAX) && (mark[n] != '"') && (mark[n] != ';')
+        && (mark[n] != '\r'))
+        n++;
+    memcpy(boundary, mark, n);
+    boundary[n] = 0;
+
+    value = n ? multipart_field(body, c->content_length, boundary, "t", &length) : NULL;
+    if (!value || (length != strlen(token)) || (memcmp(value, token, length) != 0))
+        return respond_message(c, 400, "Not added", "The page is out of date: reload it and try again.", NULL);
+
+    replace = multipart_field(body, c->content_length, boundary, "replace", &length) != NULL;
+
+    value = multipart_field(body, c->content_length, boundary, "file", &length);
+    if (!value || !length)
+        return respond_message(c, 400, "Not added", "Choose a profile file first.", NULL);
+    if (!profile_text_read(value, length, &profile, error, sizeof(error)))
+        return respond_message(c, 400, "Not added", error, NULL);
+
+    if (profiles_find(profile.name) >= 0) {
+        if (!replace) {
+            snprintf(text, sizeof(text), "There is a profile called %s already: tick replace to put this one "
+                "in its place.", profile.name);
+            return respond_message(c, 400, "Not added", text, NULL);
+        }
+    } else if (profiles_count() >= PROFILES_MAX) {
+        return respond_message(c, 400, "Not added", "Every pad profile slot is in use: delete one first.", NULL);
+    }
+
+    snprintf(text, sizeof(text), "The board adds the pad profile %s now.", profile.name);
+    if (!wifi_page_profile_add(&profile))
+        return respond_message(c, 503, "Not added", "The previous save is still being stored; try again.", NULL);
+
+    ahprintf("[web] pad profile %s: from a file\n", profile.name);
+    return respond_message(c, 303, "Added", text, saved_location("Location: ", "combos"));
+}
+
 static bool handle_form(http_conn_t *c)
 {
     static settings_t submitted;    // lwip callbacks do not nest
@@ -731,6 +860,8 @@ static bool handle_form(http_conn_t *c)
         case FORM_UPDATE_INSTALL:   return handle_net_update(c, body, true);
         case FORM_PROFILE_LOAD:     return handle_profile(c, body, true);
         case FORM_PROFILE_DELETE:   return handle_profile(c, body, false);
+        case FORM_PROFILE_FILE:     return handle_profile_file(c, body);
+        case FORM_PROFILE_ADD:      return handle_profile_add(c, body);
         default:            break;
     }
 
@@ -1191,6 +1322,10 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_PROFILE_LOAD);
     if (strcmp(target, "/profile-delete") == 0)
         return form_begin(c, FORM_PROFILE_DELETE);
+    if (strcmp(target, "/profile-file") == 0)
+        return form_begin(c, FORM_PROFILE_FILE);
+    if (strcmp(target, "/profile-add") == 0)
+        return form_begin(c, FORM_PROFILE_ADD);
     if (strcmp(target, "/bt-pair") == 0)
         return form_begin(c, FORM_BT_PAIR);
     if (strcmp(target, "/update-check") == 0)

@@ -65,6 +65,7 @@ Firmware downloads: [Releases](https://github.com/jusii/ninepin-ux/releases).
 | `firmware/` | firmware source, CMake build, pico-sdk and library submodules |
 | `hardware/rev7.1/` | KiCad project and generator scripts, `fab/` (JLCPCB package), `bom/` (hand-fit parts, ibom) |
 | `hardware/case/` | 3D-printable case (STL, STEP, FreeCAD) and its generator |
+| `profiles/` | ready-made pad profiles for the page's Add from a file |
 | `tools/` | board checkers, bench scripts |
 | `doc/` | the guides above |
 

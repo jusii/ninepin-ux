@@ -173,6 +173,33 @@ names up to 12 characters), one per game.
   that had none comes up without combos if the other mode had a profile. Combos edited but not
   saved as a profile are lost on a mode switch.
 
+### profile files
+
+Download (beside Load) gives a saved profile as a text file. Add from a file puts one in: choose
+the file, Add profile. A profile of the same name is replaced only with "replace" ticked.
+Ready-made ones: [profiles/](../profiles/).
+
+```
+ninepin-ux pad profile
+# a comment
+name=Blue Max
+machine=c64
+directions=both
+triangle=off
+autofire=10
+combo=r1 down fire1
+combo=l2 key=space
+```
+
+* `machine`: `any`, `amiga`, `c64`. `directions`: `both`, `dpad`, `stick`. `triangle`: `up`,
+  `autofire`, `off`. `autofire`: `5`, `8`, `10`, `15`, `20`. Lines left out are as the factory has
+  them.
+* `combo=`: a button, then any of `up down left right fire1 fire2 fire3 auto` and `key=` with a
+  key name as on the page. Up to six.
+* Buttons by their place on the pad, whatever its make: `west south east north` (□ ✕ ○ △),
+  `l1 r1 l2 r2`, `select start` (create, options), `l3 r3`, `home`, `touchpad`, `mute`, `b16`;
+  or a number 1 to 16.
+
 ## Bluetooth
 
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.

@@ -93,6 +93,7 @@ static settings_t page_pending;
 static wifi_profile_op_t page_pending_op;
 static char page_pending_name[PROFILE_NAME_LEN];
 static unsigned page_pending_slot;
+static profile_t page_pending_profile;  // WIFI_PROFILE_ADD
 static volatile bool page_pending_ready;
 // a save's settings from the moment the page hands them over until they are
 // stored: what the page shows meanwhile (lwip context reads, main loop clears)
@@ -580,6 +581,14 @@ bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *settings, 
     return true;
 }
 
+bool wifi_page_profile_add(profile_t const *profile)
+{
+    if (page_pending_ready)
+        return false;
+    page_pending_profile = *profile;
+    return wifi_page_profile_submit(WIFI_PROFILE_ADD, NULL, NULL, 0);
+}
+
 bool wifi_page_submit(settings_t const *settings)
 {
     return wifi_page_profile_submit(WIFI_PROFILE_NONE, settings, NULL, 0);
@@ -657,6 +666,23 @@ static void page_save_work(void)
     profile_slot = page_pending_slot;
     page_pending_ready = false;
     restore_interrupts(interrupts);
+
+    if (op == WIFI_PROFILE_ADD) {
+        // a profile from a file: stored, and nothing else changes
+        int slot;
+
+        cyw43_arch_lwip_begin();
+        slot = profiles_put(&page_pending_profile);
+        cyw43_arch_lwip_end();
+        if (slot < 0)
+            snprintf(result, sizeof(result), (slot == -1) ? "not added: every pad profile slot is in use"
+                : "not added: the flash write failed");
+        else
+            snprintf(result, sizeof(result), "profile %s added", page_pending_profile.name);
+        ahprintf("[web] %s\n", result);
+        page_result_set(result);
+        return;
+    }
 
     if ((op == WIFI_PROFILE_LOAD) || (op == WIFI_PROFILE_DELETE)) {
         profile_t const *profile = profiles_get(profile_slot);
