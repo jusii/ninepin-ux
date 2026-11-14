@@ -64,6 +64,7 @@ static const web_choice_t choices[] = {
     CHOICE(NULL, "pad_directions", "Pad directions", pad_directions, directions),
     CHOICE(NULL, "pad_deadzone", "Stick deadzone", pad_deadzone, deadzone),
     CHOICE(NULL, "pad_triangle", "Triangle button", pad_triangle, triangle),
+    CHOICE(NULL, "pad_autofire", "Autofire rate", pad_autofire, autofire),
     CHOICE(NULL, "pad_touchpad", "Touchpad mouse", pad_touchpad, off_on),
     CHOICE("Mouse", "wheel_enabled", "Mouse wheel", wheel_enabled, off_on),
     CHOICE(NULL, "wheel_reverse", "Wheel direction", wheel_reverse, wheel_dir),
@@ -111,8 +112,9 @@ static char const *const combo_buttons[SETTINGS_PAD_COMBO_BUTTONS + 1] = {
 };
 
 // the form's fields for a combo's outputs: c<slot><letter>, in pad.h's bit order
-static char const combo_letters[] = "udlrfgh";
-static char const *const combo_heads[] = { "&uarr;", "&darr;", "&larr;", "&rarr;", "F1", "F2", "F3" };
+// (the last is SETTINGS_PAD_COMBO_AUTO)
+static char const combo_letters[] = "udlrfgha";
+static char const *const combo_heads[] = { "&uarr;", "&darr;", "&larr;", "&rarr;", "F1", "F2", "F3", "&#8635;" };
 
 typedef struct {
     char const *name;
@@ -385,10 +387,11 @@ static void put_combos(writer_t *w, settings_t const *s, char const *at, char co
     put_profiles(w, s);
     put_group_foot(w, "combos", at, note);
     put(w, "<p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
-        "held together (a direction wins over the stick), and the key is down on the keyboard. The button "
-        "then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
+        "held together (a direction wins over the stick), and the key is down on the keyboard. With &#8635; "
+        "(auto) ticked the fire buttons and the key are pressed again and again instead, at the Autofire rate "
+        "(Pads). The button then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
-        "the list. A profile keeps the combos, Pad directions and Triangle button under a name: Save as "
+        "the list. A profile keeps the combos, Pad directions, Triangle button and Autofire rate under a name: Save as "
         "stores the whole form and the profile, Load puts a profile back. A profile for the Amiga or "
         "the C64 is offered in that mode only, and each mode comes back with the profile it had last."
         "</small></details>");

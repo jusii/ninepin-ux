@@ -40,6 +40,7 @@ typedef struct {
     pad_input_t input;
     uint16_t state;                 // digital, under the settings
     uint8_t keys[SETTINGS_PAD_COMBOS]; // the keys its held combo buttons stand for (0: none)
+    bool autofire;                  // it holds a combo button that fires by itself
     uint32_t home_since;            // 0: not held
     bool home_used;                 // this hold of home stepped the profile: no menu from it
     uint8_t home_dpad;              // the d-pad as it was, whilst home is held
@@ -63,6 +64,11 @@ static uint16_t sent_de9[PADS_PLAYERS];
 static pad_player_t sent_usb[PADS_PLAYERS];
 static bool usb_routed;
 static hid_keyboard_report_t sent_keys;
+
+// autofire: one beat for every pad, started afresh (pressed) by the first
+// button that wants it
+static bool autofire_on = true;
+static uint32_t autofire_at;
 
 void __attribute__((weak)) pads_output_de9(uint8_t player, uint16_t state)
 {
@@ -105,9 +111,10 @@ static uint8_t stick_directions(int8_t x, int8_t y)
 }
 
 /**
- * @param keys  the keys the held combo buttons stand for, a slot each (0: none)
+ * @param keys      the keys the held combo buttons stand for, a slot each (0: none)
+ * @param autofire  set if a held combo button fires by itself
  */
-static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COMBOS])
+static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COMBOS], bool *autofire)
 {
     settings_t const *s = settings_get();
     uint16_t state = 0;
@@ -123,10 +130,18 @@ static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COM
             continue;
         bit = (uint16_t)(1u << (c->button - 1));
         combo_buttons |= bit;
-        if (in->buttons & bit) {
-            combo |= c->outputs & SETTINGS_PAD_COMBO_OUTPUTS;
-            keys[i] = c->key;
+        if (!(in->buttons & bit))
+            continue;
+        if (c->outputs & SETTINGS_PAD_COMBO_AUTO) {
+            // its directions are held; its fire buttons and key go with the
+            // beat (held steady for the menu, which counts presses)
+            *autofire = true;
+            combo |= c->outputs & (PAD_UP | PAD_DOWN | PAD_LEFT | PAD_RIGHT);
+            if (!autofire_on && !menu_is_open())
+                continue;
         }
+        combo |= c->outputs & SETTINGS_PAD_COMBO_OUTPUTS;
+        keys[i] = c->key;
     }
 
     if (s->pad_directions != SETTINGS_PAD_DIR_STICK)
@@ -155,6 +170,14 @@ static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COM
     }
 
     return (uint16_t)(state | (combo & PAD_BUTTONS));
+}
+
+static bool autofire_held(void)
+{
+    for (unsigned i = 0; i < INPUT_BRIDGE_MAX_SLOTS; i++)
+        if (slots[i].present && slots[i].autofire)
+            return true;
+    return false;
 }
 
 static bool pad_holds_keys(pad_slot_t const *pad)
@@ -398,6 +421,7 @@ void pads_report(uint8_t slot, pad_input_t const *input)
 {
     pad_slot_t *pad;
     uint16_t before;
+    bool beating;
 
     if ((slot >= INPUT_BRIDGE_MAX_SLOTS) || !slots[slot].present || !input)
         return;
@@ -405,7 +429,16 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad = &slots[slot];
     before = pad->state;
     pad->input = *input;
-    pad->state = pad_digital(input, pad->keys);
+
+    // the first autofire button held anywhere starts the beat, pressed
+    beating = autofire_held();
+    pad->autofire = false;
+    pad->state = pad_digital(input, pad->keys, &pad->autofire);
+    if (pad->autofire && !beating) {
+        autofire_on = true;
+        autofire_at = now_ms();
+        pad->state = pad_digital(input, pad->keys, &pad->autofire);
+    }
     latest_slot = slot;
 
     // home held: open the menu (pads_task() times it), or with the d-pad left
@@ -424,6 +457,7 @@ void pads_report(uint8_t slot, pad_input_t const *input)
             pad->home_since = now_ms();
         if (!menu_is_open()) {
             pad->state = 0;
+            pad->autofire = false;
             memset(pad->keys, 0, sizeof(pad->keys));
         }
     } else {
@@ -435,7 +469,7 @@ void pads_report(uint8_t slot, pad_input_t const *input)
     pad_menu(slot, before, pad->state);
 
     // a pad let go of everything leaves quarantine
-    if (pad->quarantine && !pad->state && !input->home && !pad_holds_keys(pad))
+    if (pad->quarantine && !pad->state && !pad->autofire && !input->home && !pad_holds_keys(pad))
         pad->quarantine = false;
 
     // the touchpad as a mouse, through the same path as any mouse
@@ -473,6 +507,19 @@ void pads_task(void)
             && ((uint32_t)(now - slots[i].home_since) >= PADS_MENU_HOLD_MS)) {
             slots[i].home_since = 0;
             menu_input(MENU_IN_OPEN);
+        }
+    }
+
+    // the autofire beat: the pads holding such a button are worked out again
+    if (autofire_held() && ((uint32_t)(now - autofire_at) >= settings_autofire_half_ms())) {
+        autofire_at = now;
+        autofire_on = !autofire_on;
+        for (unsigned i = 0; i < INPUT_BRIDGE_MAX_SLOTS; i++) {
+            bool held = false;
+
+            if (!slots[i].present || !slots[i].autofire)
+                continue;
+            slots[i].state = pad_digital(&slots[i].input, slots[i].keys, &held);
         }
     }
 

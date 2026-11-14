@@ -63,6 +63,16 @@ enum settings_pad_triangle {
     SETTINGS_PAD_TRIANGLE_COUNT
 };
 
+// shots a second from an autofire button
+enum settings_pad_autofire {
+    SETTINGS_PAD_AUTOFIRE_5 = 0,
+    SETTINGS_PAD_AUTOFIRE_8,
+    SETTINGS_PAD_AUTOFIRE_10,       // the default, and what flash holds as 0
+    SETTINGS_PAD_AUTOFIRE_15,
+    SETTINGS_PAD_AUTOFIRE_20,
+    SETTINGS_PAD_AUTOFIRE_COUNT
+};
+
 // usb/bt keyboard -> amiga
 enum settings_kb_preset {
     SETTINGS_KB_PRESET_ORIGINAL = 0,
@@ -135,6 +145,7 @@ enum settings_display {
 #define SETTINGS_PAD_PROFILES       32  // profiles.h
 #define SETTINGS_PAD_COMBO_BUTTONS  16  // a pad's own buttons 1..16
 #define SETTINGS_PAD_COMBO_OUTPUTS  0x7fu // up down left right, fire 1 2 3 (pad.h's bits)
+#define SETTINGS_PAD_COMBO_AUTO     0x80u // the row's fire buttons and key pulse whilst held
 
 #define SETTINGS_WIFI_SSID_LEN      33  // 32 + nul
 #define SETTINGS_WIFI_PASSWORD_LEN  64  // 63 + nul (wpa2 passphrase)
@@ -149,7 +160,7 @@ typedef struct {
 // and / or a keyboard key
 typedef struct {
     uint8_t button;                 // the pad's own button 1..16; 0: slot unused
-    uint8_t outputs;                // PAD_UP .. PAD_FIRE3 (pad.h)
+    uint8_t outputs;                // PAD_UP .. PAD_FIRE3 (pad.h), SETTINGS_PAD_COMBO_AUTO
     uint8_t key;                    // hid keyboard usage; 0: none
 } settings_combo_t;
 
@@ -204,7 +215,9 @@ typedef struct {
     uint8_t pad_profile;                            // the pad profile loaded last, 1..32; 0: none
     uint8_t pad_profile_mode[SETTINGS_MODE_COUNT];  // the same, as each mode had it last (profiles.c)
 
-    uint8_t reserved[3];                            // zero; pads the struct to 224 bytes
+    uint8_t pad_autofire;                           // enum settings_pad_autofire
+
+    uint8_t reserved[2];                            // zero; pads the struct to 224 bytes
 } settings_t;
 
 /**
@@ -245,6 +258,11 @@ settings_t const *settings_get(void);
  * @return true if stored (or already stored) and applied
  */
 bool settings_save(settings_t const *settings);
+
+/**
+ * @return half an autofire period in ms, at the rate in effect
+ */
+unsigned settings_autofire_half_ms(void);
 
 /**
  * @return a count of the successful settings_save() calls since boot, stored

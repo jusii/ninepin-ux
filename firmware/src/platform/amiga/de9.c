@@ -30,7 +30,6 @@
 #include "util/run_mode.h"
 
 #define DE9_PORTS           2
-#define DE9_AUTOFIRE_MS     50      // half a period: 10 shots a second
 
 // 1351: the sid reads 64 + 2 * (position & 63), plus the 256 us of discharge
 #define C64_POT_DISCHARGE_US    256
@@ -442,7 +441,7 @@ void de9_task(void)
     if (!yellow || (settings_get()->pad_triangle != SETTINGS_PAD_TRIANGLE_AUTOFIRE))
         return;
 
-    if ((uint32_t)(now - autofire_at) < DE9_AUTOFIRE_MS)
+    if ((uint32_t)(now - autofire_at) < settings_autofire_half_ms())
         return;
 
     autofire_at = now;

@@ -6,7 +6,7 @@
  * please find the complete license text at https://spdx.org/licenses/EPL-2.0
  *
  * pad profiles: named copies of the pad settings a game wants (the combos,
- * the triangle button, the directions), kept in their own flash sectors
+ * the triangle button, the directions, the autofire rate), kept in their own flash sectors
  * (flash_map.h). a profile is a copy and nothing more: loading one writes it
  * into the settings, which stay what the pads go by; settings_t.pad_profile
  * remembers which one that was.
@@ -37,6 +37,8 @@ typedef struct {
     uint8_t pad_directions;
     settings_combo_t combo[SETTINGS_PAD_COMBOS];
     uint8_t machine;                // PROFILE_FOR_*
+    uint8_t pad_autofire;
+    uint8_t reserved[2];            // zero
 } profile_t;
 
 /**

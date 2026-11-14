@@ -24,10 +24,10 @@
 #include "flash_map.h"
 
 #define PROFILES_MAGIC  0x50484141u     // "AAHP"
-#define PROFILES_SCHEMA 2u
+#define PROFILES_SCHEMA 3u
 
 // schema 1: 16 profiles without the machine tag. read once and carried over
-// (as "any"); the next store writes schema 2
+// (as "any"); the next store writes the schema of the day
 #define PROFILES_V1_MAX 16u
 
 typedef struct {
@@ -45,6 +45,25 @@ typedef struct {
     profile_v1_t table[PROFILES_V1_MAX];
     uint32_t crc;
 } profiles_record_v1_t;
+
+// schema 2: 32 profiles without the autofire rate. carried over the same way,
+// at the rate there was then (10 a second)
+typedef struct {
+    char name[PROFILE_NAME_LEN];
+    uint8_t pad_triangle;
+    uint8_t pad_directions;
+    settings_combo_t combo[SETTINGS_PAD_COMBOS];
+    uint8_t machine;
+} profile_v2_t;
+
+typedef struct {
+    uint32_t magic;
+    uint32_t schema;
+    uint32_t length;
+    uint32_t sequence;
+    profile_v2_t table[PROFILES_MAX];
+    uint32_t crc;
+} profiles_record_v2_t;
 
 typedef struct {
     uint32_t magic;
@@ -108,11 +127,11 @@ static bool profile_valid(profile_t const *profile)
     if (!memchr(profile->name, 0, sizeof(profile->name)) || !profiles_name_ok(profile->name))
         return false;
     if ((profile->pad_triangle >= SETTINGS_PAD_TRIANGLE_COUNT) || (profile->pad_directions >= SETTINGS_PAD_DIR_COUNT)
-        || (profile->machine >= PROFILE_FOR_COUNT))
+        || (profile->machine >= PROFILE_FOR_COUNT) || (profile->pad_autofire >= SETTINGS_PAD_AUTOFIRE_COUNT)
+        || profile->reserved[0] || profile->reserved[1])
         return false;
     for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++)
-        if ((profile->combo[i].button > SETTINGS_PAD_COMBO_BUTTONS)
-            || (profile->combo[i].outputs & (uint8_t)~SETTINGS_PAD_COMBO_OUTPUTS))
+        if (profile->combo[i].button > SETTINGS_PAD_COMBO_BUTTONS)
             return false;
     return true;
 }
@@ -144,6 +163,30 @@ static bool record_v1(profiles_record_v1_t const *old, profile_t out[PROFILES_MA
         out[i].pad_directions = old->table[i].pad_directions;
         memcpy(out[i].combo, old->table[i].combo, sizeof(out[i].combo));
         out[i].machine = PROFILE_FOR_ANY;
+        out[i].pad_autofire = SETTINGS_PAD_AUTOFIRE_10;
+        if (!profile_valid(&out[i]))
+            return false;
+    }
+    return true;
+}
+
+/**
+ * the same for a schema 2 record
+ */
+static bool record_v2(profiles_record_v2_t const *old, profile_t out[PROFILES_MAX])
+{
+    if ((old->magic != PROFILES_MAGIC) || (old->schema != 2u) || (old->length != sizeof(old->table))
+        || (old->crc != bytes_crc((uint8_t const *)old, offsetof(profiles_record_v2_t, crc))))
+        return false;
+
+    memset(out, 0, sizeof(profile_t) * PROFILES_MAX);
+    for (unsigned i = 0; i < PROFILES_MAX; i++) {
+        memcpy(out[i].name, old->table[i].name, sizeof(out[i].name));
+        out[i].pad_triangle = old->table[i].pad_triangle;
+        out[i].pad_directions = old->table[i].pad_directions;
+        memcpy(out[i].combo, old->table[i].combo, sizeof(out[i].combo));
+        out[i].machine = old->table[i].machine;
+        out[i].pad_autofire = SETTINGS_PAD_AUTOFIRE_10;
         if (!profile_valid(&out[i]))
             return false;
     }
@@ -154,8 +197,9 @@ void profiles_init(void)
 {
     static profiles_record_t record;    // too large for an early stack
     static profiles_record_v1_t old;
+    static profiles_record_v2_t old2;
     static profile_t carried[PROFILES_MAX];
-    bool current = false;               // a schema 2 record was found
+    bool current = false;               // a record of this schema was found
 
     memset(table, 0, sizeof(table));
     current_bank = -1;
@@ -167,7 +211,8 @@ void profiles_init(void)
         if (!record_valid(&record)) {
             // an older firmware's record, only whilst there is nothing newer
             memcpy(&old, bank_record(bank), sizeof(old));
-            if (!current && record_v1(&old, carried)
+            memcpy(&old2, bank_record(bank), sizeof(old2));
+            if (!current && (record_v2(&old2, carried) || record_v1(&old, carried))
                 && ((current_bank < 0) || ((int32_t)(old.sequence - current_sequence) > 0))) {
                 current_bank = (int)bank;
                 current_sequence = old.sequence;
@@ -270,6 +315,7 @@ void profiles_from_settings(profile_t *profile, char const *name, uint8_t machin
     strncpy(profile->name, name, sizeof(profile->name) - 1);
     profile->pad_triangle = settings->pad_triangle;
     profile->pad_directions = settings->pad_directions;
+    profile->pad_autofire = settings->pad_autofire;
     memcpy(profile->combo, settings->pad_combo, sizeof(profile->combo));
 }
 
@@ -277,6 +323,7 @@ void profiles_to_settings(profile_t const *profile, settings_t *settings)
 {
     settings->pad_triangle = profile->pad_triangle;
     settings->pad_directions = profile->pad_directions;
+    settings->pad_autofire = profile->pad_autofire;
     memcpy(settings->pad_combo, profile->combo, sizeof(settings->pad_combo));
 }
 
@@ -284,6 +331,7 @@ bool profiles_matches(profile_t const *profile, settings_t const *settings)
 {
     return (profile->pad_triangle == settings->pad_triangle)
         && (profile->pad_directions == settings->pad_directions)
+        && (profile->pad_autofire == settings->pad_autofire)
         && (memcmp(profile->combo, settings->pad_combo, sizeof(profile->combo)) == 0);
 }
 

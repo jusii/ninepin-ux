@@ -69,6 +69,7 @@ void settings_defaults(settings_t *settings)
     settings->pad_deadzone = 1;                         // 50 %
     settings->pad_directions = SETTINGS_PAD_DIR_BOTH;
     settings->pad_triangle = SETTINGS_PAD_TRIANGLE_UP;
+    settings->pad_autofire = SETTINGS_PAD_AUTOFIRE_10;
     settings->pad_touchpad = 1;
 
     settings->kb_preset = SETTINGS_KB_PRESET_ORIGINAL;
@@ -137,7 +138,7 @@ bool settings_valid(settings_t const *s)
 
     for (unsigned i = 0; i < SETTINGS_PAD_COMBOS; i++)
         if ((s->pad_combo[i].button > SETTINGS_PAD_COMBO_BUTTONS)
-            || (s->pad_combo[i].outputs & (uint8_t)~SETTINGS_PAD_COMBO_OUTPUTS))
+            || (s->pad_combo[i].outputs & (uint8_t)~(SETTINGS_PAD_COMBO_OUTPUTS | SETTINGS_PAD_COMBO_AUTO)))
             return false;
 
     for (unsigned i = 0; i < sizeof(s->reserved); i++)
@@ -149,6 +150,7 @@ bool settings_valid(settings_t const *s)
         && (s->pad_deadzone < SETTINGS_DEADZONE_COUNT)
         && (s->pad_directions < SETTINGS_PAD_DIR_COUNT)
         && (s->pad_triangle < SETTINGS_PAD_TRIANGLE_COUNT)
+        && (s->pad_autofire < SETTINGS_PAD_AUTOFIRE_COUNT)
         && (s->kb_preset < SETTINGS_KB_PRESET_COUNT) && (s->kb_help < SETTINGS_KB_HELP_COUNT)
         && (s->kb_delete < SETTINGS_KB_DELETE_COUNT) && (s->kb_iso < SETTINGS_KB_ISO_COUNT)
         && remaps_ok(s->kb_remap)
@@ -189,6 +191,29 @@ static settings_record_t const *bank_record(unsigned bank)
     return (settings_record_t const *)(SETTINGS_READ_BASE + SETTINGS_FLASH_OFFSET + bank * FLASH_SECTOR_SIZE);
 }
 
+// the autofire rate took a byte older firmware wrote as zero, and holds as
+// zero still: in flash 0 is the default (10 a second), so a record from
+// before the setting reads right and one with the default suits older firmware
+static uint8_t const autofire_from_flash[SETTINGS_PAD_AUTOFIRE_COUNT] = {
+    SETTINGS_PAD_AUTOFIRE_10, SETTINGS_PAD_AUTOFIRE_5, SETTINGS_PAD_AUTOFIRE_8,
+    SETTINGS_PAD_AUTOFIRE_15, SETTINGS_PAD_AUTOFIRE_20,
+};
+
+static uint8_t autofire_to_flash(uint8_t value)
+{
+    for (uint8_t i = 0; i < SETTINGS_PAD_AUTOFIRE_COUNT; i++)
+        if (autofire_from_flash[i] == value)
+            return i;
+    return 0;
+}
+
+unsigned settings_autofire_half_ms(void)
+{
+    static uint8_t const rates[SETTINGS_PAD_AUTOFIRE_COUNT] = { 5, 8, 10, 15, 20 };
+
+    return 500u / rates[active.pad_autofire % SETTINGS_PAD_AUTOFIRE_COUNT];
+}
+
 static bool record_decode(settings_record_t const *stored, settings_t *settings)
 {
     settings_record_t record;
@@ -199,6 +224,10 @@ static bool record_decode(settings_record_t const *stored, settings_t *settings)
     if ((record.magic != SETTINGS_MAGIC) || (record.schema != SETTINGS_SCHEMA)
         || (record.length != sizeof(settings_t)) || (record.crc != record_crc(&record)))
         return false;
+
+    if (record.values.pad_autofire >= SETTINGS_PAD_AUTOFIRE_COUNT)
+        return false;
+    record.values.pad_autofire = autofire_from_flash[record.values.pad_autofire];
 
     if (!settings_valid(&record.values))
         return false;
@@ -299,6 +328,7 @@ bool settings_save(settings_t const *given)
     record.length = sizeof(settings_t);
     record.sequence = current_sequence + 1u;
     record.values = *settings;
+    record.values.pad_autofire = autofire_to_flash(settings->pad_autofire);
     record.crc = record_crc(&record);
 
     write.offset = SETTINGS_FLASH_OFFSET + bank * FLASH_SECTOR_SIZE;

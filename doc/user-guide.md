@@ -77,6 +77,7 @@ the setting visited last. Defaults in **bold**.
 * Pad directions: **d-pad + stick**, d-pad, stick
 * Stick deadzone: 25%, **50%**, 75%
 * Triangle button: **up (jump)**, autofire, off
+* Autofire rate: 5, 8, **10**, 15, 20 a second (Triangle = autofire, and combos with ↻ ticked)
 * Touchpad mouse: off, **on** (DualSense touchpad moves the pointer, left / right half clicks)
 
 **Mouse ›**
@@ -137,6 +138,8 @@ held together, a keyboard key, or both. Example: R1 = down + fire 1 (the bomb in
 L2 = space.
 
 * A combo's direction wins over the stick; the pad button no longer does what it did.
+* ↻ (auto) ticked: whilst the button is held its fire buttons and key are pressed again and again
+  at the Autofire rate (Pads); its directions stay held. Example: R2 = fire 1 with ↻.
 * Directions and fire go to the DE9 ports. The key goes wherever keyboards go, in every mode.
 * Button names are a PlayStation pad's. For other pads, hold the button and reload the page:
   Status shows its number.
@@ -146,7 +149,7 @@ L2 = space.
 
 ### profiles
 
-A profile keeps the combos, Pad directions and Triangle button under a name (up to 32 profiles,
+A profile keeps the combos, Pad directions, Triangle button and Autofire rate under a name (up to 32 profiles,
 names up to 12 characters), one per game.
 
 * Page: type a name, Save as profile (stores the whole form too); Load and Delete for saved ones.

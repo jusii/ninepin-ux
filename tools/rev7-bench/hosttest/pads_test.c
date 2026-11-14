@@ -15,6 +15,8 @@ uint64_t fake_now_us = 1000000;
 static settings_t s;
 settings_t const *settings_get(void) { return &s; }
 void ahprintf(const char *f, ...) { (void)f; }
+static unsigned autofire_half = 50;
+unsigned settings_autofire_half_ms(void) { return autofire_half; }
 static bool menu_open;
 bool menu_is_open(void) { return menu_open; }
 static int menu_opens;
@@ -73,6 +75,28 @@ int main(void)
     // home alone, held, still opens the menu
     in.home = true; pads_report(0, &in); fake_now_us += 2000000; pads_task(); assert(menu_opens == 1 && steps == 2);
     in.home = false; pads_report(0, &in);
+    in.buttons = 1u << 6; pads_report(0, &in);
+    in.buttons = 0; pads_report(0, &in);
+    // autofire: r1 -> down held, fire and the key in a beat of 50 ms (10 a second), pressed first
+    memset(s.pad_combo, 0, sizeof(s.pad_combo));
+    s.pad_combo[0] = (settings_combo_t){ 6, PAD_DOWN | PAD_FIRE | SETTINGS_PAD_COMBO_AUTO, 0x2c };
+    { int k = kb_reports;
+    in.buttons = 1u << 5; pads_report(0, &in); assert(de9[0] == (PAD_DOWN | PAD_FIRE) && kb.keycode[0] == 0x2c);
+    fake_now_us += 20000; pads_task(); assert(de9[0] == (PAD_DOWN | PAD_FIRE));
+    fake_now_us += 40000; pads_task(); assert(de9[0] == PAD_DOWN && kb.keycode[0] == 0);
+    pads_report(0, &in); assert(de9[0] == PAD_DOWN);          // a report in the gap does not press it
+    fake_now_us += 50000; pads_task(); assert(de9[0] == (PAD_DOWN | PAD_FIRE) && kb.keycode[0] == 0x2c);
+    assert(kb_reports == k + 3);
+    // the faster rate
+    autofire_half = 25; fake_now_us += 25000; pads_task(); assert(de9[0] == PAD_DOWN);
+    // let go in the gap and pressed again: it starts pressed
+    in.buttons = 0; pads_report(0, &in); assert(de9[0] == 0);
+    in.buttons = 1u << 5; pads_report(0, &in); assert(de9[0] == (PAD_DOWN | PAD_FIRE));
+    // in the menu it is held steady
+    menu_open = true; fake_now_us += 30000; pads_task(); fake_now_us += 30000; pads_task();
+    menu_open = false; in.buttons = 0; pads_report(0, &in); assert(de9[0] == 0);
+    }
+    s.pad_combo[0] = (settings_combo_t){ 7, 0, 0x2c };
     in.buttons = 1u << 6; pads_report(0, &in);
     // unplugged with the key down
     pads_disconnected(0); assert(kb.keycode[0] == 0);

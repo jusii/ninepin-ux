@@ -442,6 +442,13 @@ int main(void)
         assert(submitted.pad_combo[3].button == 16 && submitted.pad_combo[3].key == 0x64);
         assert(submitted.pad_combo[4].button == 1 && submitted.pad_combo[4].key == 0x14);
         assert(submitted.pad_combo[5].button == 0 && submitted.pad_combo[5].key == 0);
+        // the auto tick and the rate
+        snprintf(body, sizeof(body), "t=%s&combos=1&c1b=6&c1f=1&c1a=1&pad_autofire=4", token);
+        snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
+        { settings_t keep = submitted;
+        request(req, 1000, 303, "");
+        assert(submitted.pad_combo[0].outputs == (0x10 | SETTINGS_PAD_COMBO_AUTO) && submitted.pad_autofire == SETTINGS_PAD_AUTOFIRE_20);
+        submitted = keep; }
         snprintf(body, sizeof(body), "t=%s&combos=1&c1b=17", token);
         snprintf(req, sizeof(req), "POST /settings HTTP/1.1\r\nContent-Length: %zu\r\n\r\n%s", strlen(body), body);
         request(req, 1000, 400, "no such pad button");
@@ -492,6 +499,33 @@ int main(void)
                 // the same mode: just noted
                 was = current; next = was; next.pad_profile = 3; profiles_follow_mode(&next, &was);
                 assert(next.pad_profile_mode[was.mode] == 3);
+            }
+            memset(fake_flash, 0xff, sizeof(fake_flash));
+        }
+        {
+            // a record as the 32-slot firmware before the autofire rate wrote it: carried over, machine kept, 10 a second
+            static uint8_t old[16 + 32 * 34 + 4]; uint32_t head[4] = { 0x50484141u, 2, 32 * 34, 9 }, crc = UINT32_MAX;
+            memset(old, 0, sizeof(old)); memcpy(old, head, 16);
+            strcpy((char *)old + 16 + 5 * 34, "Two"); old[16 + 5 * 34 + 13] = 1; old[16 + 5 * 34 + 15] = 6; old[16 + 5 * 34 + 16] = 0x12;
+            old[16 + 5 * 34 + 33] = PROFILE_FOR_C64;
+            for (size_t k = 0; k < sizeof(old) - 4; k++) { crc ^= old[k]; for (int b = 0; b < 8; b++) crc = (crc >> 1) ^ ((crc & 1u) ? 0xedb88320u : 0); }
+            crc = ~crc; memcpy(old + sizeof(old) - 4, &crc, 4);
+            memcpy(fake_flash + FLASH_MAP_PROFILES_OFFSET, old, sizeof(old));
+            profiles_init();
+            assert(profiles_count() == 1 && profiles_find("Two") == 5 && profiles_get(5)->machine == PROFILE_FOR_C64);
+            assert(profiles_get(5)->pad_triangle == 1 && profiles_get(5)->combo[0].outputs == 0x12
+                && profiles_get(5)->pad_autofire == SETTINGS_PAD_AUTOFIRE_10);
+            {
+                // a profile carries the rate and the auto tick there and back
+                settings_t with = current, back = current; profile_t fresh;
+                with.pad_autofire = SETTINGS_PAD_AUTOFIRE_20; with.pad_combo[0] = (settings_combo_t){ 6, 0x90, 0 };
+                profiles_from_settings(&fresh, "Fast", PROFILE_FOR_ANY, &with);
+                assert(profiles_put(&fresh) == 0);
+                profiles_init();
+                assert(profiles_count() == 2 && profiles_find("Two") == 5);
+                profiles_to_settings(profiles_get(0), &back);
+                assert(back.pad_autofire == SETTINGS_PAD_AUTOFIRE_20 && back.pad_combo[0].outputs == 0x90 && profiles_matches(profiles_get(0), &with)
+                    && !profiles_matches(profiles_get(0), &current));
             }
             memset(fake_flash, 0xff, sizeof(fake_flash));
         }
