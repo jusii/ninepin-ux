@@ -13,7 +13,7 @@ Originally based on [borb/amigahid-pico](https://github.com/borb/amigahid-pico).
 
 | board | what | state |
 |---|---|---|
-| **rev7.1** (`hardware/rev7.1/`) | rev7 + a reset supervisor on RUN (cold-plug fix) | current design, not yet built |
+| **rev7.1** (`hardware/rev7.1/`) | rev7 + a reset supervisor on RUN (cold-plug fix) | current design, ordered |
 | rev7 (tag `hw/ux-rev7`) | RP2350A + RM2 radio chip-down, 4 layers, 100 x 62 mm | built; needs the RUN bodge ([errata](./doc/errata.md)) |
 
 rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [history](./doc/history.md).
