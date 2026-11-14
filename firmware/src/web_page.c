@@ -66,6 +66,7 @@ static const web_choice_t choices[] = {
     CHOICE(NULL, "pad_triangle", "Triangle button", pad_triangle, triangle),
     CHOICE(NULL, "pad_autofire", "Autofire rate", pad_autofire, autofire),
     CHOICE(NULL, "pad_touchpad", "Touchpad mouse", pad_touchpad, off_on),
+    CHOICE(NULL, "pad_names", "Pad names", pad_names, pad_names),
     CHOICE("Mouse", "wheel_enabled", "Mouse wheel", wheel_enabled, off_on),
     CHOICE(NULL, "wheel_reverse", "Wheel direction", wheel_reverse, wheel_dir),
     CHOICE(NULL, "mouse_speed", "Mouse speed", mouse_speed, mouse_speed),
@@ -105,11 +106,38 @@ void web_page_init(void)
 // the pad combos: buttons and keys by name
 //--------------------------------------------------------------------+
 
-// a pad's own buttons; the names are the playstation pads' (ds5.c, bt_ds4.c)
-static char const *const combo_buttons[SETTINGS_PAD_COMBO_BUTTONS + 1] = {
-    "-", "1 square", "2 cross", "3 circle", "4 triangle", "5 L1", "6 R1", "7 L2", "8 R2",
-    "9 create", "10 options", "11 L3", "12 R3", "13 PS", "14 touchpad", "15 mute", "16",
+// a pad's buttons by their place, numbered as the playstation pads number
+// them (ds5.c, bt_ds4.c), and what each family calls the button there. a pad
+// read by its own descriptor has its own numbers: for that one, numbers
+static char const *const combo_buttons[][SETTINGS_PAD_COMBO_BUTTONS] = {
+    { "square", "cross", "circle", "triangle", "L1", "R1", "L2", "R2",
+      "create", "options", "L3", "R3", "PS", "touchpad", "mute", "" },
+    { "X", "A", "B", "Y", "LB", "RB", "LT", "RT",
+      "view", "menu", "LS", "RS", "Xbox", "", "share", "" },
+    { "Y", "B", "A", "X", "L", "R", "ZL", "ZR",
+      "minus", "plus", "L stick", "R stick", "home", "capture", "", "" },
+    { "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "" },
 };
+
+/**
+ * @return the row of combo_buttons the page uses: the setting's, or with
+ *         "automatic" the first player's pad's (a playstation pad's with none)
+ */
+static unsigned button_names(settings_t const *s)
+{
+    pad_player_t const *p;
+
+    if (s->pad_names != SETTINGS_PAD_NAMES_AUTO)
+        return (unsigned)(s->pad_names - 1u) % 4u;
+
+    for (uint8_t player = 0; player < 2; player++) {
+        p = pads_player(player);
+        if (p && p->active)
+            return (strstr(p->name, "Dual") || strstr(p->name, "DS4") || strstr(p->name, "PlayStation")
+                || strstr(p->name, "PS3")) ? 0 : 3;
+    }
+    return 0;
+}
 
 // the form's fields for a combo's outputs: c<slot><letter>, in pad.h's bit order
 // (the last is SETTINGS_PAD_COMBO_AUTO)
@@ -360,6 +388,7 @@ static void put_group_foot(writer_t *w, char const *id, char const *at, char con
 static void put_combos(writer_t *w, settings_t const *s, char const *at, char const *note)
 {
     char buf[8];
+    char const *const *names = combo_buttons[button_names(s)];
 
     put(w, "<details open id=combos><summary>Pad button combos</summary><input type=hidden name=combos value=1>"
         "<table class=c><tr><th style=width:30%%>Button");
@@ -371,8 +400,9 @@ static void put_combos(writer_t *w, settings_t const *s, char const *at, char co
         settings_combo_t const *c = &s->pad_combo[i];
 
         put(w, "<tr><td><select name=c%ub>", i + 1);
-        for (unsigned b = 0; b <= SETTINGS_PAD_COMBO_BUTTONS; b++)
-            put(w, "<option value=%u%s>%s", b, (b == c->button) ? " selected" : "", combo_buttons[b]);
+        put(w, "<option value=0%s>-", c->button ? "" : " selected");
+        for (unsigned b = 1; b <= SETTINGS_PAD_COMBO_BUTTONS; b++)
+            put(w, "<option value=%u%s>%u %s", b, (b == c->button) ? " selected" : "", b, names[b - 1]);
         put(w, "</select>");
         for (size_t o = 0; o < sizeof(combo_letters) - 1; o++)
             put(w, "<td><input type=checkbox name=c%u%c value=1%s>", i + 1, combo_letters[o],
@@ -389,7 +419,8 @@ static void put_combos(writer_t *w, settings_t const *s, char const *at, char co
     put(w, "<p><small>Whilst the pad button is held, the ticked directions and fire buttons are "
         "held together (a direction wins over the stick), and the key is down on the keyboard. With &#8635; "
         "(auto) ticked the fire buttons and the key are pressed again and again instead, at the Autofire rate "
-        "(Pads). The button then no longer does what it did. Button names are a PlayStation pad's; on other pads, hold a "
+        "(Pads). The button then no longer does what it did. A button goes by its number; the names beside the numbers "
+        "are those of the pad in use, or what Pad names (Pads) says. On a pad of another make, hold a "
         "button and reload: Status shows its number. Keys: a letter, a digit, f1 to f12, or a name from "
         "the list. A profile keeps the combos, Pad directions, Triangle button and Autofire rate under a name: Save as "
         "stores the whole form and the profile, Load puts a profile back. A profile for the Amiga or "

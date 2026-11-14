@@ -129,6 +129,7 @@ static const menu_item_t items[] = {
     CHOICE(G_PADS, "Triangle button",   pad_triangle,   names_triangle,     NULL),
     CHOICE(G_PADS, "Autofire rate",     pad_autofire,   names_autofire,     NULL),
     CHOICE(G_PADS, "Touchpad mouse",    pad_touchpad,   names_off_on,       NULL),
+    CHOICE(G_PADS, "Pad names",         pad_names,      names_pad_names,    NULL),
 
     CHOICE(G_MOUSE, "Mouse wheel",      wheel_enabled,  names_off_on,       NULL),
     CHOICE(G_MOUSE, "Wheel direction",  wheel_reverse,  names_wheel_dir,    NULL),

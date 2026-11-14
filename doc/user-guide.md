@@ -84,6 +84,8 @@ the setting visited last. Defaults in **bold**.
 * Triangle button: **up (jump)**, autofire, off
 * Autofire rate: 5, 8, **10**, 15, 20 a second (Triangle = autofire, and combos with ↻ ticked)
 * Touchpad mouse: off, **on** (DualSense touchpad moves the pointer, left / right half clicks)
+* Pad names: **automatic**, PlayStation, Xbox, Switch, numbers (the button names in the pad
+  button combos on the page)
 
 **Mouse ›**
 * Mouse wheel: off, **on** (TankMouse / Cocolino protocol)
@@ -149,8 +151,9 @@ L2 = space.
 * ↻ (auto) ticked: whilst the button is held its fire buttons and key are pressed again and again
   at the Autofire rate (Pads); its directions stay held. Example: R2 = fire 1 with ↻.
 * Directions and fire go to the DE9 ports. The key goes wherever keyboards go, in every mode.
-* Button names are a PlayStation pad's. For other pads, hold the button and reload the page:
-  Status shows its number.
+* A button goes by its number (a PlayStation pad's numbering). The names beside the numbers are
+  the connected pad's, or as Pad names (Pads) says: PlayStation, Xbox, Switch, numbers. For a pad
+  of another make, hold the button and reload the page: Status shows its number.
 * Keys: a letter, a digit, `f1`-`f12`, or `space enter esc backspace tab up down left right del
   insert home end pgup pgdn lshift rshift lctrl lalt ralt lgui rgui capslock minus equals comma
   period slash`.

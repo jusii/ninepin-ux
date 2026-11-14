@@ -74,6 +74,18 @@ enum settings_pad_autofire {
     SETTINGS_PAD_AUTOFIRE_COUNT
 };
 
+// the names the page gives a pad's buttons. a combo goes by the button's
+// place on the pad (numbered as a playstation pad numbers them), so the names
+// are only names
+enum settings_pad_names {
+    SETTINGS_PAD_NAMES_AUTO = 0,    // the connected pad's; a playstation pad's with none
+    SETTINGS_PAD_NAMES_PLAYSTATION,
+    SETTINGS_PAD_NAMES_XBOX,
+    SETTINGS_PAD_NAMES_SWITCH,
+    SETTINGS_PAD_NAMES_NUMBERS,
+    SETTINGS_PAD_NAMES_COUNT
+};
+
 // usb/bt keyboard -> amiga
 enum settings_kb_preset {
     SETTINGS_KB_PRESET_ORIGINAL = 0,
@@ -218,7 +230,9 @@ typedef struct {
 
     uint8_t pad_autofire;                           // enum settings_pad_autofire
 
-    uint8_t reserved[2];                            // zero; pads the struct to 224 bytes
+    uint8_t pad_names;                              // enum settings_pad_names
+
+    uint8_t reserved[1];                            // zero; pads the struct to 224 bytes
 } settings_t;
 
 /**
