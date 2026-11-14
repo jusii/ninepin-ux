@@ -27,11 +27,11 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
 * **USB host** (USB-A, hubs): keyboards, mice, game controllers.
 * **Bluetooth** (RM2 / CYW43439): Classic and LE keyboards, mice and controllers.
 * **Game controllers:** PS5 DualSense (USB, Bluetooth), PS4 DualShock 4 (Bluetooth), PS3
-  DualShock 3 (USB), generic HID pads. Two players, swap, merge, deadzone, autofire, DualSense
-  touchpad as mouse.
+  DualShock 3 (USB), generic HID pads. Two players, swap, merge, deadzone, autofire on any button, pad
+  battery on the display, DualSense touchpad as mouse.
 * **Pad combos and profiles:** a pad button stands for directions and fire held together, a
   keyboard key, or both; 32 named profiles, each for the Amiga, the C64 or both, switched from
-  the page, the menu or the pad.
+  the page, the menu or the pad, and kept or shared as text files ([ready-made ones](./profiles/)).
 * **Three modes:** `amiga` (keyboards to the Amiga, mouse and pads to the DE9 ports), `c64`
   (keyboard and mouse to USB-C, pads to the DE9 ports), `usb` (everything, the Amiga keyboard
   included, to USB-C for a PC or Mac).
@@ -43,6 +43,7 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
   PlayStation pad or the console.
 * **Wi-Fi:** access point or joins a network; settings page (no JavaScript) with every menu
   setting, a log-in with the page password, the board's uptime and why it last restarted.
+* **Type text:** paste text on the page and the board types it on the Amiga, C64 Ultimate or PC.
 * **Network control:** a subset of the PiKVM `kvmd` HTTP API (keys, text in six keymaps, mouse).
 * **Firmware updates:** A/B slots with rollback; from the latest signed release on GitHub when
   asked, or a file uploaded on the settings page; with or without a press of BOOT on the board.
