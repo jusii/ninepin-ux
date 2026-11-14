@@ -46,6 +46,7 @@ enum settings_c64_port {
     SETTINGS_C64_PORT_JOYSTICK = 0,
     SETTINGS_C64_PORT_1351,
     SETTINGS_C64_PORT_OFF,
+    SETTINGS_C64_PORT_PADDLES,      // a pair of paddles (after off: stored values stay)
     SETTINGS_C64_PORT_COUNT
 };
 

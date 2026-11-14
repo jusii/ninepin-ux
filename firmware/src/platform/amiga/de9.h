@@ -55,8 +55,8 @@ void de9_task(void);
 void de9_describe(void);
 
 /**
- * @return true if a port is a 1351 in the given stored settings (the mouse then
- *         goes there in c64 mode rather than to usb)
+ * @return true if a port is a 1351 or paddles in the stored settings (the
+ *         mouse then goes there in c64 mode rather than to usb)
  */
 bool de9_c64_has_1351(void);
 

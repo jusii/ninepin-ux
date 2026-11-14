@@ -42,9 +42,11 @@ typedef enum {
     ROLE_CD32,                      // amiga cd32 pad
     ROLE_C64_JOYSTICK,
     ROLE_C64_1351,
+    ROLE_C64_PADDLES,
 } de9_role_t;
 
-static char const *const role_names[] = { "off", "mouse", "joystick", "cd32 pad", "c64 joystick", "1351 mouse" };
+static char const *const role_names[] = { "off", "mouse", "joystick", "cd32 pad", "c64 joystick", "1351 mouse",
+    "c64 paddles" };
 
 typedef struct {
     uint8_t up, down, left, right, fire, fire2, fire3;
@@ -66,6 +68,18 @@ static uint32_t autofire_at;
 static bool pot_loaded;
 static unsigned pot_offset;
 static uint8_t pos_1351[DE9_PORTS][2];   // x, y counters (6 bits used)
+
+// paddles: a pair on a port, on the pot lines; their buttons are the
+// joystick's left and right. the sid reads the value itself, 0 .. 255; kept
+// short of the top so the line is up again before the next discharge
+#define PADDLE_MAX          250
+#define PADDLE_STICK_MOVED  3       // a stick this far from where it was takes the paddle over
+static int16_t paddle[DE9_PORTS][2] = { { 128, 128 }, { 128, 128 } };
+static uint8_t paddle_sent[DE9_PORTS][2];
+static int8_t paddle_stick[DE9_PORTS][2];   // the sticks as last seen
+static bool paddle_by_stick[DE9_PORTS][2];
+static int16_t paddle_rest[2];
+static uint8_t paddle_mouse_buttons;        // bit 0 left, bit 1 right
 static bool sm_running[4];
 
 //--------------------------------------------------------------------+
@@ -161,6 +175,12 @@ static void output_port(unsigned port)
             line(p->fire3, !(state & PAD_FIRE3));
             break;
 
+        case ROLE_C64_PADDLES:
+            // paddle x's button is the joystick's left, paddle y's its right
+            line(p->left, (state & PAD_FIRE) || (paddle_mouse_buttons & 1u));
+            line(p->right, (state & PAD_FIRE2) || (paddle_mouse_buttons & 2u));
+            break;
+
         default:
             break;
     }
@@ -182,6 +202,13 @@ static void pot_push(unsigned port)
     uint32_t x = C64_POT_DISCHARGE_US + C64_POT_BASE + 2u * (pos_1351[port][0] & 63u);
     uint32_t y = C64_POT_DISCHARGE_US + C64_POT_BASE + 2u * (pos_1351[port][1] & 63u);
 
+    if (roles[port] == ROLE_C64_PADDLES) {
+        x = C64_POT_DISCHARGE_US + (uint32_t)paddle[port][0];
+        y = C64_POT_DISCHARGE_US + (uint32_t)paddle[port][1];
+        paddle_sent[port][0] = (uint8_t)paddle[port][0];
+        paddle_sent[port][1] = (uint8_t)paddle[port][1];
+    }
+
     pot_sms(port, &sm_x, &sm_y);
     if (!pio_sm_is_tx_fifo_full(de9_pio, sm_x))
         pio_sm_put(de9_pio, sm_x, x);
@@ -197,11 +224,80 @@ static int32_t owed_1351[2];        // x, y: counter steps not yet made
 static int16_t rest_1351[2];        // x, y: what the scaling left over
 static uint32_t paid_1351_ms;
 
+static void paddle_clamp(unsigned port, unsigned axis)
+{
+    if (paddle[port][axis] < 0) paddle[port][axis] = 0;
+    if (paddle[port][axis] > PADDLE_MAX) paddle[port][axis] = PADDLE_MAX;
+}
+
+// the mouse as a pair of knobs: sideways turns paddle x, up and down paddle
+// y, and they stay where they are left. a knob turned clockwise (the hand
+// moving right) reads lower
+static void paddle_motion(int16_t dx, int16_t dy)
+{
+    static int8_t const divisor[SETTINGS_MOUSE_SPEED_COUNT] = { 6, 4, 3, 2 };
+    int div = divisor[settings_get()->mouse_speed % SETTINGS_MOUSE_SPEED_COUNT];
+    int16_t const delta[2] = { dx, dy };
+
+    for (unsigned axis = 0; axis < 2; axis++) {
+        int total = paddle_rest[axis] + delta[axis];
+        int step = total / div;
+
+        paddle_rest[axis] = (int16_t)(total % div);
+        if (!step)
+            continue;
+        for (unsigned port = 0; port < DE9_PORTS; port++) {
+            if (roles[port] != ROLE_C64_PADDLES)
+                continue;
+            paddle_by_stick[port][axis] = false;
+            paddle[port][axis] = (int16_t)(paddle[port][axis] - step);
+            paddle_clamp(port, axis);
+        }
+    }
+}
+
+// a pad's sticks: the left one sideways is paddle x, the right one paddle y,
+// and the stick's place is the knob's. a stick left alone leaves the knob to
+// the mouse
+static void paddle_task(void)
+{
+    for (unsigned port = 0; port < DE9_PORTS; port++) {
+        pad_player_t const *player;
+        int8_t stick[2];
+
+        if (roles[port] != ROLE_C64_PADDLES)
+            continue;
+
+        player = pads_player((uint8_t)player_for_port(port));
+        if (player && player->active) {
+            stick[0] = player->input.lx;
+            stick[1] = player->input.rx;
+            for (unsigned axis = 0; axis < 2; axis++) {
+                int moved = stick[axis] - paddle_stick[port][axis];
+
+                if ((moved >= PADDLE_STICK_MOVED) || (moved <= -PADDLE_STICK_MOVED)) {
+                    paddle_stick[port][axis] = stick[axis];
+                    paddle_by_stick[port][axis] = true;
+                }
+                if (paddle_by_stick[port][axis]) {
+                    paddle[port][axis] = (int16_t)(PADDLE_MAX / 2 - (paddle_stick[port][axis] * (PADDLE_MAX / 2)) / 127);
+                    paddle_clamp(port, axis);
+                }
+            }
+        }
+
+        if ((paddle_sent[port][0] != paddle[port][0]) || (paddle_sent[port][1] != paddle[port][1]))
+            pot_push(port);
+    }
+}
+
 static void mouse_1351_motion(int16_t dx, int16_t dy)
 {
     static int8_t const divisor[SETTINGS_MOUSE_SPEED_COUNT] = { 12, 8, 6, 4 };
     int div = divisor[settings_get()->mouse_speed % SETTINGS_MOUSE_SPEED_COUNT];
     int16_t const delta[2] = { dx, (int16_t)-dy };
+
+    paddle_motion(dx, dy);
 
     for (unsigned axis = 0; axis < 2; axis++) {
         int total = rest_1351[axis] + delta[axis];
@@ -244,7 +340,13 @@ static void mouse_1351_task(uint32_t now_ms)
 
 static void mouse_1351_button(enum amiga_quad_mouse_buttons button, bool pressed)
 {
+    uint8_t bit = (button == AQM_LEFT) ? 1u : (button == AQM_RIGHT) ? 2u : 0;
+
+    paddle_mouse_buttons = (uint8_t)(pressed ? (paddle_mouse_buttons | bit) : (paddle_mouse_buttons & ~bit));
+
     for (unsigned port = 0; port < DE9_PORTS; port++) {
+        if (roles[port] == ROLE_C64_PADDLES)
+            output_port(port);
         if (roles[port] != ROLE_C64_1351)
             continue;
         // left on fire (pin 6), right on up (pin 1)
@@ -319,6 +421,7 @@ static de9_role_t role_for(unsigned port)
             switch (s->c64_port[port]) {
                 case SETTINGS_C64_PORT_JOYSTICK:    return ROLE_C64_JOYSTICK;
                 case SETTINGS_C64_PORT_1351:        return ROLE_C64_1351;
+                case SETTINGS_C64_PORT_PADDLES:     return ROLE_C64_PADDLES;
                 default:                            return ROLE_OFF;
             }
         default:
@@ -330,15 +433,22 @@ bool de9_c64_has_1351(void)
 {
     settings_t const *s = settings_get();
 
-    return (s->c64_port[0] == SETTINGS_C64_PORT_1351) || (s->c64_port[1] == SETTINGS_C64_PORT_1351);
+    for (unsigned port = 0; port < DE9_PORTS; port++)
+        if ((s->c64_port[port] == SETTINGS_C64_PORT_1351) || (s->c64_port[port] == SETTINGS_C64_PORT_PADDLES))
+            return true;
+    return false;
 }
 
 static void teardown(unsigned port)
 {
     switch (roles[port]) {
         case ROLE_CD32:     cd32_enable(port, false); break;
-        case ROLE_C64_1351: pot_stop(port); break;
-        default:            break;
+        case ROLE_C64_1351:
+        case ROLE_C64_PADDLES:
+            pot_stop(port);
+            break;
+        default:
+            break;
     }
     if (roles[port] != ROLE_MOUSE)
         lines_idle(port);
@@ -360,7 +470,7 @@ void de9_apply(void)
                 next[port] = ROLE_OFF;
         }
         any_cd32 |= next[port] == ROLE_CD32;
-        any_1351 |= next[port] == ROLE_C64_1351;
+        any_1351 |= (next[port] == ROLE_C64_1351) || (next[port] == ROLE_C64_PADDLES);
     }
 
     // take down whatever changes; the mouse lets go of its pins first
@@ -394,8 +504,12 @@ void de9_apply(void)
 
         switch (next[port]) {
             case ROLE_CD32:     cd32_enable(port, true); break;
-            case ROLE_C64_1351: pot_start(port); break;
-            default:            break;
+            case ROLE_C64_1351:
+            case ROLE_C64_PADDLES:
+                pot_start(port);
+                break;
+            default:
+                break;
         }
     }
 
@@ -435,8 +549,10 @@ void de9_task(void)
     uint32_t now = to_ms_since_boot(get_absolute_time());
     bool yellow = (player_state[0] | player_state[1]) & PAD_FIRE4;
 
-    if (pot_loaded)
+    if (pot_loaded) {
         mouse_1351_task(now);
+        paddle_task();
+    }
 
     if (!yellow || (settings_get()->pad_triangle != SETTINGS_PAD_TRIANGLE_AUTOFIRE))
         return;

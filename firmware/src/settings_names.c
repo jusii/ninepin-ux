@@ -20,7 +20,7 @@
 
 NAMES(mode,         SETTINGS_MODE_COUNT,        "amiga", "c64", "usb");
 NAMES(amiga_port,   SETTINGS_AMIGA_PORT_COUNT,  "mouse", "joystick", "cd32 pad", "off");
-NAMES(c64_port,     SETTINGS_C64_PORT_COUNT,    "joystick", "1351 mouse", "off");
+NAMES(c64_port,     SETTINGS_C64_PORT_COUNT,    "joystick", "1351 mouse", "off", "paddles");
 NAMES(no_yes,       2,                          "no", "yes");
 NAMES(off_on,       2,                          "off", "on");
 NAMES(deadzone,     SETTINGS_DEADZONE_COUNT,    "25%", "50%", "75%");

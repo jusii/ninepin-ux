@@ -36,7 +36,7 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
   (keyboard and mouse to USB-C, pads to the DE9 ports), `usb` (everything, the Amiga keyboard
   included, to USB-C for a PC or Mac).
 * **DE9 ports, Amiga:** mouse (TankMouse / Cocolino wheel), joystick with 3 fire buttons, CD32 pad.
-* **DE9 ports, C64:** joystick with 2nd / 3rd fire on the POT lines, 1351 mouse.
+* **DE9 ports, C64:** joystick with 2nd / 3rd fire on the POT lines, 1351 mouse, paddles.
 * **USB-C device:** keyboard, mouse, two gamepads, serial console.
 * **Keyboard settings:** Help / Del / ISO key mapping, Y-Z and AZERTY presets, 8 remaps each way.
 * **Menu** on the OLED, in two levels, from a keyboard, the BOOT button, a rotary encoder, a

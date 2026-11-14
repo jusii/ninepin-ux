@@ -38,11 +38,16 @@ BOOT held 1 s steps the mode; the board remembers it.
 | mode | keyboards | mice | pads | A4000 keyboard |
 |---|---|---|---|---|
 | `amiga` | Amiga keyboard port | DE9 port set to mouse | DE9 ports | Amiga |
-| `c64` | USB-C | USB-C, or a DE9 port set to 1351 | DE9 ports | USB-C |
+| `c64` | USB-C | USB-C, or a DE9 port set to 1351 or paddles | DE9 ports | USB-C |
 | `usb` | USB-C | USB-C | USB-C, two gamepads | USB-C |
 
 * **C64 1351 mouse:** set a C64 port to 1351 mouse. Left button on fire, right button on the up
   line; pointer speed by Mouse speed. The mouse then no longer goes to USB-C.
+* **C64 paddles:** set a C64 port to paddles (a pair, on the POT lines; not yet tried on a C64
+  itself). A mouse turns them: sideways paddle X, up and down paddle Y, left / right button their
+  buttons, and they stay where they are left. A pad's left stick sideways is paddle X, its right
+  stick paddle Y, fire 1 / fire 2 their buttons; the stick's place is the knob's. Whichever moved
+  last has the knob. Mouse speed sets how far the mouse turns them.
 
 ## the menu
 
@@ -67,7 +72,7 @@ the setting visited last. Defaults in **bold**.
 * Pad profile: picks a saved profile (see pads); `*` after the name: changed since it was loaded
 * Port 1 / Port 2, for the current mode:
   * amiga: mouse, joystick, cd32 pad, off (**port 1 mouse, port 2 joystick**)
-  * c64: **joystick**, 1351 mouse, off
+  * c64: **joystick**, 1351 mouse, off, paddles
 * Pads ›, Mouse ›, Keyboard ›, Bluetooth ›, Wi-Fi ›, Board ›
 * Save & exit, Cancel
 
