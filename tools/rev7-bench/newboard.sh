@@ -47,7 +47,8 @@ if [ -n "$dev" ]; then
   for i in $(seq 1 40); do [ -e "$mnt/INFO_UF2.TXT" ] || break; sleep 0.5; done
   sleep 2
   UF2="$files/ninepin-ux.uf2" WAIT=60 CAPTURE=0 bash "$here/flash.sh" | grep -E "copied|enumerated|no cafe|failed" || exit 1
-  sleep 3
+  # the firmware starts its radio and its console takes a moment
+  sleep 8
 fi
 
 for i in $(seq 1 40); do tty=$(console); [ -n "$tty" ] && break; sleep 0.5; done
@@ -59,6 +60,8 @@ stty -F "$tty" raw -echo 115200
 # the run: up to 10 s of listening, 10 s for BOOT, then three steps of 10 s
 ( timeout 75 cat "$tty" > "$log.raw" ) &
 sleep 0.4
+# an empty line first: whatever was half typed on the console is done with
+printf '\r' > "$tty"; sleep 0.6
 printf 'selftest go\r' > "$tty"
 shown=0
 for i in $(seq 1 148); do
@@ -69,11 +72,11 @@ for i in $(seq 1 148); do
     shown=$now
   fi
   grep -q 'not covered:' "$log.raw" && break
-  grep -q 'unknown command' "$log.raw" && break
+  tr -d '\033\r' < "$log.raw" | grep -A1 '> selftest go' | grep -q 'unknown command' && break
 done
 pkill -P $$ -x timeout 2>/dev/null; wait 2>/dev/null
 
-if grep -q 'unknown command' "$log.raw"; then
+if tr -d '\033\r' < "$log.raw" | grep -A1 '> selftest go' | grep -q 'unknown command'; then
   rm -f "$log.raw"
   echo "this board's firmware has no self-test: hold BOOT, plug it in again and run this once more"
   exit 1
