@@ -38,6 +38,7 @@
 #include "profiles.h"
 #include "util/reset_info.h"
 #include "net_update.h"
+#include "selftest.h"
 #include "settings.h"
 #include "util/status_led.h"
 #include "util/user_button.h"
@@ -298,6 +299,9 @@ static void board_controls_task(void)
     io_expander_task();
 
     while ((iox_event = io_expander_poll_event()) != IO_EXPANDER_EVENT_NONE) {
+        // a self-test in progress has the encoder
+        if (selftest_encoder(iox_event))
+            continue;
         switch (iox_event) {
             case IO_EXPANDER_EVENT_ENC_CW:      menu_encoder_turn(+1); break;
             case IO_EXPANDER_EVENT_ENC_CCW:     menu_encoder_turn(-1); break;
@@ -313,8 +317,8 @@ static void board_controls_task(void)
     // otherwise a 1 s hold steps to the next mode
     user_button_event_t button = user_button_task();
 
-    // an update waiting for BOOT takes the press first
-    if ((button != USER_BUTTON_EVENT_NONE) && !ota_button() && !menu_button(button)) {
+    // a self-test in progress takes the button, then an update waiting for BOOT
+    if ((button != USER_BUTTON_EVENT_NONE) && !selftest_button(button) && !ota_button() && !menu_button(button)) {
         if (button == USER_BUTTON_EVENT_LONG_PRESS)
             run_mode_next();
     }
@@ -469,6 +473,7 @@ int main(void)
         // the watchdog, if the settings ask for one
         AT(RESET_STAGE_APPLY);
         apply_task();
+        selftest_task();
 
 #ifdef ENABLE_BLUETOOTH_HID
         AT(RESET_STAGE_BLUETOOTH);

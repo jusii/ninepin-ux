@@ -213,7 +213,24 @@ Type; the board types them as a keyboard would. "Press Return at the end" adds o
   is when reloaded, and has a Stop button.
 * With it on, whoever can open the page can type on the machine: keep the page password on.
 
-## Bluetooth
+## self-test
+
+The board checks itself: `selftest go` on the console, or Self-test on the page (tick the box).
+A first check of a new board, not a replacement for trying it on the machine.
+
+* With nothing attached: chip, flash, I/O expander, display, radio, Bluetooth reception, and
+  USB-A if a device is plugged in.
+* With a straight DE9 cable from port 1 to port 2 and a 6-pin mini-DIN cable from KBD OUT to
+  KBD IN: the port lines each way, and key codes out of one keyboard port into the other. The
+  keyboard cable also gives the Amiga side its 5 V, which the DE9 check needs.
+* Then the LED blinks blue for 10 s: press BOOT for the checks by hand (encoder, LED colours,
+  display pattern; BOOT means yes, each waits 10 s). No press ends the test.
+* Each line says `pass`, `FAIL` or `--` (not tested). The LED ends green (all passed), amber
+  (passed, something not tested) or red.
+* It pulls the port lines and sends key codes: run it with the test cables or nothing on those
+  ports, not with a machine attached.
+* Not covered: the A500 headers, 5 V in on DE9 pin 7.
+
 
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.
 * Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED.

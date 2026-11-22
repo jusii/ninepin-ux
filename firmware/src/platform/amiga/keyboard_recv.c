@@ -656,10 +656,57 @@ static void amiga_keyboard_recv_reset_task(void)
     amiga_kbdin_reset(true);
 }
 
+// the self-test listens in place of everything else: what arrives is kept
+// for it and goes nowhere
+static bool tap_on;
+static uint8_t tap_codes[16];
+static unsigned tap_count;
+
+void amiga_keyboard_recv_selftest(bool on)
+{
+    tap_on = on;
+    tap_count = 0;
+    // a clean start, and a clean line to leave behind
+    amiga_keyboard_recv_restart();
+}
+
+unsigned amiga_keyboard_recv_selftest_take(uint8_t *codes, unsigned max)
+{
+    unsigned count = (tap_count < max) ? tap_count : max;
+
+    memcpy(codes, tap_codes, count);
+    tap_count = 0;
+    return count;
+}
+
+void amiga_keyboard_recv_selftest_deaf(bool deaf)
+{
+    if (deaf) {
+        pio_sm_set_enabled(recv_pio, recv_sm, false);
+        // stopped wherever it was: kdat is let go
+        pio_sm_exec(recv_pio, recv_sm, pio_encode_set(pio_pindirs, 0));
+    } else {
+        amiga_keyboard_recv_restart();
+    }
+}
+
+bool amiga_keyboard_recv_selftest_data_low(void)
+{
+    return gpio_get(KBD_REAL_DAT) == 0;
+}
+
 void amiga_keyboard_recv_task(void)
 {
     while (!pio_sm_is_rx_fifo_empty(recv_pio, recv_sm)) {
         uint32_t word = pio_sm_get(recv_pio, recv_sm);
+
+        if (tap_on) {
+            uint8_t raw = (uint8_t)(~(uint8_t)(word & 0xff));
+
+            if (tap_count < sizeof(tap_codes))
+                tap_codes[tap_count++] = (uint8_t)((raw >> 1) | (raw << 7));
+            continue;
+        }
 
         // the wire is busy; a resynchronisation has to wait for a gap
         recv_last_active = time_us_32();
@@ -713,6 +760,9 @@ void amiga_keyboard_recv_task(void)
             }
         }
     }
+
+    if (tap_on)
+        return;
 
     // drain first, act on the line state second: the key events leading up to a
     // ctrl-amiga-amiga reach the combo tracking before the keyboard's kclk hold

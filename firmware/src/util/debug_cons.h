@@ -80,6 +80,12 @@ void dbgcons_bt_status(char const *status);
  */
 void dbgcons_notice(char const *text);
 void dbgcons_notice_task(void);
+
+/**
+ * @brief Draw the status screen again as it stands (after something else had
+ *        the display).
+ */
+void dbgcons_redraw(void);
 void dbgcons_display_mode(uint8_t mode);
 
 void dbgcons_bt_passkey(char const *message);

@@ -28,6 +28,7 @@
 #define _PLATFORM_AMIGA_DE9_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #include "config.h"
@@ -48,6 +49,23 @@ void de9_apply(void);
  * @brief Autofire. Main loop.
  */
 void de9_task(void);
+
+typedef enum {
+    DE9_SELFTEST_NO_CABLE = 0,      // nothing driven on port 1 shows on port 2
+    DE9_SELFTEST_PASS,
+    DE9_SELFTEST_FAIL,
+} de9_selftest_t;
+
+/**
+ * @brief Self-test, with a straight cable between the two ports (and 5 V on
+ *        the amiga side, without which the lines do not move): each line of
+ *        each port is pulled low in turn and looked for on the other port,
+ *        with every other line watched. The ports are taken out of use for a
+ *        few milliseconds and put back. Main loop.
+ *
+ * @param out   what was found wrong, empty if nothing
+ */
+de9_selftest_t de9_selftest(char *out, size_t size);
 
 /**
  * @brief Describe the ports for the console.

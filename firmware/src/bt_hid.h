@@ -53,6 +53,12 @@ void bt_hid_forget_all(void);
 char const *bt_hid_status(void);
 
 /**
+ * @return a count of the advertisements and inquiry results received since
+ *         boot, from any device
+ */
+uint32_t bt_hid_heard(void);
+
+/**
  * @brief Print the state, pairing policy, bonds and connections for the
  *        console. Main loop.
  */

@@ -136,6 +136,10 @@ bool kvmd_api_page_status(char *out, size_t size)
     if (typed_len) { snprintf(out, size, "Typed %zu characters.", typed_len); return true; }
     out[0] = 0; return false;
 }
+static int selftests; static bool selftest_on; static char const *selftest_text = "";
+bool selftest_start(void) { if (selftest_on) return false; selftests++; return true; }
+bool selftest_running(void) { return selftest_on; }
+char const *selftest_report(void) { return selftest_text; }
 static int profile_ops;
 bool wifi_page_profile_add(profile_t const *p) { profile_ops++; return profiles_put(p) >= 0; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *name, unsigned slot)
@@ -743,6 +747,24 @@ int main(void)
             }
             current = kept; typed_len = 0;
         }
+
+        // the self-test: asked for with its tick, one at a time, its report on the page
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2 id=selftest>Self-test</h2>");
+        assert(strstr(last_out, "name=sure value=1 required") && !strstr(last_out, "<pre"));
+        snprintf(body, sizeof(body), "t=%s", token);
+        post("/selftest", NULL, body, 400, "Tick the box");
+        snprintf(body, sizeof(body), "t=bad&sure=1");
+        post("/selftest", NULL, body, 400, "out of date");
+        assert(selftests == 0);
+        snprintf(body, sizeof(body), "t=%s&sure=1", token);
+        post("/selftest", NULL, body, 303, "Location: /?saved=selftest#selftest");
+        assert(selftests == 1);
+        selftest_on = true;
+        post("/selftest", NULL, body, 503, "running already");
+        selftest_on = false;
+        selftest_text = "pass  flash: 16 MB\nFAIL  de9 ports: port 2 pin 1 <not> seen\n";
+        request("GET /?saved=selftest HTTP/1.1\r\n\r\n", 1000, 200, "pass  flash: 16 MB\nFAIL  de9 ports: port 2 pin 1 &lt;not&gt; seen");
+        selftest_text = "";
 
         // the device name
         snprintf(body, sizeof(body), "t=%s&wifi_mode=1&device_name=Amiga-4000", token);

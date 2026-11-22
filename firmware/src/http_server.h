@@ -19,6 +19,7 @@
  *   POST /profile-file    the same form: a saved profile as a text file
  *   POST /profile-add     a profile from a text file (a multipart form of
  *                         its own; profile_text.h)
+ *   POST /selftest    the board's test of itself (selftest.h), with a tick
  *   POST /type-set, /type, /type-stop
  *                     the type text section: its switch and layout, a text
  *                     for the machine's keyboard (kvmd_api.h), and its end

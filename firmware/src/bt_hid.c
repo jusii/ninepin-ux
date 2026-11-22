@@ -84,6 +84,15 @@ typedef enum
 
 static char const *const bt_pad_names[] = { "BT pad", "DS4", "DualSense" };
 
+// advertisements and inquiry results received, whoever they were from: the
+// self-test's sign that the radio and its antenna hear something
+static volatile uint32_t heard;
+
+uint32_t bt_hid_heard(void)
+{
+    return heard;
+}
+
 typedef struct
 {
     uint8_t modifier;
@@ -1168,6 +1177,7 @@ static void bt_classic_packet_handler(uint8_t packet_type, uint16_t channel, uin
             break;
 
         case GAP_EVENT_INQUIRY_RESULT:
+            heard++;
             bt_classic_inquiry_result(packet, size);
             break;
 
@@ -1772,6 +1782,7 @@ static void bt_le_packet_handler(uint8_t packet_type, uint16_t channel, uint8_t 
             break;
 
         case GAP_EVENT_ADVERTISING_REPORT:
+            heard++;
             if ((bt_le_state != BT_LE_STATE_SCANNING) || bt_resolving)
                 break;
             if (!bt_le_adv_event_contains_hid_service(packet))

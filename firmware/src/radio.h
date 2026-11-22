@@ -22,4 +22,9 @@
  */
 bool radio_init(void);
 
+/**
+ * @return true if the radio has been brought up (radio_init() succeeded)
+ */
+bool radio_up(void);
+
 #endif // _RADIO_H

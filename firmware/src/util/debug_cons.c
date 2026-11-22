@@ -497,6 +497,17 @@ void dbgcons_ota(char const *text)
 #endif
 }
 
+void dbgcons_redraw(void)
+{
+    if (display_mode == DBGCONS_DISPLAY_OFF)
+        return;
+    dbgcons_print_counters();
+    for (uint8_t line = 1; line < 4; line++)
+        disp_write(0, line, line_cache[line][0] ? line_cache[line] : "                     ");
+    if (diag_hid())
+        dbgcons_write_diag_line(2, hid_line);
+}
+
 // a short message over line 3, which gets its own text back after a while
 #define DBGCONS_NOTICE_MS 3000
 static uint32_t notice_until;

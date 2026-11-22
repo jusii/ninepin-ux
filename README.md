@@ -43,6 +43,7 @@ rev7 and rev7.1 run the same firmware and fit the same case. Older boards: [hist
   PlayStation pad or the console.
 * **Wi-Fi:** access point or joins a network; settings page (no JavaScript) with every menu
   setting, a log-in with the page password, the board's uptime and why it last restarted.
+* **Self-test:** the board checks itself, its ports too with two loop cables.
 * **Type text:** paste text on the page and the board types it on the Amiga, C64 Ultimate or PC.
 * **Network control:** a subset of the PiKVM `kvmd` HTTP API (keys, text in six keymaps, mouse).
 * **Firmware updates:** A/B slots with rollback; from the latest signed release on GitHub when

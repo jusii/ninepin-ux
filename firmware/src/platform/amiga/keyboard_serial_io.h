@@ -118,6 +118,20 @@ bool amiga_keyboard_idle(void);
 uint32_t amiga_keyboard_missed_handshakes(void);
 
 /**
+ * @brief Self-test: clock one raw code (bit 7: key up) out of the keyboard
+ *        output now, whatever the amiga's power state, and wait for its
+ *        acknowledge. Main loop; blocks like any code sent.
+ *
+ * @return true if the code was acknowledged
+ */
+bool amiga_selftest_send(uint8_t code);
+
+/**
+ * @brief Self-test: hold the keyboard output's data line low, or let it go.
+ */
+void amiga_selftest_data(bool low);
+
+/**
  * @brief Note that the real keyboard's receiver has been resynchronised
  *
  * Called once per reset, after keyboard_recv.c restarts its state machine. The

@@ -154,6 +154,9 @@ bool kvmd_api_page_type(char const *t, size_t n, char const *k) { (void)t; (void
 bool kvmd_api_page_typing(void) { return false; }
 void kvmd_api_page_stop(void) { }
 bool kvmd_api_page_status(char *out, size_t size) { (void)size; out[0] = 0; return false; }
+bool selftest_start(void) { return true; }
+bool selftest_running(void) { return false; }
+char const *selftest_report(void) { return ""; }
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }

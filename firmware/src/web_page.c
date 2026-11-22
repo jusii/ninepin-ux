@@ -32,6 +32,7 @@
 #include "ota.h"
 #include "pad.h"
 #include "profiles.h"
+#include "selftest.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
 #include "util/reset_info.h"
@@ -673,6 +674,23 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
         "<input type=file name=firmware accept=.uf2> <button>Upload</button></form>"
         "<p><small>Updates need a BOOT press: %s (Board, above).</small>",
         http_server_token(), s->ota_needs_boot ? "yes" : "no");
+
+    // the board's test of itself
+    put(&w, "<h2 id=selftest>Self-test</h2><form method=post action=/selftest>"
+        "<input type=hidden name=t value=%s>"
+        "<label>Only the test cables, or nothing, are on the DE9 and keyboard ports "
+        "<input type=checkbox name=sure value=1 required></label>"
+        "<p><button>Run the self-test</button>%s</form>", http_server_token(),
+        selftest_running() ? " <b>Running: reload for the rest.</b>" : "");
+    if (selftest_report()[0]) {
+        put(&w, "<pre style=\"white-space:pre-wrap\">");
+        put_text(&w, selftest_report(), 1800);
+        put(&w, "</pre>");
+    }
+    put(&w, "<p><small>The board checks itself: some seconds, then BOOT within 10 s for the checks by hand "
+        "(prompts on the display). With a straight DE9 cable from port 1 to port 2 and a 6-pin mini-DIN cable "
+        "from KBD OUT to KBD IN it checks those ports too. It pulls the port lines and sends key codes: "
+        "not with a machine attached. Pads and keys pause for a moment.</small>");
 
     put(&w, "</body></html>");
 

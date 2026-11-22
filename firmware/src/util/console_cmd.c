@@ -37,6 +37,7 @@
 #ifdef HAS_WIFI
 #include "wifi.h"
 #endif
+#include "selftest.h"
 #include "util/run_mode.h"
 
 static void cmd_help(char const *arg);
@@ -51,9 +52,23 @@ static void cmd_log(char const *arg);
 static void cmd_bt(char const *arg);
 static void cmd_pads(char const *arg);
 static void cmd_ports(char const *arg);
+static void cmd_selftest(char const *arg)
+{
+    if (strcmp(arg, "go") == 0) {
+        if (!selftest_start())
+            ahprintf("a self-test is running\n");
+        return;
+    }
+    if (selftest_report()[0])
+        ahprintf("%s", selftest_report());
+    ahprintf("selftest go runs it: it pulls the de9 lines and sends key codes out of KBD OUT, so nothing but\n"
+        "the test cables may be on those (de9 port 1 to port 2, KBD OUT to KBD IN; or nothing)\n");
+}
+
 static void cmd_hang(char const *arg);
 static void cmd_wifi(char const *arg);
 static void cmd_ota(char const *arg);
+static void cmd_selftest(char const *arg);
 
 typedef struct {
     char const *name;
@@ -75,6 +90,7 @@ static const console_cmd_t commands[] = {
     { "wifi",     cmd_wifi,     "wifi [off|ap|join <ssid> [password]]: wi-fi state, page password; set the mode" },
     { "ota",      cmd_ota,      "ota [previous|check|install]: firmware slots and updates; the previous firmware; the latest release" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
+    { "selftest", cmd_selftest, "selftest go: the board tests itself; selftest: the last report" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };

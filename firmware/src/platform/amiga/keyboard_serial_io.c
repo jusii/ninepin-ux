@@ -99,6 +99,7 @@ static queue_t keyboard_event_queue;
 #endif
 static uint8_t misses_in_row;
 #define AKB_ACK_MIN_US              40
+#define AKB_SELFTEST_ACK_MIN_US     12
 static volatile uint32_t handshake_missed;
 
 static inline void amiga_reset_stateful_flags(void)
@@ -179,6 +180,11 @@ uint8_t get_modifier_from_hid(hid_keyboard_modifier_bm_t modifier)
     return 0;
 }
 
+// how long a low on KDAT must last to be the acknowledge. the self-test
+// shortens it: the board's own keyboard input acknowledges the moment the
+// last bit is clocked, so most of its 85 us is over before KDAT is let go
+static uint32_t ack_min_us = AKB_ACK_MIN_US;
+
 static void amiga_send_immediate(uint8_t keycode, bool up)
 {
     uint8_t bit_position, bit_mask = 0x80, sendcode;
@@ -233,7 +239,7 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
                 continue;
             low_since = time_us_32();
             while (!gpio_get(KBD_AMIGA_DAT) && !time_reached(until)) {
-                if ((uint32_t)(time_us_32() - low_since) >= AKB_ACK_MIN_US)
+                if ((uint32_t)(time_us_32() - low_since) >= ack_min_us)
                     acked = true;
             }
         }
@@ -252,6 +258,29 @@ static void amiga_send_immediate(uint8_t keycode, bool up)
 uint32_t amiga_keyboard_missed_handshakes(void)
 {
     return handshake_missed;
+}
+
+bool amiga_selftest_send(uint8_t code)
+{
+    uint32_t missed = handshake_missed;
+    uint8_t run = misses_in_row;
+
+    // every code is waited for in full, whatever went before; and the test's
+    // misses are not the amiga's
+    misses_in_row = 0;
+    ack_min_us = AKB_SELFTEST_ACK_MIN_US;
+    amiga_send_immediate(code & 0x7f, (code & 0x80) != 0);
+    ack_min_us = AKB_ACK_MIN_US;
+    misses_in_row = run;
+    if (handshake_missed == missed)
+        return true;
+    handshake_missed = missed;
+    return false;
+}
+
+void amiga_selftest_data(bool low)
+{
+    _keyboard_gpio_set(KBD_AMIGA_DAT, low ? LOW : HIGH);
 }
 
 void amiga_init_io(void)

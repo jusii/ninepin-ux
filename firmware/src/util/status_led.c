@@ -247,9 +247,26 @@ static bool status_led_activity_task(uint32_t now)
     return activity_pending;
 }
 
+static bool override_on;
+static uint32_t override_grb;
+
+void status_led_override(bool on, bool red, bool green, bool blue)
+{
+    override_on = on;
+    override_grb = ((green ? STATUS_RGB_LEVEL : 0u) << 16) | ((red ? STATUS_RGB_LEVEL : 0u) << 8)
+        | (blue ? STATUS_RGB_LEVEL : 0u);
+}
+
 void status_led_task(void)
 {
     uint32_t now = to_ms_since_boot(get_absolute_time());
+
+    // the self-test has the led
+    if (override_on) {
+        status_led_rgb_put(override_grb);
+        return;
+    }
+
     bool led1_lit = status_led_source_task(now);
     bool led2_lit = status_led_activity_task(now);
 

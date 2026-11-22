@@ -92,4 +92,10 @@ void status_led_mode(bool alternate);
  */
 void status_led_pairing(bool active);
 
+/**
+ * @brief Take the led over with a colour of its own (the self-test), or give
+ *        it back. Shown from the next status_led_task().
+ */
+void status_led_override(bool on, bool red, bool green, bool blue);
+
 #endif // _UTIL_STATUS_LED_H

@@ -8,6 +8,10 @@ updates. Not part of the firmware build. Run from the repo root.
 * `bash tools/rev7-bench/flash.sh`: flash a UF2 without the BOOT button. A running board is
   sent into BOOTSEL with the 1200 baud touch, the UF2 is copied, the console captured.
   `UF2=path WAIT=40 CAPTURE=14` (default UF2: `/tmp/ahp-ci-rev7-bt/src/ninepin-ux.uf2`).
+* `bash tools/rev7-bench/newboard.sh`: a new board in one go. Waits for it on USB-C, installs the
+  latest release if it sits in BOOTSEL (`--local`: the local build), runs its self-test and keeps
+  the report in `_local/selftest/` by serial number. Fit the loop cables first (DE9 port 1 to
+  port 2, KBD OUT to KBD IN) and press BOOT when the LED blinks blue.
 * `bash tools/rev7-bench/con.sh "cmd" ...`: console commands, one reply each (`LISTEN=2`
   seconds). `help` lists them.
 

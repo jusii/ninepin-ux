@@ -29,3 +29,8 @@ bool radio_init(void)
 
     return radio_state == RADIO_UP;
 }
+
+bool radio_up(void)
+{
+    return radio_state == RADIO_UP;
+}

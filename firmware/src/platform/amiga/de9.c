@@ -11,6 +11,9 @@
  * mode, the c64 outputs and the 1351 are this tree's own.
  */
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <string.h>
 #include "config.h"
 #include "de9.h"
 
@@ -405,9 +408,14 @@ static void pot_stop(unsigned port)
 // roles
 //--------------------------------------------------------------------+
 
+static bool selftest_running;    // the ports are the self-test's: no role
+
 static de9_role_t role_for(unsigned port)
 {
     settings_t const *s = settings_get();
+
+    if (selftest_running)
+        return ROLE_OFF;
 
     switch (run_mode_get()) {
         case RUN_MODE_AMIGA:
@@ -564,6 +572,141 @@ void de9_task(void)
     autofire_on = !autofire_on;
     for (unsigned port = 0; port < DE9_PORTS; port++)
         output_port(port);
+}
+
+//--------------------------------------------------------------------+
+// self-test: the two ports joined pin to pin by a straight cable
+//--------------------------------------------------------------------+
+
+#define DE9_TEST_LINES      7
+#define DE9_TEST_SETTLE_US  300
+
+// the lines in de9_pins_t order, by the de9 pin they are on
+static uint8_t const test_pin[DE9_TEST_LINES] = { 1, 2, 3, 4, 6, 9, 5 };
+
+/**
+ * @return the lines of a port that read low just now, a bit each
+ */
+static uint8_t test_read(unsigned port)
+{
+    uint8_t const *pin = &pins[port].up;
+    uint8_t low = 0;
+
+    for (unsigned i = 0; i < DE9_TEST_LINES; i++)
+        if (!gpio_get(pin[i]))
+            low |= (uint8_t)(1u << i);
+    return low;
+}
+
+static void test_note(char *out, size_t size, char const *format, ...) __attribute__((format(printf, 3, 4)));
+
+static void test_note(char *out, size_t size, char const *format, ...)
+{
+    size_t used = strlen(out);
+    va_list args;
+
+    // what does not fit is left out; the first faults are the ones that say most
+    if (used + 48 >= size)
+        return;
+    va_start(args, format);
+    vsnprintf(out + used, size - used, format, args);
+    va_end(args);
+}
+
+de9_selftest_t de9_selftest(char *out, size_t size)
+{
+    bool looped = false, failed = false;
+    uint8_t idle[DE9_PORTS];
+
+    out[0] = 0;
+
+    // the ports let go of whatever they were
+    selftest_running = true;
+    de9_apply();
+    busy_wait_us(2000);
+
+    // nothing driven: every line is up, or it is held or shorted low
+    for (unsigned port = 0; port < DE9_PORTS; port++)
+        idle[port] = test_read(port);
+
+    // is there a cable? one short low on each line of port 1, looked for on port 2
+    for (unsigned i = 0; i < DE9_TEST_LINES; i++) {
+        uint8_t const *from = &pins[0].up;
+
+        line(from[i], true);
+        busy_wait_us(DE9_TEST_SETTLE_US);
+        if (test_read(1) & (uint8_t)~idle[1] & (1u << i))
+            looped = true;
+        line(from[i], false);
+        busy_wait_us(DE9_TEST_SETTLE_US);
+    }
+
+    if (looped) {
+        for (unsigned port = 0; port < DE9_PORTS; port++) {
+            for (unsigned i = 0; i < DE9_TEST_LINES; i++) {
+                if (idle[port] & (1u << i)) {
+                    failed = true;
+                    test_note(out, size, "port %u pin %u low with nothing driving it; ", port + 1, test_pin[i]);
+                }
+            }
+        }
+
+        // each line of each port pulled low in turn: it shows on both ports,
+        // and no other line moves
+        for (unsigned port = 0; port < DE9_PORTS; port++) {
+            uint8_t const *from = &pins[port].up;
+            unsigned other = port ? 0 : 1;
+
+            for (unsigned i = 0; i < DE9_TEST_LINES; i++) {
+                uint8_t here, there, wanted = (uint8_t)(1u << i);
+
+                if ((idle[0] | idle[1]) & wanted)
+                    continue;
+                line(from[i], true);
+                busy_wait_us(DE9_TEST_SETTLE_US);
+                here = test_read(port) & (uint8_t)~idle[port];
+                there = test_read(other) & (uint8_t)~idle[other];
+                line(from[i], false);
+                busy_wait_us(DE9_TEST_SETTLE_US);
+
+                if (!(here & wanted)) {
+                    failed = true;
+                    test_note(out, size, "port %u pin %u does not go low; ", port + 1, test_pin[i]);
+                } else if (!(there & wanted)) {
+                    failed = true;
+                    test_note(out, size, "port %u pin %u not seen on port %u; ", port + 1, test_pin[i], other + 1);
+                }
+                for (unsigned j = 0; j < DE9_TEST_LINES; j++) {
+                    if ((j != i) && ((here | there) & (1u << j))) {
+                        failed = true;
+                        test_note(out, size, "port %u pin %u also pulls pin %u; ", port + 1, test_pin[i], test_pin[j]);
+                    }
+                }
+            }
+        }
+    }
+
+    // no cable seen: say what the lines did, for whoever looks into it
+    if (!looped) {
+        uint8_t own = 0;
+
+        for (unsigned i = 0; i < DE9_TEST_LINES; i++) {
+            line((&pins[0].up)[i], true);
+            busy_wait_us(DE9_TEST_SETTLE_US);
+            if (!gpio_get((&pins[0].up)[i]))
+                own |= (uint8_t)(1u << i);
+            line((&pins[0].up)[i], false);
+            busy_wait_us(DE9_TEST_SETTLE_US);
+        }
+        test_note(out, size, "at rest port 1 low 0x%02x, port 2 low 0x%02x; port 1 pulls 0x%02x of 0x7f low",
+            idle[0], idle[1], own);
+    }
+
+    // and back to what the settings say
+    selftest_running = false;
+    de9_apply();
+
+    return !looped ? DE9_SELFTEST_NO_CABLE : failed ? DE9_SELFTEST_FAIL : DE9_SELFTEST_PASS;
 }
 
 void de9_describe(void)

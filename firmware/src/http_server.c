@@ -29,6 +29,7 @@
 #include "ota.h"
 #include "profile_text.h"
 #include "profiles.h"
+#include "selftest.h"
 #include "settings.h"
 #include "util/output.h"
 #include "web_auth.h"
@@ -78,6 +79,7 @@ typedef enum {
     FORM_TYPE_SET,      // the type text section: its switch and layout,
     FORM_TYPE,          // a text to type (multipart),
     FORM_TYPE_STOP,     // and the end of one being typed
+    FORM_SELFTEST,      // the board's test of itself
 } form_kind_t;
 
 typedef struct {
@@ -496,13 +498,16 @@ static bool page_waits(char const *at)
     // a short text is typed before the page is back; a long one is not waited for
     if (at && (strcmp(at, "typed") == 0))
         return kvmd_api_page_typing();
+    // the self-test is waited for as long as a look for a release is
+    if (at && (strcmp(at, "selftest") == 0))
+        return selftest_running();
     return wifi_page_busy() && !wifi_page_storing();
 }
 
 static char const *page_note(char const *at)
 {
     // the firmware section says how things stand itself
-    if (at && ((strcmp(at, "update") == 0) || (strcmp(at, "typed") == 0)))
+    if (at && ((strcmp(at, "update") == 0) || (strcmp(at, "typed") == 0) || (strcmp(at, "selftest") == 0)))
         return NULL;
     return wifi_page_storing() ? "Saved." : wifi_page_result();
 }
@@ -934,6 +939,22 @@ static bool handle_type_stop(http_conn_t *c, char const *body)
     return respond_message(c, 303, "Stopped", "The board stops typing.", saved_location("Location: ", "typed"));
 }
 
+static bool handle_selftest(http_conn_t *c, char const *body)
+{
+    char sure[4];
+
+    if (!token_given(body))
+        return respond_message(c, 400, "Not run", "The page is out of date: reload it and try again.", NULL);
+    if (!web_page_field(body, "sure", sure, sizeof(sure)) || strcmp(sure, "1"))
+        return respond_message(c, 400, "Not run", "Tick the box first: the test drives the DE9 and keyboard "
+            "ports, and only its cables may be on them.", NULL);
+    if (!selftest_start())
+        return respond_message(c, 503, "Not run", "A self-test is running already.", NULL);
+
+    ahprintf("[web] self-test\n");
+    return respond_message(c, 303, "Running", "The board tests itself now.", saved_location("Location: ", "selftest"));
+}
+
 static bool handle_form(http_conn_t *c)
 {
     static settings_t submitted;    // lwip callbacks do not nest
@@ -963,6 +984,7 @@ static bool handle_form(http_conn_t *c)
         case FORM_TYPE_SET:         return handle_type_set(c, body);
         case FORM_TYPE:             return handle_type(c, body);
         case FORM_TYPE_STOP:        return handle_type_stop(c, body);
+        case FORM_SELFTEST:         return handle_selftest(c, body);
         default:            break;
     }
 
@@ -1433,6 +1455,8 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_TYPE);
     if (strcmp(target, "/type-stop") == 0)
         return form_begin(c, FORM_TYPE_STOP);
+    if (strcmp(target, "/selftest") == 0)
+        return form_begin(c, FORM_SELFTEST);
     if (strcmp(target, "/bt-pair") == 0)
         return form_begin(c, FORM_BT_PAIR);
     if (strcmp(target, "/update-check") == 0)
@@ -1680,7 +1704,7 @@ static err_t on_poll(void *arg, struct tcp_pcb *pcb)
 
     // a page waiting for something that never ends is sent as things are (a
     // save takes a moment, a look at the releases up to its own timeout)
-    if ((c->phase == CONN_PAGE_WAIT) && (c->idle_polls >= (strcmp(c->page_at, "update") ? 1 : 12))) {
+    if ((c->phase == CONN_PAGE_WAIT) && (c->idle_polls >= ((strcmp(c->page_at, "update") && strcmp(c->page_at, "selftest")) ? 1 : 12))) {
         char const *at = c->page_at[0] ? c->page_at : NULL;
 
         return page_send(c, at, page_note(at)) ? ERR_OK : ERR_ABRT;

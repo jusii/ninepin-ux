@@ -11,6 +11,7 @@ add_executable(ninepin-ux
   pads.c
   profiles.c
   profile_text.c
+  selftest.c
   settings.c
   settings_names.c
   usb_descriptors.c

@@ -51,4 +51,27 @@ void amiga_keyboard_recv_release_all(void);
  */
 uint8_t amiga_keyboard_recv_hid_usage(uint8_t amiga);
 
+/**
+ * @brief Self-test: whilst on, the codes received are kept for
+ *        amiga_keyboard_recv_selftest_take() and go nowhere else. Switching
+ *        restarts the receiver.
+ */
+void amiga_keyboard_recv_selftest(bool on);
+
+/**
+ * @return how many codes were copied out (raw: bit 7 key up), oldest first
+ */
+unsigned amiga_keyboard_recv_selftest_take(uint8_t *codes, unsigned max);
+
+/**
+ * @brief Self-test: stop the receiver (it acknowledges nothing), or start it
+ *        afresh.
+ */
+void amiga_keyboard_recv_selftest_deaf(bool deaf);
+
+/**
+ * @return true if the keyboard input's data line reads low just now
+ */
+bool amiga_keyboard_recv_selftest_data_low(void);
+
 #endif // _PLATFORM_AMIGA_KEYBOARD_RECV_H
