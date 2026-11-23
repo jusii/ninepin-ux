@@ -79,6 +79,7 @@ typedef struct {
     uint32_t pass_worst_us;
     uint32_t pass_worst_by_us;
     uint8_t pass_worst_by;
+    uint32_t fast, fast_corrected;
 } stats_t;
 
 typedef struct {
@@ -89,6 +90,7 @@ typedef struct {
 
 static stats_t stats;
 static stamp_t origin;
+static volatile bool fast_wanted = true;
 
 // usb out, per player: changed and waiting, handed to the stack, collected
 static stamp_t usb_pending[2], usb_flight[2];
@@ -189,6 +191,29 @@ void lag_out_de9(void)
 {
     if (origin.on)
         sample(origin.from, LAG_TO_DE9, origin.at_us, lag_now());
+}
+
+void lag_out_de9_at(uint32_t at_us)
+{
+    if (origin.on)
+        sample(origin.from, LAG_TO_DE9, origin.at_us, at_us);
+}
+
+bool lag_fast_on(void)
+{
+    return fast_wanted;
+}
+
+void lag_fast_set(bool on)
+{
+    fast_wanted = on;
+}
+
+void lag_fast(bool corrected)
+{
+    stats.fast++;
+    if (corrected)
+        stats.fast_corrected++;
 }
 
 void lag_out_usb(uint8_t player)
@@ -421,6 +446,9 @@ size_t lag_report(char *out, size_t size)
             put(&t, "\n");
         }
     }
+
+    put(&t, "fast path %s: %lu reports straight to the de9 lines, %lu put right afterwards\n",
+        fast_wanted ? "on" : "off", (unsigned long)copy.fast, (unsigned long)copy.fast_corrected);
 
     if (copy.passes) {
         put(&t, "main loop: a pass takes %s on average, the slowest %s",

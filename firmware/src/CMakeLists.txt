@@ -98,6 +98,8 @@ target_link_libraries(ninepin-ux PUBLIC
 )
 
 if (ENABLE_BLUETOOTH_HID)
+  # the driver's packet reads pass a lag stamp too (bt_hid.c)
+  target_link_options(ninepin-ux PRIVATE -Wl,--wrap=cyw43_bluetooth_hci_read)
   target_compile_options(ninepin-ux PRIVATE
     -Wno-error=maybe-uninitialized
   )

@@ -75,6 +75,13 @@ static void cmd_lag(char const *arg)
         ahprintf("lag figures cleared\n");
         return;
     }
+    if ((strcmp(arg, "fast on") == 0) || (strcmp(arg, "fast off") == 0)) {
+        // until the next start: for comparing
+        lag_fast_set(arg[6] == 'n');
+        lag_reset();
+        ahprintf("fast path %s, lag figures cleared\n", lag_fast_on() ? "on" : "off");
+        return;
+    }
     lag_report(text, sizeof(text));
     ahprintf("%s", text);
 }
@@ -105,7 +112,7 @@ static const console_cmd_t commands[] = {
     { "ota",      cmd_ota,      "ota [previous|check|install]: firmware slots and updates; the previous firmware; the latest release" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "selftest", cmd_selftest, "selftest go: the board tests itself; selftest: the last report" },
-    { "lag",      cmd_lag,      "lag [reset]: how long pad reports take through the board; clear the figures" },
+    { "lag",      cmd_lag,      "lag [reset|fast on|fast off]: how long pad reports take through the board; clear the figures; the fast path" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };

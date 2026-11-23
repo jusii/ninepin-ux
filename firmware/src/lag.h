@@ -37,6 +37,19 @@ void lag_origin_end(void);
 void lag_out_de9(void);
 
 /**
+ * @brief They were written already, at that time, by the fast path.
+ */
+void lag_out_de9_at(uint32_t at_us);
+
+/**
+ * @brief The fast path (pads.c): wanted at all; and one more report it took,
+ *        with whether the main loop then had to put the lines right.
+ */
+bool lag_fast_on(void);
+void lag_fast_set(bool on);
+void lag_fast(bool corrected);
+
+/**
  * @brief A player's usb report has changed and waits for the host.
  */
 void lag_out_usb(uint8_t player);

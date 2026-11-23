@@ -22,6 +22,7 @@
 
 #include "input_bridge.h"
 #include "input_bridge_bt.h"
+#include "lag.h"
 #include "menu.h"
 #include "settings.h"
 #include "util/debug_cons.h"
@@ -73,10 +74,23 @@ static hid_keyboard_report_t sent_keys;
 static bool autofire_on = true;
 static uint32_t autofire_at;
 
+// the fast path: the player (+ 1) a slot's pad may drive straight from the
+// radio's context just now, 0 if it may not. route() keeps it; a byte each,
+// so it is never read half-written
+static volatile uint8_t fast_place[INPUT_BRIDGE_MAX_SLOTS];
+static pads_fast_t const *report_fast;      // of the report being handled
+
 void __attribute__((weak)) pads_output_de9(uint8_t player, uint16_t state)
 {
     (void)player;
     (void)state;
+}
+
+bool __attribute__((weak)) pads_output_de9_fast(uint8_t player, uint16_t state)
+{
+    (void)player;
+    (void)state;
+    return false;
 }
 
 void __attribute__((weak)) pads_output_usb(uint8_t player, pad_player_t const *source)
@@ -173,6 +187,31 @@ static uint16_t pad_digital(pad_input_t const *in, uint8_t keys[SETTINGS_PAD_COM
     }
 
     return (uint16_t)(state | (combo & PAD_BUTTONS));
+}
+
+void pads_fast(uint8_t slot, pad_input_t const *input, pads_fast_t *fast)
+{
+    uint8_t keys[SETTINGS_PAD_COMBOS];
+    bool autofire = false;
+    uint16_t state;
+    uint8_t place;
+
+    fast->done = false;
+    if (!lag_fast_on() || (slot >= INPUT_BRIDGE_MAX_SLOTS) || !input || input->home)
+        return;
+    place = fast_place[slot];
+    if (!place)
+        return;
+
+    // the beat is the main loop's
+    state = pad_digital(input, keys, &autofire);
+    if (autofire || !pads_output_de9_fast((uint8_t)(place - 1), state))
+        return;
+
+    fast->at_us = lag_now();
+    fast->player = (uint8_t)(place - 1);
+    fast->state = state;
+    fast->done = true;
 }
 
 static bool autofire_held(void)
@@ -322,9 +361,32 @@ static void route(void)
                 sent_usb[p] = out[p];
             }
         } else if (out[p].state != sent_de9[p]) {
-            pads_output_de9((uint8_t)p, out[p].state);
+            // the fast path has written just this already (or something newer
+            // since, which an older write here would undo)
+            if (report_fast && report_fast->done && (report_fast->player == p)
+                && (report_fast->state == out[p].state))
+                lag_out_de9_at(report_fast->at_us);
+            else
+                pads_output_de9((uint8_t)p, out[p].state);
             sent_de9[p] = out[p].state;
         }
+    }
+
+    // who may take the fast path until the next pass
+    {
+        uint8_t place[INPUT_BRIDGE_MAX_SLOTS];
+
+        memset(place, 0, sizeof(place));
+        if (!to_usb && !captured && !s->pad_merge) {
+            for (unsigned p = 0; p < PADS_PLAYERS; p++) {
+                int16_t slot = places[p].slot;
+
+                if (places[p].connected && (slot >= 0) && slots[slot].present && !slots[slot].quarantine)
+                    place[slot] = (uint8_t)((s->pad_swap ? (PADS_PLAYERS - 1 - p) : p) + 1);
+            }
+        }
+        for (unsigned i = 0; i < INPUT_BRIDGE_MAX_SLOTS; i++)
+            fast_place[i] = place[i];
     }
 }
 
@@ -430,6 +492,11 @@ static void pad_menu(uint8_t slot, uint16_t before, uint16_t after)
 
 void pads_report(uint8_t slot, pad_input_t const *input)
 {
+    pads_report_fast(slot, input, NULL);
+}
+
+void pads_report_fast(uint8_t slot, pad_input_t const *input, pads_fast_t const *fast)
+{
     pad_slot_t *pad;
     uint16_t before;
     bool beating;
@@ -500,7 +567,22 @@ void pads_report(uint8_t slot, pad_input_t const *input)
         input_bridge_handle_mouse(slot, &mouse);
     }
 
+    report_fast = fast;
     route();
+    report_fast = NULL;
+
+    // the fast path wrote something else than this came to: these lines are
+    // the ones that count. not its mistake if it may no longer act at all
+    // (the menu opened, the mode changed since)
+    if (fast && fast->done && (fast->player < PADS_PLAYERS)) {
+        bool wrong = !run_mode_pads_usb(run_mode_get()) && (out[fast->player].state != fast->state);
+
+        if (wrong) {
+            pads_output_de9(fast->player, out[fast->player].state);
+            sent_de9[fast->player] = out[fast->player].state;
+        }
+        lag_fast(wrong && (fast_place[slot] == fast->player + 1));
+    }
 }
 
 void pads_release_all(void)

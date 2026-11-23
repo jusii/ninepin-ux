@@ -120,7 +120,8 @@ typedef struct
 {
     uint8_t slot;
     bt_hid_queue_type_t type;
-    uint32_t at_us;                 // a pad's report: when the stack handed it over
+    uint32_t at_us;                 // a pad's report: when it was fetched from the radio chip
+    pads_fast_t fast;               // and what the fast path did with it
     union
     {
         bt_hid_keyboard_report_t keyboard;
@@ -562,6 +563,7 @@ static bool bt_hid_dequeue(bt_hid_queue_entry_t *entry)
             pending->pad_pending = false;
             entry->type = BT_HID_QUEUE_PAD;
             entry->at_us = pending->pad_at_us;
+            entry->fast.done = false;
             entry->pad = pending->pad;
         } else {
             continue;
@@ -620,6 +622,21 @@ static void bt_hid_enqueue_pad_connect(uint8_t slot, uint8_t const *address, bt_
 }
 
 static uint32_t bt_pad_at_us;       // when the report being decoded arrived
+static uint32_t bt_fetch_at_us;     // when the packet being worked on was fetched
+
+// the driver's read of a packet from the radio chip (linked with --wrap): the
+// start of a read that brought one is where a pad report's lag is timed from
+int __real_cyw43_bluetooth_hci_read(uint8_t *buf, uint32_t max_size, uint32_t *len);
+
+int __wrap_cyw43_bluetooth_hci_read(uint8_t *buf, uint32_t max_size, uint32_t *len)
+{
+    uint32_t at = lag_now();
+    int result = __real_cyw43_bluetooth_hci_read(buf, max_size, len);
+
+    if ((result == 0) && (*len > 0))
+        bt_fetch_at_us = at;
+    return result;
+}
 
 static void bt_hid_enqueue_pad(uint8_t slot, pad_input_t const *input)
 {
@@ -630,6 +647,7 @@ static void bt_hid_enqueue_pad(uint8_t slot, pad_input_t const *input)
     };
 
     entry.pad = *input;
+    pads_fast(slot, input, &entry.fast);
     bt_hid_enqueue(&entry);
 }
 
@@ -1007,7 +1025,7 @@ static void bt_classic_pad_report(uint8_t slot, uint8_t const *report, uint16_t 
     pad_input_t input;
     bool decoded;
 
-    bt_pad_at_us = lag_now();
+    bt_pad_at_us = bt_fetch_at_us;
     switch (connection->pad_kind) {
         case BT_PAD_DS4:
             decoded = bt_ds4_decode(&connection->ds4, report, report_len, &input);
@@ -1432,6 +1450,33 @@ static bool bt_le_adv_event_contains_hid_service(uint8_t const *packet)
     return ad_data_contains_uuid16(ad_len, ad_data, ORG_BLUETOOTH_SERVICE_HUMAN_INTERFACE_DEVICE);
 }
 
+/**
+ * the le search. all the time, until a classic pad is in use and nothing new
+ * is being paired (as bt_classic_wants_inquiry()): then a tenth of the time.
+ * every advertisement heard holds the main loop off for half a millisecond,
+ * and the listening is radio time the pad does not get; a paired le device
+ * still comes back, a little later
+ */
+static bool bt_le_scan_slow;
+
+static bool bt_pad_quiet(void)
+{
+    if (bt_pair_window)
+        return false;
+    for (unsigned slot = 0; slot < INPUT_BRIDGE_BT_CLASSIC_SLOTS; slot++)
+        if (bt_classic_connections[slot].in_use && bt_classic_connections[slot].has_gamepad)
+            return !bt_pad_search_until || ((int32_t)(bt_now_ms() - bt_pad_search_until) >= 0);
+    return false;
+}
+
+static void bt_le_scan_set(bool slow)
+{
+    bt_le_scan_slow = slow;
+    // active: some le pads put their hid service uuid in the scan response.
+    // 30 ms at a time, back to back or every 300 ms
+    gap_set_scan_parameters(1, slow ? 480 : 48, 48);
+}
+
 static void bt_le_start_scan(void)
 {
     if (!bt_hid_ready || !bt_radio_on || !bt_classic_working || bt_scan_paused
@@ -1441,8 +1486,7 @@ static void bt_le_start_scan(void)
     bt_le_clear_characteristics();
     bt_hid_passkey_done();
     bt_le_set_state(BT_LE_STATE_SCANNING);
-    // active: some le pads put their hid service uuid in the scan response
-    gap_set_scan_parameters(1, 48, 48);
+    bt_le_scan_set(bt_pad_quiet());
     gap_start_scan();
 }
 
@@ -1519,7 +1563,7 @@ static void bt_le_gamepad_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
             if ((size < 10) || (bt_le_state != BT_LE_STATE_READY) || !bt_le_has_gamepad)
                 break;
-            bt_pad_at_us = lag_now();
+            bt_pad_at_us = bt_fetch_at_us;
             service = gattservice_subevent_hid_report_get_service_index(packet);
             if ((service >= MAX_NUM_HID_SERVICES) || !bt_le_gamepads[service].field_count)
                 break;
@@ -2173,6 +2217,12 @@ static void bt_hid_settings_task(void)
         hci_power_control(HCI_POWER_ON);
     }
 
+    // btstack restarts a running scan with the new parameters itself
+    if ((bt_le_state == BT_LE_STATE_SCANNING) && (bt_le_scan_slow != bt_pad_quiet())) {
+        bt_le_scan_set(!bt_le_scan_slow);
+        ahprintf("[bt] le search %s\n", bt_le_scan_slow ? "slowed: a pad is in use" : "at full rate");
+    }
+
     if (bt_scan_pause_effective() && !bt_scan_paused) {
         bt_scan_paused = true;
         bt_classic_stop_inquiry();
@@ -2250,7 +2300,7 @@ void bt_hid_task(void)
 
             case BT_HID_QUEUE_PAD:
                 lag_origin(LAG_FROM_BT, entry.at_us);
-                pads_report(entry.slot, &entry.pad);
+                pads_report_fast(entry.slot, &entry.pad, &entry.fast);
                 lag_origin_end();
                 break;
         }

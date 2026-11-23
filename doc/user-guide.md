@@ -236,8 +236,14 @@ A first check of a new board, not a replacement for trying it on the machine.
 `lag` on the console, or Lag on the page: how long pad reports take through the board, counted
 since power on (`lag reset`, or Clear, starts again).
 
-* Timed from the report reaching the board (Bluetooth or USB-A) to the joystick port lines
-  changing, or to the USB host collecting the report. Only reports that change an output count.
+* Timed from the report being fetched from the radio chip (or coming in on USB-A) to the
+  joystick port lines changing, or to the USB host collecting the report. Only reports that
+  change an output count.
+* A Bluetooth pad on a plain joystick port takes the fast path: its lines are written where the
+  report arrives, and the main loop checks them afterwards. Not with the menu open, PS held,
+  merged players, an autofire button held, CD32 pads or paddles. `lag` counts the reports that
+  took it and how many had to be put right (should be 0); `lag fast off|on` switches it until
+  the next start, for comparing.
 * Not in it: the pad's own delay, the radio, the machine.
 * Per path: changes, least, median, worst, and how many took under 0.25 .. 32 ms.
 * The main loop's average and slowest pass, and the last eight reports over 4 ms with the part
@@ -251,6 +257,8 @@ since power on (`lag reset`, or Clear, starts again).
 * A second pad: put it in pairing mode within 30 s of the first one connecting. Later, open
   BT pair (2 min) first (menu, or Pair on the page): the board does not otherwise search while a
   pad is in use.
+* With a pad in use the search for LE devices runs a tenth of the time: a paired LE keyboard or
+  mouse still reconnects, a little later.
 * Searching for new devices pauses while the Wi-Fi access point is on and during an upload (shared
   radio). Connected devices keep working; BT pair (2 min) searches anyway.
 
@@ -338,6 +346,6 @@ Boards running firmware from before the rename show up as `amigahid-xxxx` until 
 USB-C serial, any baud rate except 1200. `help` lists the commands: `info` (firmware, uptime,
 what started the board, the last fault), `settings`,
 `mode amiga|c64|usb`, `menu open|next|prev|inc|dec|enter|leave`, `bt [pair|forget]`,
-`wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `lag [reset]`, `selftest [go]`,
+`wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `lag [reset|fast on|fast off]`, `selftest [go]`,
 `ota [previous]`, `log`, `defaults`,
 `reboot`, `bootsel`.

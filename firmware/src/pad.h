@@ -102,6 +102,29 @@ void pads_disconnected(uint8_t slot);
  */
 void pads_report(uint8_t slot, pad_input_t const *input);
 
+// what the fast path did with a report, for the main loop to check
+typedef struct {
+    bool done;
+    uint8_t player;
+    uint16_t state;
+    uint32_t at_us;
+} pads_fast_t;
+
+/**
+ * @brief The fast path, called where a bluetooth report arrives (the radio's
+ *        context), before it is queued for the main loop: in the plain case
+ *        (de9 joystick port, menu closed, home not held, players not merged,
+ *        no autofire) work out that pad's lines and write them at once. The
+ *        main loop handles the report in full afterwards and has the last
+ *        word.
+ */
+void pads_fast(uint8_t slot, pad_input_t const *input, pads_fast_t *fast);
+
+/**
+ * @brief pads_report() for a report the fast path has seen.
+ */
+void pads_report_fast(uint8_t slot, pad_input_t const *input, pads_fast_t const *fast);
+
 /**
  * @brief Expire held places, autofire, keep outputs current. Main loop.
  */
@@ -128,6 +151,13 @@ void pads_describe(void);
  * those exist. called from the main loop whenever a player's output changes.
  */
 void pads_output_de9(uint8_t player, uint16_t state);
+
+/**
+ * @brief The same from the radio's context, for plain joystick ports only.
+ *
+ * @return false, with nothing written, if the player's port is anything else
+ */
+bool pads_output_de9_fast(uint8_t player, uint16_t state);
 void pads_output_usb(uint8_t player, pad_player_t const *source);
 
 /**

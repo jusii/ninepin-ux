@@ -23,6 +23,7 @@
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 #include "hardware/pio.h"
+#include "hardware/sync.h"
 
 #include "c64_pot.pio.h"
 #include "cd32.h"
@@ -140,7 +141,7 @@ static uint16_t with_yellow(uint16_t state)
     return state;
 }
 
-static void output_port(unsigned port)
+static void output_port_now(unsigned port)
 {
     de9_pins_t const *p = &pins[port];
     uint16_t state = player_state[player_for_port(port)];
@@ -188,6 +189,23 @@ static void output_port(unsigned port)
         default:
             break;
     }
+}
+
+/**
+ * the lines of a port, from the state its player is in. the fast path writes
+ * them from the radio's context too: a plain joystick port is read and
+ * written in one go, so neither can leave the other's older state behind
+ */
+static void output_port(unsigned port)
+{
+    bool plain = (roles[port] == ROLE_JOYSTICK) || (roles[port] == ROLE_C64_JOYSTICK);
+    uint32_t interrupts = 0;
+
+    if (plain)
+        interrupts = save_and_disable_interrupts();
+    output_port_now(port);
+    if (plain)
+        restore_interrupts(interrupts);
 }
 
 //--------------------------------------------------------------------+
@@ -540,6 +558,31 @@ void de9_init(void)
         roles[port] = (port == 0) ? ROLE_MOUSE : ROLE_OFF;   // as quad_mouse starts
     lines_idle(1);
     de9_apply();
+}
+
+bool pads_output_de9_fast(uint8_t player, uint16_t state)
+{
+    bool any = false;
+
+    if (player > 1)
+        return false;
+    for (unsigned port = 0; port < DE9_PORTS; port++) {
+        if (player_for_port(port) != player)
+            continue;
+        if ((roles[port] == ROLE_JOYSTICK) || (roles[port] == ROLE_C64_JOYSTICK))
+            any = true;
+        else if (roles[port] != ROLE_OFF)
+            return false;
+    }
+    // the yellow button's own autofire beats in de9_task()
+    if (!any || ((state & PAD_FIRE4) && (settings_get()->pad_triangle == SETTINGS_PAD_TRIANGLE_AUTOFIRE)))
+        return false;
+
+    player_state[player] = state;
+    for (unsigned port = 0; port < DE9_PORTS; port++)
+        if (player_for_port(port) == player)
+            output_port(port);
+    return true;
 }
 
 void pads_output_de9(uint8_t player, uint16_t state)
