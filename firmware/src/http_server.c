@@ -29,6 +29,7 @@
 #include "ota.h"
 #include "profile_text.h"
 #include "profiles.h"
+#include "lag.h"
 #include "selftest.h"
 #include "settings.h"
 #include "util/output.h"
@@ -43,7 +44,7 @@
 #define HTTP_CONNECTIONS        4
 #define HTTP_REQUEST_MAX        3072    // the request head and a settings form
 #define HTTP_SMALL_MAX          2048    // a response head and a short page
-#define HTTP_PAGE_MAX           20480   // the settings page
+#define HTTP_PAGE_MAX           24576   // the settings page
 #define HTTP_POLL_INTERVAL      4       // tcp_poll ticks of 0.5 s: every 2 s
 #define HTTP_IDLE_POLLS         10      // ~20 s without progress closes
 #define HTTP_BOUNDARY_MAX       70      // rfc 2046
@@ -80,6 +81,7 @@ typedef enum {
     FORM_TYPE,          // a text to type (multipart),
     FORM_TYPE_STOP,     // and the end of one being typed
     FORM_SELFTEST,      // the board's test of itself
+    FORM_LAG_RESET,     // the lag figures cleared
 } form_kind_t;
 
 typedef struct {
@@ -507,7 +509,8 @@ static bool page_waits(char const *at)
 static char const *page_note(char const *at)
 {
     // the firmware section says how things stand itself
-    if (at && ((strcmp(at, "update") == 0) || (strcmp(at, "typed") == 0) || (strcmp(at, "selftest") == 0)))
+    if (at && ((strcmp(at, "update") == 0) || (strcmp(at, "typed") == 0) || (strcmp(at, "selftest") == 0)
+        || (strcmp(at, "lag") == 0)))
         return NULL;
     return wifi_page_storing() ? "Saved." : wifi_page_result();
 }
@@ -939,6 +942,14 @@ static bool handle_type_stop(http_conn_t *c, char const *body)
     return respond_message(c, 303, "Stopped", "The board stops typing.", saved_location("Location: ", "typed"));
 }
 
+static bool handle_lag_reset(http_conn_t *c, char const *body)
+{
+    if (!token_given(body))
+        return respond_message(c, 400, "Not done", "The page is out of date: reload it and try again.", NULL);
+    lag_reset();
+    return respond_message(c, 303, "Cleared", "The lag figures are cleared.", saved_location("Location: ", "lag"));
+}
+
 static bool handle_selftest(http_conn_t *c, char const *body)
 {
     char sure[4];
@@ -985,6 +996,7 @@ static bool handle_form(http_conn_t *c)
         case FORM_TYPE:             return handle_type(c, body);
         case FORM_TYPE_STOP:        return handle_type_stop(c, body);
         case FORM_SELFTEST:         return handle_selftest(c, body);
+        case FORM_LAG_RESET:        return handle_lag_reset(c, body);
         default:            break;
     }
 
@@ -1457,6 +1469,8 @@ static bool handle_head(http_conn_t *c)
         return form_begin(c, FORM_TYPE_STOP);
     if (strcmp(target, "/selftest") == 0)
         return form_begin(c, FORM_SELFTEST);
+    if (strcmp(target, "/lag-reset") == 0)
+        return form_begin(c, FORM_LAG_RESET);
     if (strcmp(target, "/bt-pair") == 0)
         return form_begin(c, FORM_BT_PAIR);
     if (strcmp(target, "/update-check") == 0)

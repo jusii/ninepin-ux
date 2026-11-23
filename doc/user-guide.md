@@ -231,6 +231,19 @@ A first check of a new board, not a replacement for trying it on the machine.
   ports, not with a machine attached.
 * Not covered: the A500 headers, 5 V in on DE9 pin 7.
 
+## lag
+
+`lag` on the console, or Lag on the page: how long pad reports take through the board, counted
+since power on (`lag reset`, or Clear, starts again).
+
+* Timed from the report reaching the board (Bluetooth or USB-A) to the joystick port lines
+  changing, or to the USB host collecting the report. Only reports that change an output count.
+* Not in it: the pad's own delay, the radio, the machine.
+* Per path: changes, least, median, worst, and how many took under 0.25 .. 32 ms.
+* The main loop's average and slowest pass, and the last eight reports over 4 ms with the part
+  of the firmware that held each up.
+* Showing the page is work for the board too and can add a slow one.
+
 
 * PS5 DualSense: hold Create + PS 3 s until the light bar double-blinks. PS4 DualShock 4: Share + PS.
 * Keyboards and mice: their own pairing mode. A passkey, if asked, shows on the OLED.
@@ -325,5 +338,6 @@ Boards running firmware from before the rename show up as `amigahid-xxxx` until 
 USB-C serial, any baud rate except 1200. `help` lists the commands: `info` (firmware, uptime,
 what started the board, the last fault), `settings`,
 `mode amiga|c64|usb`, `menu open|next|prev|inc|dec|enter|leave`, `bt [pair|forget]`,
-`wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `ota [previous]`, `log`, `defaults`,
+`wifi [off|ap|join <ssid> [password]]`, `pads`, `ports`, `lag [reset]`, `selftest [go]`,
+`ota [previous]`, `log`, `defaults`,
 `reboot`, `bootsel`.

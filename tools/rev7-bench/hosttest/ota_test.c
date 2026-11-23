@@ -157,6 +157,8 @@ bool kvmd_api_page_status(char *out, size_t size) { (void)size; out[0] = 0; retu
 bool selftest_start(void) { return true; }
 bool selftest_running(void) { return false; }
 char const *selftest_report(void) { return ""; }
+size_t lag_report(char *out, size_t size) { if (size) out[0] = 0; return 0; }
+void lag_reset(void) {}
 static pad_player_t players[2];
 pad_player_t const *pads_player(uint8_t p) { return &players[p]; }
 char const *bt_hid_status(void) { return "bt"; }

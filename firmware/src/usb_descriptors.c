@@ -95,8 +95,8 @@ enum
 #define EPNUM_CDC_IN        0x82
 #define EPNUM_HID_KEYBOARD  0x83
 #define EPNUM_HID_MOUSE     0x84
-#define EPNUM_HID_GAMEPAD   0x85
-#define EPNUM_HID_GAMEPAD2  0x86
+#define EPNUM_HID_GAMEPAD   USB_DEVICE_EP_GAMEPAD
+#define EPNUM_HID_GAMEPAD2  USB_DEVICE_EP_GAMEPAD2
 #define EPNUM_HID_ABS       0x87
 
 // 1 ms polling for all of them; the hosts this talks to are not short of bandwidth

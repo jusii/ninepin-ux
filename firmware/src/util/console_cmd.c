@@ -37,6 +37,7 @@
 #ifdef HAS_WIFI
 #include "wifi.h"
 #endif
+#include "lag.h"
 #include "selftest.h"
 #include "util/run_mode.h"
 
@@ -65,6 +66,19 @@ static void cmd_selftest(char const *arg)
         "the test cables may be on those (de9 port 1 to port 2, KBD OUT to KBD IN; or nothing)\n");
 }
 
+static void cmd_lag(char const *arg)
+{
+    static char text[LAG_REPORT_MAX];
+
+    if (strcmp(arg, "reset") == 0) {
+        lag_reset();
+        ahprintf("lag figures cleared\n");
+        return;
+    }
+    lag_report(text, sizeof(text));
+    ahprintf("%s", text);
+}
+
 static void cmd_hang(char const *arg);
 static void cmd_wifi(char const *arg);
 static void cmd_ota(char const *arg);
@@ -91,6 +105,7 @@ static const console_cmd_t commands[] = {
     { "ota",      cmd_ota,      "ota [previous|check|install]: firmware slots and updates; the previous firmware; the latest release" },
     { "hang",     cmd_hang,     "stop the main loop (tests the watchdog)" },
     { "selftest", cmd_selftest, "selftest go: the board tests itself; selftest: the last report" },
+    { "lag",      cmd_lag,      "lag [reset]: how long pad reports take through the board; clear the figures" },
     { "ports",    cmd_ports,    "what the de9 ports are, and what they send" },
     { "menu",     cmd_menu,     "menu [open|next|prev|inc|dec|enter|leave]: drive the oled menu, show it" },
 };

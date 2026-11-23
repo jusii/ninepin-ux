@@ -26,6 +26,7 @@
 
 #include "c64_pot.pio.h"
 #include "cd32.h"
+#include "lag.h"
 #include "pad.h"
 #include "quad_mouse.h"
 #include "settings.h"
@@ -543,13 +544,21 @@ void de9_init(void)
 
 void pads_output_de9(uint8_t player, uint16_t state)
 {
+    bool written = false;
+
     if (player > 1)
         return;
 
     player_state[player] = state;
-    for (unsigned port = 0; port < DE9_PORTS; port++)
-        if (player_for_port(port) == player)
-            output_port(port);
+    for (unsigned port = 0; port < DE9_PORTS; port++) {
+        if (player_for_port(port) != player)
+            continue;
+        output_port(port);
+        if (roles[port] != ROLE_OFF)
+            written = true;
+    }
+    if (written)
+        lag_out_de9();
 }
 
 void de9_task(void)

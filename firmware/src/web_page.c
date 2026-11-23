@@ -32,6 +32,7 @@
 #include "ota.h"
 #include "pad.h"
 #include "profiles.h"
+#include "lag.h"
 #include "selftest.h"
 #include "settings_names.h"
 #include "util/run_mode.h"
@@ -691,6 +692,21 @@ size_t web_page_render(char *out, size_t size, char const *at, char const *note)
         "(prompts on the display). With a straight DE9 cable from port 1 to port 2 and a 6-pin mini-DIN cable "
         "from KBD OUT to KBD IN it checks those ports too. It pulls the port lines and sends key codes: "
         "not with a machine attached. Pads and keys pause for a moment.</small>");
+
+    // how long pads take through the board
+    {
+        static char lag[LAG_REPORT_MAX];    // lwip callbacks do not nest
+
+        lag_report(lag, sizeof(lag));
+        put(&w, "<h2 id=lag>Lag</h2><pre style=\"white-space:pre-wrap\">");
+        put_text(&w, lag, sizeof(lag));
+        put(&w, "</pre><form method=post action=/lag-reset><input type=hidden name=t value=%s>"
+            "<button>Clear</button></form>"
+            "<p><small>From a pad's report reaching the board to the joystick port lines changing, or to the "
+            "USB host collecting it. The pad's own delay and the radio are not in it. Counted since power on "
+            "or Clear; showing this page is work for the board too, and can add a slow one.</small>",
+            http_server_token());
+    }
 
     put(&w, "</body></html>");
 

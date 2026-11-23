@@ -44,6 +44,10 @@
 #define USB_DEVICE_HID_MOUSE    1
 #define USB_DEVICE_HID_GAMEPAD  2
 #define USB_DEVICE_HID_GAMEPAD2 3   // player 2
+
+// the gamepads' endpoints, for whoever times their reports
+#define USB_DEVICE_EP_GAMEPAD   0x85
+#define USB_DEVICE_EP_GAMEPAD2  0x86
 #define USB_DEVICE_HID_ABS      4   // absolute pointer, network control
 
 /**

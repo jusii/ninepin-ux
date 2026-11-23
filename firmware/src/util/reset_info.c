@@ -65,6 +65,11 @@ static char const *const stage_names[RESET_STAGE_COUNT] = {
 // page is served from the radio's interrupt context)
 static volatile uint32_t loop_passes, loop_seen_passes, loop_seen_ms;
 
+char const *reset_info_stage_name(reset_stage_t stage)
+{
+    return (stage < RESET_STAGE_COUNT) ? stage_names[stage] : "?";
+}
+
 void reset_info_stage(reset_stage_t stage)
 {
     watchdog_hw->scratch[0] = (RESET_MAGIC << 20) | (uint32_t)stage;

@@ -42,6 +42,7 @@
 #include "ds5.h"
 #include "hid_gamepad.h"
 #include "input_bridge_bt.h"
+#include "lag.h"
 #include "pad.h"
 #include "radio.h"
 #include "settings.h"
@@ -119,6 +120,7 @@ typedef struct
 {
     uint8_t slot;
     bt_hid_queue_type_t type;
+    uint32_t at_us;                 // a pad's report: when the stack handed it over
     union
     {
         bt_hid_keyboard_report_t keyboard;
@@ -143,6 +145,7 @@ typedef struct
     bt_hid_keyboard_report_t keyboard;
     bt_hid_mouse_report_t mouse;
     pad_input_t pad;
+    uint32_t pad_at_us;
 } bt_hid_overflow_t;
 
 typedef struct
@@ -509,6 +512,9 @@ static void bt_hid_enqueue(bt_hid_queue_entry_t const *entry)
         case BT_HID_QUEUE_PAD: {
             pad_input_t pad = entry->pad;
 
+            // merged reports are timed from the oldest
+            if (!pending->pad_pending)
+                pending->pad_at_us = entry->at_us;
             if (pending->pad_pending) {
                 pad.touch_dx = bt_hid_clamp_i8((int32_t)pad.touch_dx + pending->pad.touch_dx);
                 pad.touch_dy = bt_hid_clamp_i8((int32_t)pad.touch_dy + pending->pad.touch_dy);
@@ -555,6 +561,7 @@ static bool bt_hid_dequeue(bt_hid_queue_entry_t *entry)
         } else if (pending->pad_pending) {
             pending->pad_pending = false;
             entry->type = BT_HID_QUEUE_PAD;
+            entry->at_us = pending->pad_at_us;
             entry->pad = pending->pad;
         } else {
             continue;
@@ -612,11 +619,14 @@ static void bt_hid_enqueue_pad_connect(uint8_t slot, uint8_t const *address, bt_
     bt_hid_enqueue(&entry);
 }
 
+static uint32_t bt_pad_at_us;       // when the report being decoded arrived
+
 static void bt_hid_enqueue_pad(uint8_t slot, pad_input_t const *input)
 {
     bt_hid_queue_entry_t entry = {
         .slot = slot,
         .type = BT_HID_QUEUE_PAD,
+        .at_us = bt_pad_at_us,
     };
 
     entry.pad = *input;
@@ -997,6 +1007,7 @@ static void bt_classic_pad_report(uint8_t slot, uint8_t const *report, uint16_t 
     pad_input_t input;
     bool decoded;
 
+    bt_pad_at_us = lag_now();
     switch (connection->pad_kind) {
         case BT_PAD_DS4:
             decoded = bt_ds4_decode(&connection->ds4, report, report_len, &input);
@@ -1508,6 +1519,7 @@ static void bt_le_gamepad_handler(uint8_t packet_type, uint16_t channel, uint8_t
 
             if ((size < 10) || (bt_le_state != BT_LE_STATE_READY) || !bt_le_has_gamepad)
                 break;
+            bt_pad_at_us = lag_now();
             service = gattservice_subevent_hid_report_get_service_index(packet);
             if ((service >= MAX_NUM_HID_SERVICES) || !bt_le_gamepads[service].field_count)
                 break;
@@ -2237,7 +2249,9 @@ void bt_hid_task(void)
                 break;
 
             case BT_HID_QUEUE_PAD:
+                lag_origin(LAG_FROM_BT, entry.at_us);
                 pads_report(entry.slot, &entry.pad);
+                lag_origin_end();
                 break;
         }
     }

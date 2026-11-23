@@ -140,6 +140,9 @@ static int selftests; static bool selftest_on; static char const *selftest_text 
 bool selftest_start(void) { if (selftest_on) return false; selftests++; return true; }
 bool selftest_running(void) { return selftest_on; }
 char const *selftest_report(void) { return selftest_text; }
+static int lag_resets;
+size_t lag_report(char *out, size_t size) { return (size_t)snprintf(out, size, "bluetooth pad > de9 <12>\n"); }
+void lag_reset(void) { lag_resets++; }
 static int profile_ops;
 bool wifi_page_profile_add(profile_t const *p) { profile_ops++; return profiles_put(p) >= 0; }
 bool wifi_page_profile_submit(wifi_profile_op_t op, settings_t const *s, char const *name, unsigned slot)
@@ -750,7 +753,7 @@ int main(void)
 
         // the self-test: asked for with its tick, one at a time, its report on the page
         request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2 id=selftest>Self-test</h2>");
-        assert(strstr(last_out, "name=sure value=1 required") && !strstr(last_out, "<pre"));
+        assert(strstr(last_out, "name=sure value=1 required") && !strstr(last_out, "<pre style=\"white-space:pre-wrap\">pass"));
         snprintf(body, sizeof(body), "t=%s", token);
         post("/selftest", NULL, body, 400, "Tick the box");
         snprintf(body, sizeof(body), "t=bad&sure=1");
@@ -765,6 +768,15 @@ int main(void)
         selftest_text = "pass  flash: 16 MB\nFAIL  de9 ports: port 2 pin 1 <not> seen\n";
         request("GET /?saved=selftest HTTP/1.1\r\n\r\n", 1000, 200, "pass  flash: 16 MB\nFAIL  de9 ports: port 2 pin 1 &lt;not&gt; seen");
         selftest_text = "";
+
+        // the lag figures: shown as text, cleared with the page's token
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "<h2 id=lag>Lag</h2>");
+        request("GET / HTTP/1.1\r\n\r\n", 1000, 200, "bluetooth pad &gt; de9 &lt;12&gt;");
+        post("/lag-reset", NULL, "t=wrong", 400, "out of date");
+        assert(lag_resets == 0);
+        snprintf(body, sizeof(body), "t=%s", http_server_token());
+        post("/lag-reset", NULL, body, 303, "Location: /?saved=lag#lag");
+        assert(lag_resets == 1);
 
         // the device name
         snprintf(body, sizeof(body), "t=%s&wifi_mode=1&device_name=Amiga-4000", token);

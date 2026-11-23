@@ -22,6 +22,9 @@
 #include <string.h>
 
 #include "input_bridge.h"
+#include "host/hcd.h"
+
+#include "lag.h"
 #include "platform/amiga/keyboard_serial_io.h"
 #include "tusb_config.h"
 #include "util/output.h"
@@ -191,6 +194,27 @@ static bool usb_pad_ps3(uint8_t const *report, uint16_t len, pad_input_t *input)
 /**
  * @return true if the slot is a pad and the report went to it
  */
+// when the report being handled came off the wire. the host controller's
+// interrupt notes it on its way to tinyusb (linked with --wrap); one note a
+// device, the oldest not yet used, so a queue of reports is never flattered
+#define HOST_STAMPS 16
+static volatile uint32_t host_in_at[HOST_STAMPS];
+static volatile bool host_in_on[HOST_STAMPS];
+static uint32_t usb_report_at;
+
+void __real_hcd_event_handler(hcd_event_t const *event, bool in_isr);
+
+void __wrap_hcd_event_handler(hcd_event_t const *event, bool in_isr)
+{
+    if ((event->event_id == HCD_EVENT_XFER_COMPLETE) && (event->xfer_complete.result == XFER_RESULT_SUCCESS)
+        && (event->xfer_complete.ep_addr & 0x80) && (event->xfer_complete.ep_addr & 0x0f)
+        && (event->dev_addr < HOST_STAMPS) && !host_in_on[event->dev_addr]) {
+        host_in_at[event->dev_addr] = lag_now();
+        host_in_on[event->dev_addr] = true;
+    }
+    __real_hcd_event_handler(event, in_isr);
+}
+
 static bool usb_pad_report(uint8_t slot, uint8_t const *report, uint16_t len)
 {
     usb_hid_slot_t *hid = &hid_info[slot];
@@ -214,8 +238,11 @@ static bool usb_pad_report(uint8_t slot, uint8_t const *report, uint16_t len)
             return false;
     }
 
-    if (ok)
+    if (ok) {
+        lag_origin(LAG_FROM_USB, usb_report_at);
         pads_report(slot, &input);
+        lag_origin_end();
+    }
     return true;
 }
 
@@ -377,6 +404,12 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
 {
     uint8_t const hid_protocol = tuh_hid_interface_protocol(dev_addr, instance);
     int8_t slot = usb_hid_find_slot(dev_addr, instance);
+
+    usb_report_at = lag_now();
+    if ((dev_addr < HOST_STAMPS) && host_in_on[dev_addr]) {
+        usb_report_at = host_in_at[dev_addr];
+        host_in_on[dev_addr] = false;
+    }
 
     if (slot < 0) {
         tuh_hid_receive_report(dev_addr, instance);

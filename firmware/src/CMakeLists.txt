@@ -4,6 +4,7 @@ add_executable(ninepin-ux
   hid_gamepad.c
   input_bridge.c
   keyboard_map.c
+  lag.c
   main.c
   net_update.c
   ota.c
@@ -86,6 +87,9 @@ target_link_libraries(ninepin-ux PUBLIC
 # board_init(), which would force clk_sys to 156 MHz and expect a
 # PICO_DEFAULT_PIO_USB_DP_PIN from the board header
 pico_enable_stdio_uart(ninepin-ux 0)
+# the usb interrupts pass through lag stamps on their way into tinyusb
+# (usb_device.c, usb_hid.c)
+target_link_options(ninepin-ux PRIVATE -Wl,--wrap=dcd_event_handler -Wl,--wrap=hcd_event_handler)
 target_link_libraries(ninepin-ux PUBLIC
   tinyusb_device
   tinyusb_pico_pio_usb

@@ -22,7 +22,7 @@ updates. Not part of the firmware build. Run from the repo root.
 ## host tests (gcc, ASan/UBSan)
 
 `hosttest/` runs `http_server.c`, `web_page.c`, `web_auth.c` and `ota.c` against a fake lwIP
-(with a TCP window), a fake 16 MB flash and a fake bootrom, and the pad combos in `pads.c`.
+(with a TCP window), a fake 16 MB flash and a fake bootrom, the pad combos in `pads.c` and the lag figures in `lag.c`.
 
 ```shell
 R=$PWD; H=$R/tools/rev7-bench/hosttest; B=/tmp/ahp-ci-rev7-bt/src
@@ -37,6 +37,9 @@ gcc $F -DCFG_TUSB_MCU=0 -I $H/inc3 -include $H/inc2/fake_sdk.h -o /tmp/ahp_pads_
 /tmp/ahp_pads_t
 gcc $F -o /tmp/ahp_ptext_t $H/profile_text_test.c $R/firmware/src/profile_text.c
 /tmp/ahp_ptext_t $R/profiles/*.txt
+gcc -std=gnu11 -g -O1 -Wall -Wextra -DLAG_HOST_TEST -fsanitize=address,undefined -I $R/firmware/src \
+   -o /tmp/ahp_lag_t $H/lag_test.c $R/firmware/src/lag.c
+/tmp/ahp_lag_t
 ```
 
 `test.c` covers the page, the log-in form, sessions, the page password form, the pad combo and

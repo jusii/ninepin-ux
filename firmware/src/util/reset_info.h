@@ -42,6 +42,11 @@ void reset_info_init(void);
 void reset_info_stage(reset_stage_t stage);
 
 /**
+ * @return a stage's name, e.g. "wifi"
+ */
+char const *reset_info_stage_name(reset_stage_t stage);
+
+/**
  * @return why the board started, e.g. "power on", "watchdog (in wifi)",
  *         "fault pc 1000abcd lr 1000ef01 cfsr 00000400 (in bluetooth)"
  */

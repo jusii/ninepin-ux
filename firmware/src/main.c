@@ -34,6 +34,7 @@
 #include "apply.h"
 #include "menu.h"
 #include "platform/amiga/de9.h"
+#include "lag.h"
 #include "pad.h"
 #include "profiles.h"
 #include "util/reset_info.h"
@@ -439,7 +440,7 @@ int main(void)
 #ifdef USB_DEVICE_BRINGUP_SERVICE
 #define AT(stage)
 #else
-#define AT(stage) reset_info_stage(stage)
+#define AT(stage) do { reset_info_stage(stage); lag_stage(stage); } while (0)
 #endif
 
     while (1) {
@@ -510,6 +511,7 @@ int main(void)
         LOOP_STAGE("L led");
         // advance the status indicators
         status_led_task();
+        lag_pass_end();
 
         if (first_pass) {
             boot_stage("ok");

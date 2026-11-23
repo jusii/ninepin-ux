@@ -24,6 +24,9 @@
 #include "input_bridge_bt.h"
 #include "usb_device.h"
 #include "util/debug_cons.h"
+#include "device/dcd.h"
+
+#include "lag.h"
 #include "pad.h"
 #include "util/output.h"
 
@@ -257,6 +260,21 @@ static int8_t hid_take_axis(int32_t *accum)
     return (int8_t)step;
 }
 
+// the usb interrupt, on its way to tinyusb (linked with --wrap): the moment
+// the host collects a gamepad report is the end of that report's lag
+void __real_dcd_event_handler(dcd_event_t const *event, bool in_isr);
+
+void __wrap_dcd_event_handler(dcd_event_t const *event, bool in_isr)
+{
+    if (event->event_id == DCD_EVENT_XFER_COMPLETE) {
+        if (event->xfer_complete.ep_addr == USB_DEVICE_EP_GAMEPAD)
+            lag_usb_collected(0);
+        else if (event->xfer_complete.ep_addr == USB_DEVICE_EP_GAMEPAD2)
+            lag_usb_collected(1);
+    }
+    __real_dcd_event_handler(event, in_isr);
+}
+
 static void hid_flush(void)
 {
     if (!tud_mounted()) {
@@ -265,8 +283,11 @@ static void hid_flush(void)
         mouse_dx = mouse_dy = mouse_wheel = mouse_pan = 0;
         caps_tap = CAPS_TAP_NONE;
         host_caps_lock = -1;
+        lag_usb_idle();
         return;
     }
+    if (tud_suspended())
+        lag_usb_idle();
 
     if ((caps_tap != CAPS_TAP_NONE) && tud_hid_n_ready(USB_DEVICE_HID_KEYBOARD)) {
         hid_keyboard_report_t merged;
@@ -303,9 +324,13 @@ static void hid_flush(void)
     for (uint8_t player = 0; player < 2; player++) {
         uint8_t instance = player ? USB_DEVICE_HID_GAMEPAD2 : USB_DEVICE_HID_GAMEPAD;
 
-        if (gamepad_dirty[player] && tud_hid_n_ready(instance)
-            && tud_hid_n_report(instance, 0, &gamepad_report[player], sizeof(gamepad_report[player])))
-            gamepad_dirty[player] = false;
+        if (gamepad_dirty[player] && tud_hid_n_ready(instance)) {
+            lag_usb_sending(player);
+            if (tud_hid_n_report(instance, 0, &gamepad_report[player], sizeof(gamepad_report[player])))
+                gamepad_dirty[player] = false;
+            else
+                lag_usb_unsent(player);
+        }
     }
 
     if (abs_dirty && tud_hid_n_ready(USB_DEVICE_HID_ABS)
@@ -378,8 +403,10 @@ void usb_device_task(bool vbus_present)
         reset_usb_boot(0, 0);
     }
 
-    if (!connected)
+    if (!connected) {
+        lag_usb_idle();
         return;
+    }
 
     console_drain();
     hid_flush();
@@ -512,6 +539,7 @@ void pads_output_usb(uint8_t player, pad_player_t const *source)
 
     gamepad_report[player] = report;
     gamepad_dirty[player] = true;
+    lag_out_usb(player);
     hid_wake_host();
 }
 
